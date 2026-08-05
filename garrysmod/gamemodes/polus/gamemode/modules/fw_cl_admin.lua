@@ -69,6 +69,7 @@ net.Receive("P11FW_AdminData", function()
         p.warns    = net.ReadUInt(8)
         p.muted    = net.ReadBool()
         p.muteLeft = p.muted and net.ReadUInt(16) or 0
+        p.doc      = net.ReadString() -- v1.6.1: код удостоверения
         d.players[#d.players + 1] = p
     end
 
@@ -177,9 +178,10 @@ function P11FW.OpenAdminMenu()
 
     -- ============ ВКЛАДКИ ============
 
+    local myLevel = P11FW.GetRankLevel(LocalPlayer())
     local tabs = {
         { id = "players",  name = "ИГРОКИ" },
-        { id = "mod",      name = "МОДЕРАЦИЯ" },
+        { id = "mod",      name = "МОДЕРАЦИЯ", perm = "warn", badge = "!" },
         { id = "acts",     name = "ДЕЙСТВИЯ" },
         { id = "jobs",     name = "ДОЛЖНОСТИ" },
         { id = "factions", name = "ФРАКЦИИ" },
@@ -188,6 +190,7 @@ function P11FW.OpenAdminMenu()
     f.TabPanels = {}
     f.TabButtons = {}
 
+    surface.SetFont("P11FW.Adm.Tab")
     for i, t in ipairs(tabs) do
         local tb = vgui.Create("DButton", f)
         tb:SetPos(12 + (i - 1) * 143, 58)
@@ -197,9 +200,27 @@ function P11FW.OpenAdminMenu()
         tb.Paint = function(s, w, h)
             local on = f.ActiveTab == s.TabId
             draw.RoundedBox(5, 0, 0, w, h, on and Color(AC.accent.r, AC.accent.g, AC.accent.b, 55) or Color(255, 255, 255, 8))
-            draw.SimpleText(t.name, "P11FW.Adm.Tab", w / 2, h / 2, on and AC.accent or AC.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+            if on then
+                surface.SetDrawColor(AC.accent)
+                surface.DrawRect(10, h - 2, w - 20, 2)
+            end
+            -- v1.6: вкладки под права — без прав текст серый
+            local col = on and AC.accent or AC.dim
+            if t.perm and not P11FW.CanMod(LocalPlayer(), t.perm) then
+                col = Color(90, 95, 105)
+            end
+            draw.SimpleText(t.name, "P11FW.Adm.Tab", w / 2 - (t.badge and 8 or 0), h / 2, col, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+            if t.badge then
+                draw.SimpleText(t.badge, "P11FW.Small", w - 14, 4,
+                    P11FW.CanMod(LocalPlayer(), t.perm) and AC.gold or Color(90, 95, 105))
+            end
         end
         tb.DoClick = function()
+            if t.perm and not P11FW.CanMod(LocalPlayer(), t.perm) then
+                surface.PlaySound("buttons/button10.wav") -- недоступно рангу
+                chat.AddText(AC.gold, "[P11FW] Вкладка «" .. t.name .. "» доступна с ранга Хелпер (2).")
+                return
+            end
             f.ActiveTab = t.id
             for id, p in pairs(f.TabPanels) do p:SetVisible(id == t.id) end
             if t.id == "players" or t.id == "utils" or t.id == "acts" or t.id == "mod" then RequestAdminData() end
@@ -229,9 +250,10 @@ function P11FW.OpenAdminMenu()
         lv:SetPos(10, 10)
         lv:SetSize(520, 450)
         lv:SetMultiSelect(false)
-        lv:AddColumn("Ник"):SetFixedWidth(190)
-        lv:AddColumn("Должность"):SetFixedWidth(160)
-        lv:AddColumn("Статус"):SetFixedWidth(90)
+        lv:AddColumn("Ник"):SetFixedWidth(170)
+        lv:AddColumn("КОД"):SetFixedWidth(105)
+        lv:AddColumn("Должность"):SetFixedWidth(130)
+        lv:AddColumn("Статус"):SetFixedWidth(70)
         lv:AddColumn("Осталось")
 
         f.PlayersList = lv
@@ -241,7 +263,8 @@ function P11FW.OpenAdminMenu()
             for _, pl in ipairs((self.AdminData and self.AdminData.players) or {}) do
                 local job = P11FW.Jobs[pl.jobId]
                 local status = pl.pun == "arrest" and "АРЕСТ" or pl.pun == "slavery" and "РАБСТВО" or pl.pun == "ban" and "БАН" or "—"
-                local line = lv:AddLine(pl.nick, job and job.name or pl.jobId, status, pl.pun ~= "" and (pl.left .. " мин") or "")
+                local line = lv:AddLine(pl.nick, pl.doc ~= "" and pl.doc or "—", job and job.name or pl.jobId,
+                    status, pl.pun ~= "" and (pl.left .. " мин") or "")
                 line.PlayerIdx = pl.idx
             end
         end

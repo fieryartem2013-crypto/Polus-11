@@ -57,8 +57,16 @@ hook.Add("HUDPaint", "P11_Nametags", function()
                         end
 
                         -- v2.9: ранг администрации под должностью (Хелпер+)
+                        -- v3.4: высокие ранги ПЕРЕЛИВАЮТСЯ (RankFxColor)
                         if P11FW and P11FW.GetRankLevel and P11FW.GetRankLevel(ply) >= 2 then
-                            local rc = P11FW.GetRankColor(ply)
+                            local rc = P11FW.RankFxColor and P11FW.RankFxColor(ply) or P11FW.GetRankColor(ply)
+                            if P11FW.RankHasFx and P11FW.RankHasFx(ply) then
+                                -- мягкое свечение за текстом для «живых» рангов
+                                local pulse = 0.35 + math.sin(CurTime() * 2.6) * 0.15
+                                draw.SimpleTextOutlined("◆ " .. P11FW.GetRankName(ply), "P11.HUD.Text",
+                                    pos.x, pos.y + 56, Color(rc.r, rc.g, rc.b, a * pulse),
+                                    TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 4, Color(rc.r, rc.g, rc.b, a * 0.55))
+                            end
                             draw.SimpleTextOutlined("◆ " .. P11FW.GetRankName(ply), "P11.HUD.Text",
                                 pos.x, pos.y + 56, Color(rc.r, rc.g, rc.b, a),
                                 TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 2, Color(0, 0, 0, a * 0.8))

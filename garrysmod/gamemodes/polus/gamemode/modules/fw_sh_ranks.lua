@@ -14,11 +14,11 @@ P11FW.Ranks = {
     { id = "helper",     name = "Хелпер",          level = 2, color = Color(140, 220, 150) },
     { id = "moderator",  name = "Модератор",       level = 3, color = Color(140, 190, 250) },
     { id = "admin",      name = "Админ",           level = 4, color = Color(235, 150, 90) },
-    { id = "curator",    name = "Куратор",         level = 5, color = Color(225, 120, 110) },
-    { id = "superadmin", name = "Суперадмин",      level = 6, color = Color(240, 100, 100) },
-    { id = "founder",    name = "Основатель",      level = 7, color = Color(255, 90, 90) },
-    { id = "sozdatel",   name = "Создатель",       level = 8, color = Color(255, 150, 80) },
-    { id = "glava",      name = "Глава Полюса-11", level = 9, color = Color(255, 215, 90) },
+    { id = "curator",    name = "Куратор",         level = 5, color = Color(225, 120, 110), fx = "shimmer" },
+    { id = "superadmin", name = "Суперадмин",      level = 6, color = Color(240, 100, 100), fx = "shimmer" },
+    { id = "founder",    name = "Основатель",      level = 7, color = Color(255, 90, 90),   fx = "shimmer" },
+    { id = "sozdatel",   name = "Создатель",       level = 8, color = Color(255, 150, 80),  fx = "aurora" },
+    { id = "glava",      name = "Глава Полюса-11", level = 9, color = Color(255, 215, 90),  fx = "aurora" },
 }
 
 P11FW.RankById = {}
@@ -55,6 +55,36 @@ end
 
 function P11FW.GetRankColor(ply)
     return (P11FW.GetRank(ply) or P11FW.RankById.user).color or Color(170, 170, 170)
+end
+
+--- Есть ли у ранга живой эффект цвета (Куратор+)
+function P11FW.RankHasFx(ply)
+    local r = P11FW.GetRank(ply)
+    return r and r.fx ~= nil
+end
+
+--- v1.6: «ЖИВОЙ» ЦВЕТ РАНГА — для высоких рангов.
+--  shimmer = мягкое переливание вокруг базового оттенка (Куратор..Основатель)
+--  aurora  = северное сияние (Создатель, Глава Полюса-11)
+function P11FW.RankFxColor(ply, t)
+    local r = P11FW.GetRank(ply) or P11FW.RankById.user
+    local c = r.color or Color(170, 170, 170)
+    if not r.fx then return c end
+    t = t or (CLIENT and CurTime()) or os.clock()
+    local h, s, v = ColorToHSV(c)
+    if r.fx == "aurora" then
+        -- медленная смена оттенка золото→оранж→роза→золото, пульс яркости
+        local wave = math.sin(t * 1.1) * 40 + math.sin(t * 0.7 + 2) * 20
+        h = (h + wave) % 360
+        s = math.Clamp(s - 0.08 + math.sin(t * 2.4) * 0.10, 0.35, 1)
+        v = 0.86 + math.sin(t * 3.0) * 0.14
+        return HSVToColor(h, s, v)
+    else
+        -- shimmer: оттенок качается ±25°, лёгкий блеск
+        h = (h + math.sin(t * 1.6 + r.level * 0.8) * 25) % 360
+        v = 0.82 + math.sin(t * 2.8) * 0.18
+        return HSVToColor(h, s, v)
+    end
 end
 
 --- Может ли ply выдавать ранги (и не выше себя)?

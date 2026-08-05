@@ -68,6 +68,10 @@ function SWEP:PrimaryAttack()
 
     local maxhp = target:GetMaxHealth() > 0 and target:GetMaxHealth() or 100
     target:SetHealth(math.min(maxhp, target:Health() + (POLUS11.Config.RationHeal or 15)))
+    -- v3.7: горячий паёк согревает (против переохлаждения)
+    if POLUS11.AddWarmth then
+        POLUS11.AddWarmth(target, 15)
+    end
     target:EmitSound("npc/barnacle/barnacle_gulp1.wav", 60, 110)
     ply:EmitSound("items/smallmedkit1.wav", 55, 105)
 

@@ -1,5 +1,5 @@
 -- ============================================================
---  POLUS-11 RP — ГЕЙММОД (shared) — сборка 3.4 (ЗАТ)
+--  POLUS-11 RP — ГЕЙММОД (shared) — сборка 3.7 (ЗАТ)
 --  Единая сборка: ПОЛЮС FRAMEWORK v1.6 (профессии, F4, админка
 --  с МОДЕРАЦИЕЙ по рангам, наказания, варны/мут/кик/бан,
 --  журнал действий) + ПОЛЮС-11 v2.8 (Нечто, заражение, энергия,
@@ -20,9 +20,9 @@ P11FW = P11FW or {}
 P11FW.Version = "1.7.0"
 
 POLUS11 = POLUS11 or {}
-POLUS11.Version = "3.0"
+POLUS11.Version = "3.1"
 
-POLUS_BUILD = "3.6" -- версия сборки-гейммода
+POLUS_BUILD = "3.7" -- версия сборки-гейммода
 
 -- ============ ОБЩИЕ МОДУЛИ (shared) ============
 
@@ -123,6 +123,13 @@ function GM:SpawnMenuOpen(ply)   return true end
 --- станционное меню жестов/действий (p11_cl_cmenu.lua). Админские
 --- инструменты доступны через Q-меню (спавнлисты/настройки тулгана).
 function GM:ContextMenuOpen(ply) return false end
+
+--- v3.7: стандартный ТАБ песочницы ПОЛНОСТЬЮ отключён —
+--- своё табло живёт в modules/p11_cl_scoreboard.lua и само
+--- реагирует на +showscores. Если только цепляться хуком,
+--- sandbox-скорборд рисуется ПОВЕРХ нашего (баг «ваниль поверх»).
+function GM:ScoreboardShow() return true end
+function GM:ScoreboardHide() return true end
 
 --- Ноуклип — только админам.
 function GM:PlayerNoClip(ply, on)

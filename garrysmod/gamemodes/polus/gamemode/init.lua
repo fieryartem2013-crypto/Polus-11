@@ -78,6 +78,7 @@ local sv = {
     "modules/p11_sv_shadowtasks.lua",-- ложные задачи маскировки Нечто
     "modules/p11_sv_command.lua",    -- приказы командира / розыск / репорты
     "modules/p11_sv_shift.lua",      -- распорядок смены + авто-буря
+    "modules/p11_sv_cold.lua",       -- переохлаждение: тепло как ресурс (v3.7)
 }
 
 local function Safe(f)

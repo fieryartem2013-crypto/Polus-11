@@ -3,9 +3,15 @@ AddCSLuaFile("shared.lua")
 include("shared.lua")
 
 function ENT:Initialize()
+    -- v3.7: модель пульта станции + фолбэки без пака lt_c
+    local models = {
+        "models/lt_c/holo_rails.mdl",
+        "models/props_c17/consolebox01a.mdl",
+        "models/props_lab/heatplate.mdl",
+    }
     local model = "models/props_c17/consolebox01a.mdl"
-    if not file.Exists(model, "GAME") then
-        model = "models/props_lab/heatplate.mdl"
+    for _, m in ipairs(models) do
+        if file.Exists(m, "GAME") then model = m break end
     end
     self:SetModel(model)
 

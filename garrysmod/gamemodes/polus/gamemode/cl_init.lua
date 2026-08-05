@@ -49,3 +49,49 @@ end)
 
 print("[POLUS-11 RP v" .. tostring(POLUS_BUILD) .. "] Клиент: "
     .. loaded .. "/" .. #cl .. " модулей. F4 — должности, TAB — состав.")
+
+-- ============================================================
+--  ГЛОБАЛЬНЫЙ ФИКС: dscrollpanel.lua:111 "Tried to use a NULL Panel!"
+--  Известный баг движка: DScrollPanel:PerformLayoutInternal() трогает
+--  канвас, когда тот уже удалён (быстрое пересоздание меню — F4,
+--  админка, терминал, TAB). Ловим на корню: храним ссылку на канвас
+--  после СОЗДАНИЯ панели (раньше срабатывало GetCanvas()=nil из-за
+--  скрытого удаления в момент ParentToHUD) и проверяем IsValid.
+-- ============================================================
+timer.Simple(0, function() -- ждём, пока загрузятся стандартные контролы
+    local SP = vgui.GetControlTable and vgui.GetControlTable("DScrollPanel")
+    if not SP or SP.P11NullFixed then return end
+    SP.P11NullFixed = true
+
+    -- 1) если канвас вдруг помер (быстрое пересоздание меню) —
+    --    пересоздаём его тихо, а не падаем в PerformLayoutInternal
+    local oldGetCanvas = SP.GetCanvas
+    SP.GetCanvas = function(self)
+        if not IsValid(self.pnlCanvas) then
+            self.pnlCanvas = vgui.Create("Panel", self)
+            self.pnlCanvas.OnMousePressed = function() end
+            self.pnlCanvas:SetPaintBackground(false)
+        end
+        return self.pnlCanvas
+    end
+
+    -- 2) оригинальную раскладку оборачиваем в pcall: даже если что-то
+    --    ещё сломалось внутри — кадр визуально пропускаем, не спамим ошибку
+    local oldLayout = SP.PerformLayoutInternal
+    SP.PerformLayoutInternal = function(self, w, h)
+        if not IsValid(self:GetCanvas()) then return end
+        if not IsValid(self.VBar) then return oldLayout(self, w, h) end
+        local ok = pcall(oldLayout, self, w, h)
+        if not ok and not SP.P11Warned then
+            SP.P11Warned = true
+            print("[P11] DScrollPanel layout guarded (один пропущенный кадр, это норма при пересоздании меню)")
+        end
+    end
+
+    -- 3) OnVScroll тоже дергает канвас
+    local oldV = SP.OnVScroll
+    SP.OnVScroll = function(self, i)
+        if not IsValid(self:GetCanvas()) then return end
+        oldV(self, i)
+    end
+end)

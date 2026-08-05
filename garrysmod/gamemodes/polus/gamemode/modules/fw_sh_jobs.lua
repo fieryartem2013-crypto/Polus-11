@@ -114,6 +114,49 @@ P11FW.Jobs = {
         weapons = { "weapon_polus11_flamethrower", "weapon_polus11_radio" },
         max = 2,
     },
+
+    -- ============ v3.7: НОВЫЕ ДОЛЖНОСТИ ============
+
+    porter = {
+        order = 8, category = "garrison",
+        name = "Грузчик",
+        desc = "Руки-лопаты и спина из железа. Перетаскивает бочки с соляркой к генераторам (E по бочке — на плечо, от генератора — заправка), волочёт грузы склада. Привык к весу — почти не сбавляет шаг. Пол станции держится на таких.",
+        models = {
+            "models/player/Group01/male_05.mdl",
+            "models/player/Group01/male_06.mdl",
+            "models/player/Group01/male_02.mdl",
+        },
+        color = Color(185, 160, 110),
+        weapons = { "weapon_polus11_radio" },
+        max = 2,
+    },
+
+    tech = {
+        order = 9, category = "science",
+        name = "Техник-механик",
+        desc = "Дежурный по машинному отделению. Его смена — генераторы: техосмотры (снимают износ), поломки (перегрев, утечки, стартер), переключение режимов ОСНОВНОЙ/РЕЗЕРВ. Работает на генераторе вдвое быстрее остальных.",
+        models = {
+            "models/player/barney.mdl",
+            "models/player/Group01/male_03.mdl",
+        },
+        color = Color(120, 190, 235),
+        weapons = { "weapon_polus11_radio" },
+        max = 2,
+    },
+
+    medic = {
+        order = 10, category = "science",
+        name = "Полевой медик",
+        desc = "Санитар гарнизона. Умеет брать кровь как лаборант, но главное — ПКМ шприца ЛЕЧИТ раненых (+12 ХП). Латать после стычек с Нечто — его хлеб и его крест.",
+        models = {
+            "models/player/Group03m/male_01.mdl",
+            "models/player/Group03m/male_02.mdl",
+            "models/player/Group03m/male_03.mdl",
+        },
+        color = Color(150, 230, 190),
+        weapons = { "weapon_polus11_syringe", "weapon_polus11_radio" },
+        max = 2,
+    },
 }
 
 -- ============ РЕГИСТРАЦИЯ КОМАНД (team) ============

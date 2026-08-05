@@ -21,6 +21,26 @@ POLUS11.TaskDefs = {
         { key = "alive",      name = "Дежурство: 5 мин без смерти", max = 300, time = true },
     },
 
+    -- ============ v3.7: задачи новых должностей ============
+
+    porter = {
+        { key = "haul",       name = "Перетаскивай грузы (бочки на плече)", max = 4 },
+        { key = "refuel_gen", name = "Доставь топливо до генератора", max = 2 },
+        { key = "alive",      name = "Смена на складе: 5 мин без смерти", max = 300, time = true },
+    },
+
+    tech = {
+        { key = "gen_service", name = "Обслужи генератор (техосмотр/поломка)", max = 3 },
+        { key = "repair_gen",  name = "Отремонтируй генератор после аварии", max = 1 },
+        { key = "alive",       name = "Дежурство в машинном: 5 мин", max = 300, time = true },
+    },
+
+    medic = {
+        { key = "heal_player", name = "Обработай раненых (ПКМ шприца)", max = 3 },
+        { key = "blood_draw",  name = "Возьми образцы крови", max = 1 },
+        { key = "alive",       name = "Дежурство в медблоке: 5 мин", max = 300, time = true },
+    },
+
     virologist = {
         { key = "blood_draw", name = "Возьми образцы крови у экипажа", max = 2 },
         { key = "blood_test", name = "Проведи тест крови на столе", max = 1 },

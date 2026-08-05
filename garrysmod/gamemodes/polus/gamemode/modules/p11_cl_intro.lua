@@ -71,7 +71,10 @@ local function OpenIntro()
     INTRO.t = CurTime()
     INTRO.chars = 0
     INTRO.total = 0
-    for _, l in ipairs(LINES) do INTRO.total = INTRO.total + #l.t end
+    for _, l in ipairs(LINES) do
+        INTRO.total = INTRO.total + #l.t
+        l.doneT = nil l.glitched = nil -- v3.4: сброс глитча при повторе
+    end
     INTRO.logoSounded = false
     P11.IntroOpen = true
     if not FLAKES then BuildFlakes() end
@@ -147,6 +150,27 @@ local function OpenIntro()
             draw.SimpleTextOutlined(part .. ((not done) and "▌" or ""), font,
                 w / 2, y, col, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER,
                 1, Color(0, 0, 0, 200))
+
+            -- v3.4: глитч-треск на завершённой красной строке (первая секунда)
+            if l.red and done then
+                l.doneT = l.doneT or CurTime()
+                local age = CurTime() - l.doneT
+                if age < 0.9 then
+                    if not l.glitched and age < 0.15 then
+                        l.glitched = true
+                        surface.PlaySound("buttons/button17.wav") -- треск радиопомех
+                    end
+                    if math.random() < 0.35 then
+                        local dx = math.random(-3, 3)
+                        local dy = math.random(-1, 1)
+                        draw.SimpleText(part, font, w / 2 + dx - 2, y + dy,
+                            Color(255, 60, 50, 90), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+                        draw.SimpleText(part, font, w / 2 + dx + 2, y - dy,
+                            Color(120, 200, 255, 70), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+                    end
+                end
+            end
+
             y = y + (l.big and 54 or 40)
             if not done then allDone = false break end
         end
@@ -175,6 +199,11 @@ local function OpenIntro()
             local ra = CurTime() * 1.6
             surface.SetDrawColor(120, 200, 230, 130 * a)
             surface.DrawLine(cx, cy, cx + math.cos(ra) * 33, cy + math.sin(ra) * 33)
+
+            -- v3.4: трепет лампы в первую полсекунды логотипа
+            if lt < 0.55 then
+                a = a * (math.random() < 0.45 and math.Rand(0.25, 0.7) or 1)
+            end
 
             -- логотип: два прохода = свечение
             draw.SimpleText("ПОЛЮС-11", "P11.Intro.Title", w / 2, h * 0.24 + 20,

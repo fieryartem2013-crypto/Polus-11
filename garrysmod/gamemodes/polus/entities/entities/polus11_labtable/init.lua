@@ -2,7 +2,9 @@ AddCSLuaFile("cl_init.lua")
 include("shared.lua")
 
 function ENT:Initialize()
+    -- v3.7: футуристичный лабораторный стол + фолбэки без пака lt_c
     local models = {
+        "models/lt_c/sci_fi/counter.mdl",
         "models/props_wasteland/controlroom_desk001a.mdl",
         "models/props_combine/breendesk.mdl",
         "models/props_c17/FurnitureTable001a.mdl",

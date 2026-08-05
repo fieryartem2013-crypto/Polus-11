@@ -106,6 +106,44 @@ hook.Add("HUDPaint", "P11.Vitals", function()
     DrawBar(px, py + 34, pw, 16, curAr / 100, COL.armor,
         nil, math.Round(ar) > 0 and ("БРОНЯ  " .. math.Round(ar)) or "БРОНИ НЕТ")
 
+    -- ----- v3.7: ТЕПЛО (переохлаждение) -----
+    local wm = me:GetNWFloat("P11_Warmth", 100)
+    curWarm = curWarm + (wm - curWarm) * ft
+    if math.abs(curWarm - wm) < 0.5 then curWarm = wm end
+    -- показываем всегда, но бледно, когда тепло полное (для инфы)
+    local warmFrac = math.Clamp(curWarm / 100, 0, 1)
+    local warmCol
+    if warmFrac > 0.6 then warmCol = Color(120, 190, 235)
+    elseif warmFrac > 0.3 then warmCol = Color(150, 210, 245)
+    else
+        local p = 0.7 + math.sin(t * 8) * 0.3
+        warmCol = Color(225, 245, 255, 150 + 105 * p) -- тревожное мигание на морозе
+    end
+    DrawBar(px, py + 56, pw, 12, warmFrac, warmCol,
+        nil, "❄ ТЕПЛО  " .. math.Round(curWarm) .. "%")
+    if warmFrac <= 0.3 then
+        draw.SimpleText("ЗАМЕРЗАЕШЬ — К ГЕНЕРАТОРУ!", "P11.Vitals.Small", px + pw, py + 62,
+            Color(235, 245, 255, 200 + 55 * math.sin(t * 8)), TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
+    end
+
+    -- ----- вспышка урона/лечения (красная/зелёная молния слева) -----
+    if hp < lastHp - 1 then
+        dmgFlash = math.min(1, dmgFlash + (lastHp - hp) / 18)
+    elseif hp > lastHp + 2 then
+        healFlash = 0.7
+    end
+    lastHp = hp
+    if dmgFlash > 0.003 then
+        draw.RoundedBoxEx(8, px - 12, py - 26, 4, 118, Color(240, 70, 60, 230 * dmgFlash), true, false, true, false)
+        surface.SetDrawColor(200, 30, 30, 90 * dmgFlash)
+        surface.DrawRect(0, 0, sw, 34)
+        dmgFlash = dmgFlash * math.max(0, 1 - FrameTime() * 3.2)
+    end
+    if healFlash > 0.003 then
+        draw.RoundedBoxEx(8, px - 12, py - 26, 4, 118, Color(120, 230, 140, 200 * healFlash), true, false, true, false)
+        healFlash = healFlash * math.max(0, 1 - FrameTime() * 3.2)
+    end
+
     -- ----- значок МУТА -----
     if me:GetNWBool("P11FW_Muted", false) then
         local left = me:GetNWInt("P11FW_MuteLeftMin", 0)

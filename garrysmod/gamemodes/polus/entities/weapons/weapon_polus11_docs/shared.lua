@@ -112,11 +112,22 @@ function SWEP:SecondaryAttack()
     if name == "" then name = ply:Nick() end
     local jobName = P11FW.GetJobName and P11FW.GetJobName(ply) or "без назначения"
 
+    -- v3.7: ФРАКЦИЯ + читаемый формат кода (как в DRP-документах)
+    local facName = "ПЕРСОНАЛ СТАНЦИИ"
+    if P11FW.GetJob and P11FW.CategoryList then
+        local job = P11FW.GetJob(ply)
+        local cid = job and (job.faction or job.category) or nil
+        for _, c in ipairs(P11FW.CategoryList) do
+            if c.id == cid then facName = c.name break end
+        end
+    end
+
     net.Start("P11_DocShow")
         net.WriteString(name)
         net.WriteString(jobName)
         net.WriteString(DocCodeOf(ply))
         net.WriteString(os.date("%d.%m.%Y %H:%M"))
+        net.WriteString(facName)
     net.Send(best)
 
     ply:ChatPrint("[ПОЛЮС-11] Документы предъявлены: " .. best:Nick())
@@ -147,6 +158,15 @@ end
 -- ============ ОКНО ДОКУМЕНТА (у того, кому предъявили) ============
 
 if CLIENT then
+    -- "П11-АГЛ-922" — как выглядит код в диктовке вслух (уже с дефисами;
+    -- если когда-то появится код БЕЗ дефисов — аккуратно разобьём)
+    local function FormatDocCode(code)
+        if string.find(code, "-", 1, true) then return code end
+        local letters = string.match(code, "^(%D+)") or code
+        local digits  = string.match(code, "(%d+)$") or ""
+        return letters .. (digits ~= "" and ("-" .. digits) or "")
+    end
+
     surface.CreateFont("P11.Doc.Big",   { font = "Roboto", size = 26, weight = 800, extended = true })
     surface.CreateFont("P11.Doc.Mid",   { font = "Roboto", size = 18, weight = 600, extended = true })
     surface.CreateFont("P11.Doc.Small", { font = "Roboto", size = 14, weight = 400, extended = true })
@@ -156,6 +176,7 @@ if CLIENT then
         local jobName = net.ReadString()
         local code = net.ReadString()
         local stamp = net.ReadString()
+        local facName = net.ReadString() -- v3.7
 
         if IsValid(POLUS11.DocFrame) then POLUS11.DocFrame:Remove() end
 
@@ -181,14 +202,17 @@ if CLIENT then
             draw.SimpleText("УДОСТОВЕРЕНИЕ ЛИЧНОСТИ", "P11.Doc.Small", w / 2, 56,
                 Color(70, 60, 44), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 
-            draw.SimpleText("Имя: " .. name, "P11.Doc.Mid", 22, 88, Color(40, 36, 26),
+            draw.SimpleText("Имя: " .. name, "P11.Doc.Mid", 22, 84, Color(40, 36, 26),
                 TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-            draw.SimpleText("Должность: " .. jobName, "P11.Doc.Mid", 22, 116, Color(40, 36, 26),
+            -- ФРАКЦИЯ крупно (как в DRP)
+            draw.SimpleText(string.upper(facName), "P11.Doc.Mid", 22, 110, Color(90, 62, 30),
+                TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+            draw.SimpleText("Должность: " .. jobName, "P11.Doc.Small", 22, 130, Color(40, 36, 26),
                 TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
 
-            -- код — главное
-            draw.RoundedBox(4, 22, 140, w - 44, 40, Color(24, 30, 40, 255))
-            draw.SimpleText("КОД: " .. code, "P11.Doc.Big", w / 2, 160,
+            -- код — главное (группами, читаемо при устном диктовании)
+            draw.RoundedBox(4, 22, 146, w - 44, 38, Color(24, 30, 40, 255))
+            draw.SimpleText("КОД: " .. FormatDocCode(code), "P11.Doc.Big", w / 2, 165,
                 Color(230, 220, 190), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 
             draw.SimpleText("выдано/проверено: " .. stamp, "P11.Doc.Small", 22, 200,

@@ -110,6 +110,9 @@ net.Receive("P11FW_AdminData", function(len, ply)
             if muted then
                 net.WriteUInt(math.min(P11FW.MuteLeftMin(p), 60000), 16)
             end
+            -- v1.6.1: код удостоверения (у Нечто — УКРАДЕННЫЙ из его
+            -- документов; админ в списке видит ровно то, что покажет документ)
+            net.WriteString(p:GetNWString("P11_DocCode", ""))
         end
 
         -- баны

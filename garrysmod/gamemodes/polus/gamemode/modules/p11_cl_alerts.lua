@@ -165,14 +165,39 @@ hook.Add("HUDPaint", "P11.FrostVignette", function()
 
     local w, h = ScrW(), ScrH()
     local storm = GetGlobalBool("P11_Storm", false) and 2 or 1
-    local a = math.floor(9 * storm)
+    local wm = me:GetNWFloat("P11_Warmth", 100)
+    local a = 9 * storm
 
-    -- углы подёрнуты инеем
+    -- v3.7: ПЕРЕОХЛАЖДЕНИЕ сжимает ледяную корку по краям вдвое-втрое
+    if wm < 65 then
+        a = a + (65 - wm) * 0.55
+    end
+    a = math.floor(math.min(a, 120))
+
+    -- углы и кромки подёрнуты инеем
     surface.SetDrawColor(170, 205, 235, a)
-    surface.DrawRect(0, 0, w, 30)
-    surface.DrawRect(0, h - 30, w, 30)
+    surface.DrawRect(0, 0, w, 26 + (65 - math.max(wm, 40)) * 0.35)
+    surface.DrawRect(0, h - (26 + (65 - math.max(wm, 40)) * 0.35), w, 26 + (65 - math.max(wm, 40)) * 0.35)
     surface.DrawRect(0, 0, 30, h)
     surface.DrawRect(w - 30, 0, 30, h)
+
+    -- кристаллики у краёв при сильном обморожении (это уже опасно)
+    if wm <= 30 then
+        for i = 1, 3 do
+            if math.random() < 0.4 then
+                local sx = math.random() < 0.5 and math.random(2, 46) or math.random(w - 46, w - 2)
+                local sy = math.random(0, h)
+                surface.SetDrawColor(225, 245, 255, 90 + math.random(0, 60))
+                surface.DrawRect(sx, sy, 2, 2)
+            end
+        end
+        -- пульс «иди грейся» (редко, чтобы не мешал бою)
+        if (CurTime() % 5) < 2 then
+            draw.SimpleText("❄ ТЫ ЗАМЕРЗАЕШЬ — ИЩИ ТЕПЛО ❄", "P11.Alerts.Small",
+                w / 2, h * 0.20, Color(200, 230, 250, 170 + 60 * math.sin(CurTime() * 5)),
+                TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        end
+    end
 
     -- мерцающие искры угловой изморози (очень редко и слабо)
     if math.random() < 0.006 then
