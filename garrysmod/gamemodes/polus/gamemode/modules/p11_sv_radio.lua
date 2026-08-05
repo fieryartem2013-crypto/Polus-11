@@ -1,14 +1,16 @@
 -- ============================================================
 --  ПОЛЮС-11 — РАЦИИ (сервер)
---  Каналы: «Гарнизон», «Лаборатория», «Общий».
+--  Каналы: «РККА», «НКВД», «Наука», «Персонал», «Общий» (v3.9).
 --  Текст: /r сообщение | Голос: дальняя связь при общем канале.
 --  Буря глушит эфир. Заражённый с рацией слышит ВСЕ каналы.
 -- ============================================================
 
 POLUS11.RadioChannels = {
-    garrison = "Гарнизон",
-    lab      = "Лаборатория",
-    all      = "Общий",
+    rkka      = "РККА",
+    nkvd      = "НКВД",
+    science   = "Наука",
+    personnel = "Персонал",
+    all       = "Общий",
 }
 
 function POLUS11.HasRadio(ply)
@@ -49,7 +51,7 @@ hook.Add("PlayerSay", "P11_RadioSay", function(ply, text)
     local msg = string.sub(text, off)
     if msg == "" then return "" end
 
-    local channel = ply:GetNWString("P11_RadioCh", "garrison")
+    local channel = ply:GetNWString("P11_RadioCh", "rkka")
     local chName = POLUS11.RadioChannels[channel] or channel
 
     -- буря полностью рубит эфир
@@ -64,7 +66,7 @@ hook.Add("PlayerSay", "P11_RadioSay", function(ply, text)
 
     for _, recv in ipairs(player.GetAll()) do
         if recv ~= ply and POLUS11.HasRadio(recv) then
-            local rch = recv:GetNWString("P11_RadioCh", "garrison")
+            local rch = recv:GetNWString("P11_RadioCh", "rkka")
             local hearsAll = recv:GetNWBool("P11_Infected", false) and recv:GetNWBool("P11_InfActive", false)
 
             local ok = (channel == "all") or (rch == "all") or (rch == channel) or hearsAll
@@ -97,8 +99,8 @@ hook.Add("PlayerCanHearPlayersVoice", "P11_RadioVoice", function(listener, talke
     local storm = GetGlobalBool("P11_Storm", false)
     if storm and POLUS11.Config.StormBlocksRadio then return false, false end
 
-    local lch = listener:GetNWString("P11_RadioCh", "garrison")
-    local tch = talker:GetNWString("P11_RadioCh", "garrison")
+    local lch = listener:GetNWString("P11_RadioCh", "rkka")
+    local tch = talker:GetNWString("P11_RadioCh", "rkka")
 
     if lch == "all" or tch == "all" or lch == tch then
         return true, false -- слышно на любой дистанции, стерео

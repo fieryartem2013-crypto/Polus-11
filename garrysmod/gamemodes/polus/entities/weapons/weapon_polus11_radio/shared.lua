@@ -32,7 +32,7 @@ SWEP.Secondary.Ammo        = "none"
 
 SWEP.Weight = 1
 
-local ORDER = {"garrison", "lab", "all"}
+local ORDER = {"rkka", "nkvd", "science", "personnel", "all"} -- v3.9: каналы фракций
 
 function SWEP:Initialize()
     self:SetHoldType(self.HoldType)
@@ -42,7 +42,7 @@ function SWEP:Deploy()
     if SERVER then
         local cur = self.Owner:GetNWString("P11_RadioCh", "")
         if cur == "" then
-            self.Owner:SetNWString("P11_RadioCh", "garrison")
+            self.Owner:SetNWString("P11_RadioCh", "rkka")
         end
     end
     return true
@@ -60,7 +60,7 @@ function SWEP:Reload()
     if CurTime() < self.NextReload then return end
     self.NextReload = CurTime() + 0.8
 
-    local cur = ply:GetNWString("P11_RadioCh", "garrison")
+    local cur = ply:GetNWString("P11_RadioCh", "rkka")
     local next = 1
     for i, ch in ipairs(ORDER) do
         if ch == cur then
@@ -83,7 +83,7 @@ if CLIENT then
         local ply = self.Owner
         if not IsValid(ply) then return end
 
-        local ch = ply:GetNWString("P11_RadioCh", "garrison")
+        local ch = ply:GetNWString("P11_RadioCh", "rkka")
         local name = (POLUS11.RadioChannels and POLUS11.RadioChannels[ch]) or ch
 
         local w, h = ScrW(), ScrH()

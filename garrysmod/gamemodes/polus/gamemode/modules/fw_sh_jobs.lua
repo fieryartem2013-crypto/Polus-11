@@ -12,9 +12,12 @@ P11FW = P11FW or {}
 -- ============ КАТЕГОРИИ ============
 
 P11FW.Categories = {
-    { id = "garrison", name = "ВОЕННЫЙ ГАРНИЗОН",  order = 1, color = Color(150, 165, 95)  },
-    { id = "science",  name = "НАУЧНЫЙ ПЕРСОНАЛ",  order = 2, color = Color(140, 200, 240) },
-    { id = "misc",     name = "БЕЗ НАЗНАЧЕНИЯ",    order = 3, color = Color(170, 170, 170) },
+    { id = "science",   name = "УЧЁНЫЕ",         order = 2, color = Color(140, 200, 240) },
+    { id = "personnel", name = "ПЕРСОНАЛ",       order = 3, color = Color(205, 180, 110) },
+    { id = "misc",      name = "БЕЗ НАЗНАЧЕНИЯ", order = 4, color = Color(170, 170, 170) },
+    -- v3.9: встроенный «ВОЕННЫЙ ГАРНИЗОН» УБРАН по заявке владельца.
+    -- РККА / НКВД / НЕЧТО приезжают АВТО-СИДОМ (fw_sv_seed_rkka.lua)
+    -- как кастомные фракции — с ними тот же порядок F4/ТАБа.
 }
 
 -- ============ ДОЛЖНОСТИ ============
@@ -28,7 +31,7 @@ P11FW.Jobs = {
     recruit = {
         order = 1, category = "misc",
         name = "Новобранец",
-        desc = "Ты только сошёл с транспорта на станцию «Полюс-11». Пройди оформление у кадровика или через F4 — без должности тебе не положены ни оружие, ни допуск в отсеки.",
+        desc = "Ты только сошёл с транспорта на станцию «Полюс-11». Оформись у кадровика или через F4: в РККА — под ружьё, к учёным — в лабораторию, в обслугу — по хозяйству. Без назначения: ни оружия, ни допуска в отсеки.",
         models = {
             "models/player/Group03/male_01.mdl",
             "models/player/Group03/male_02.mdl",
@@ -41,35 +44,30 @@ P11FW.Jobs = {
         max = 0,
     },
 
-    guard = {
-        order = 2, category = "garrison",
-        name = "Рядовой охраны",
-        desc = "Охрана периметра и внутренних отсеков комплекса. Подчиняется Начкару. В случае ЧП — держит коридор до прихода подмоги.",
-        models = { "models/player/combine_soldier.mdl" },
-        color = Color(150, 165, 95),
-        weapons = { "weapon_pistol", "weapon_polus11_radio" },
-        ammo = { {"pistol", 90} },
+    -- ============ v3.9: ОБСЛУЖИВАЮЩИЙ ПЕРСОНАЛ ============
+    -- По заявке владельца из встроенных оставлен ТОЛЬКО персонал
+    -- (уборщик / снабженец / грузчик / техник / медик / инженер).
+    -- Военные РККА, госбезопасность НКВД и учёные — пресетами сида.
+
+    janitor = {
+        order = 8, category = "personnel",
+        name = "Уборщик",
+        desc = "Швабра, совок, ведро с мыльной водой. Ты везде — и тебя нигде не замечают: уборщик слышит разговоры, которые не для чужих ушей. Лом на случай «слипшихся» дверей и открытых вентилей.",
+        models = {
+            "models/player/Group01/male_01.mdl",
+            "models/player/Group01/male_04.mdl",
+            "models/player/Group01/female_01.mdl",
+            "models/player/Group01/female_04.mdl",
+        },
+        color = Color(150, 175, 130),
+        weapons = { "weapon_crowbar" },
         max = 0,
     },
 
-    officer = {
-        order = 3, category = "garrison", terminal = true, command = true,
-        name = "Начкар / Офицер",
-        desc = "Командир караула станции. Расставляет посты, ведёт переговоры, объявляет тревогу. Может отдавать ПРИКАЗЫ (!приказ) и объявлять РОЗЫСК (!розыск). Единственная должность с автоматом. Одно место.",
-        models = {
-            "models/player/police.mdl",
-            "models/player/combine_soldier_prisonguard.mdl",
-        },
-        color = Color(190, 175, 90),
-        weapons = { "weapon_polus11_radio", "weapon_ar2" },
-        ammo = { {"ar2", 120} },
-        max = 1,
-    },
-
     cook = {
-        order = 4, category = "garrison",
-        name = "Военный повар / Снабженец",
-        desc = "Камбуз, склад, выдача снаряжения. Знает, где лежит каждая бочка с солярой для генератора. Без камбуза гарнизон бунтует к концу смены.",
+        order = 9, category = "personnel",
+        name = "Снабженец / Повар",
+        desc = "Камбуз, склад, выдача снаряжения и талонов на пайки. Знает, где лежит каждая бочка с солярой для генератора. Без снабженца база голодная уже к вечеру.",
         models = {
             "models/player/Group01/male_07.mdl",
             "models/player/Group01/male_09.mdl",
@@ -79,46 +77,8 @@ P11FW.Jobs = {
         max = 2,
     },
 
-    lab = {
-        order = 5, category = "science",
-        name = "Лаборант",
-        desc = "Младший научный состав. Забор образцов, анализы, тесты крови на раскалённой проволоке. Помощник вирусолога в полевых условиях.",
-        models = {
-            "models/player/mossman.mdl",
-            "models/player/kleiner.mdl",
-        },
-        color = Color(170, 210, 255),
-        weapons = { "weapon_polus11_syringe", "weapon_polus11_radio", "weapon_polus11_scalpel" },
-        max = 3,
-    },
-
-    virologist = {
-        order = 6, category = "science", terminal = true,
-        name = "Вирусолог",
-        desc = "Старший по лаборатории. Единственный, кому доверяют официальное заключение теста крови. Если он заражён и подменит результат — его никто не проверит...",
-        models = {
-            "models/player/kleiner.mdl",
-            "models/player/magnusson.mdl",
-        },
-        color = Color(140, 200, 240),
-        weapons = { "weapon_polus11_syringe", "weapon_polus11_radio", "weapon_polus11_scalpel" },
-        max = 2,
-    },
-
-    engineer = {
-        order = 7, category = "science",
-        name = "Инженер-изобретатель",
-        desc = "Кустарные огнемёты — его рук дело. Чинит генератор, заправляет струи, следит за проводкой. Против Нечто огонь — единственный аргумент.",
-        models = { "models/player/eli.mdl" },
-        color = Color(255, 195, 95),
-        weapons = { "weapon_polus11_flamethrower", "weapon_polus11_radio" },
-        max = 2,
-    },
-
-    -- ============ v3.7: НОВЫЕ ДОЛЖНОСТИ ============
-
     porter = {
-        order = 8, category = "garrison",
+        order = 10, category = "personnel",
         name = "Грузчик",
         desc = "Руки-лопаты и спина из железа. Перетаскивает бочки с соляркой к генераторам (E по бочке — на плечо, от генератора — заправка), волочёт грузы склада. Привык к весу — почти не сбавляет шаг. Пол станции держится на таких.",
         models = {
@@ -132,7 +92,7 @@ P11FW.Jobs = {
     },
 
     tech = {
-        order = 9, category = "science",
+        order = 11, category = "personnel",
         name = "Техник-механик",
         desc = "Дежурный по машинному отделению. Его смена — генераторы: техосмотры (снимают износ), поломки (перегрев, утечки, стартер), переключение режимов ОСНОВНОЙ/РЕЗЕРВ. Работает на генераторе вдвое быстрее остальных.",
         models = {
@@ -145,9 +105,9 @@ P11FW.Jobs = {
     },
 
     medic = {
-        order = 10, category = "science",
+        order = 12, category = "personnel",
         name = "Полевой медик",
-        desc = "Санитар гарнизона. Умеет брать кровь как лаборант, но главное — ПКМ шприца ЛЕЧИТ раненых (+12 ХП). Латать после стычек с Нечто — его хлеб и его крест.",
+        desc = "Санитар станции. Умеет брать кровь как лаборант, но главное — ПКМ шприца ЛЕЧИТ раненых (+12 ХП). Латать после стычек с Нечто — его хлеб и его крест.",
         models = {
             "models/player/Group03m/male_01.mdl",
             "models/player/Group03m/male_02.mdl",
@@ -155,6 +115,16 @@ P11FW.Jobs = {
         },
         color = Color(150, 230, 190),
         weapons = { "weapon_polus11_syringe", "weapon_polus11_radio" },
+        max = 2,
+    },
+
+    engineer = {
+        order = 13, category = "personnel",
+        name = "Инженер-изобретатель",
+        desc = "Кустарные огнемёты — его рук дело. Чинит генератор, заправляет струи, следит за проводкой. Против Нечто огонь — единственный аргумент.",
+        models = { "models/player/eli.mdl" },
+        color = Color(255, 195, 95),
+        weapons = { "weapon_polus11_flamethrower", "weapon_polus11_radio" },
         max = 2,
     },
 }
@@ -220,16 +190,17 @@ function P11FW.JobFull(jobId, except)
     return P11FW.TeamCount(jobId, except) >= job.max
 end
 
--- валидные модели должности (с проверкой существования файла)
+-- v3.9 КРИТ-ФИКС «модельки не выдаются»: список НЕ режем по наличию файла.
+-- Серверу модель не нужна физически: SetModel идёт строкой, а рендерит её
+-- КЛИЕНТ (у кого воркшоп-пак стоит — тот и видит). Старая проверка file.Exists
+-- сбрасывала ВСЕХ в male_01, если пака не было на сервере.
+-- Фолбэк нужен только когда у должности ВООБЩЕ нет списка моделей.
 function P11FW.ValidModels(job)
-    local ok = {}
-    for _, m in ipairs(job.models or {}) do
-        if file.Exists(m, "GAME") then ok[#ok + 1] = m end
+    local list = job.models or {}
+    if #list == 0 then
+        return { "models/player/Group01/male_01.mdl" }
     end
-    if #ok == 0 then
-        ok[1] = "models/player/Group01/male_01.mdl" -- гарантированный фолбэк
-    end
-    return ok
+    return list
 end
 
 -- отфильтровать оружие, которого нет на сервере (например, нет polus11)

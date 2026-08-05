@@ -41,29 +41,13 @@ POLUS11.TaskDefs = {
         { key = "alive",       name = "Дежурство в медблоке: 5 мин", max = 300, time = true },
     },
 
-    virologist = {
-        { key = "blood_draw", name = "Возьми образцы крови у экипажа", max = 2 },
-        { key = "blood_test", name = "Проведи тест крови на столе", max = 1 },
-        { key = "autopsy",    name = "Проведи вскрытие трупа", max = 1 },
-        { key = "alive",      name = "Дежурство: 5 мин без смерти", max = 300, time = true },
-    },
+    -- v3.9: старые встроенные (Вирусолог/Офицер/Охрана/Лаборант) УБРАНЫ,
+    -- их дела уехали в категорийные пулы ниже (POLUS11.CategoryTaskDefs).
 
-    lab = {
-        { key = "blood_draw", name = "Возьми образцы крови у экипажа", max = 3 },
-        { key = "blood_test", name = "Проведи тест крови на столе", max = 1 },
-        { key = "alive",      name = "Дежурство: 5 мин без смерти", max = 300, time = true },
-    },
-
-    guard = {
-        { key = "damage_thing", name = "Нанеси урона Нечто", max = 150 },
-        { key = "radio",        name = "Доложи в рацию (×3)", max = 3 },
-        { key = "alive",        name = "Караул: 10 мин без смерти", max = 600, time = true },
-    },
-
-    officer = {
-        { key = "arrest",   name = "Посади нарушителя (арест/рабство)", max = 1 },
-        { key = "rollcall", name = "Проведи общее построение по сирене", max = 1 },
-        { key = "alive",    name = "Караул: 10 мин без смерти", max = 600, time = true },
+    janitor = {
+        { key = "repair_gen", name = "Подсоби у генератора (ремонт/обслуживание)", max = 1 },
+        { key = "refuel_gen", name = "Помоги с бочкой у генератора", max = 1 },
+        { key = "alive",      name = "Неуловимая спина со шваброй: 5 мин", max = 300, time = true },
     },
 
     cook = {
@@ -78,6 +62,31 @@ POLUS11.TaskDefs = {
     },
 }
 
+-- ============ v3.9: ПУЛЫ ЗАДАЧ ПО ФРАКЦИЯМ (фолбэк) ============
+-- Если у должности нет своего пула (сид-профы РККА/НКВД/Учёные,
+-- кастомы админки) — выдаём дела по её фракции.
+POLUS11.CategoryTaskDefs = {
+    rkka = {
+        { key = "damage_thing", name = "Нанеси урона Нечто", max = 150 },
+        { key = "radio",        name = "Доложи в рацию (×3)", max = 3 },
+        { key = "alive",        name = "Пост РККА: 10 мин без смерти", max = 600, time = true },
+    },
+    nkvd = {
+        { key = "arrest", name = "Задержи подозреваемого (арест)", max = 1 },
+        { key = "radio",  name = "Секретный доклад в эфир (×2)", max = 2 },
+        { key = "alive",  name = "Наружка: 10 мин в тени событий", max = 600, time = true },
+    },
+    science = {
+        { key = "blood_draw", name = "Возьми образцы крови у экипажа", max = 2 },
+        { key = "blood_test", name = "Проведи тест крови на столе", max = 1 },
+        { key = "alive",      name = "Дежурство в лаборатории: 5 мин", max = 300, time = true },
+    },
+    personnel = {
+        { key = "refuel_gen", name = "Подсоби с топливом для генератора", max = 1 },
+        { key = "alive",      name = "Хозработы: 5 мин без происшествий", max = 300, time = true },
+    },
+}
+
 -- ============ API ============
 
 function POLUS11.AssignTasks(ply)
@@ -85,7 +94,14 @@ function POLUS11.AssignTasks(ply)
     if not POLUS11.Config.Tasks then return end
     if not P11FW then return end
 
-    local defs = POLUS11.TaskDefs[P11FW.GetJobId(ply)]
+    local jobId = P11FW.GetJobId(ply)
+    local defs = POLUS11.TaskDefs[jobId]
+    if not defs then
+        -- v3.9: фолбэк на пул ФРАКЦИИ должности
+        local job = P11FW.Jobs and P11FW.Jobs[jobId] or nil
+        local catId = (job and (job.faction or job.category)) or "misc"
+        defs = POLUS11.CategoryTaskDefs[catId]
+    end
     if not defs then
         POLUS11.SyncTasks(ply)
         return

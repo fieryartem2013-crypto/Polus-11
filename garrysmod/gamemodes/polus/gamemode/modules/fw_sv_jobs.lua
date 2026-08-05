@@ -70,7 +70,14 @@ function P11FW.SetJob(ply, jobId, modelIdx, force)
     if not job then return false, "такой должности нет" end
 
     local oldId = P11FW.GetJobId(ply)
-    if oldId == jobId then return false, "вы уже на этой должности" end
+    if oldId == jobId then
+        -- v3.9: та же должность, но другой ВАРИАНТ МОДЕЛИ (C-меню/F4-выбор внешности)
+        if modelIdx and ply:Alive() then
+            P11FW.ApplyLoadout(ply, modelIdx)
+            return true
+        end
+        return false, "вы уже на этой должности"
+    end
 
     -- арестованным и рабам должности не выдают (кроме системных вызовов с force)
     if not force then

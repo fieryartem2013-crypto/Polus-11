@@ -52,14 +52,17 @@ net.Receive("P11_AdminModel", function(len, ply)
         P11FW.Notify(ply, "Только модели из models/player/.")
         return
     end
-    if not file.Exists(mdl, "GAME") then
-        P11FW.Notify(ply, "Модель не найдена: " .. mdl)
-        return
-    end
-
-    util.PrecacheModel(mdl)
+    -- v3.9: серверу файл не обязателен (воркшоп-модель видят клиенты с паком).
+    -- Если файла нет — ставим всё равно, но честно предупреждаем про ERROR
+    -- у игроков без пака.
+    local serverHas = file.Exists(mdl, "GAME")
+    if serverHas then util.PrecacheModel(mdl) end
     ply:SetModel(mdl)
-    P11FW.Notify(ply, "Внешность изменена (до смены должности/респавна).")
+    if serverHas then
+        P11FW.Notify(ply, "Внешность изменена (до смены должности/респавна).")
+    else
+        P11FW.Notify(ply, "Внешность изменена. ВНИМАНИЕ: файла на сервере нет — игроки без пака видят ERROR!")
+    end
     if P11FW.ModLog then P11FW.ModLog("model", ply, ply, mdl) end
 end)
 

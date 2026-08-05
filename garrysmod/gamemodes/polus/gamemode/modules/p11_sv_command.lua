@@ -7,7 +7,7 @@
 --  • РЕПОРТ (!репорт <текст>) — любой игрок пишет админам,
 --    падает в чат админам + в файл data/polus11/reports.txt.
 --  • !ролл — кубик 1-100 для спорных моментов.
---  Приказы/розыск: должность с флагом command (Офицер) или админ.
+--  Приказы/розыск: должность с флагом command (v3.9: Генерал/Особист) или админ.
 -- ============================================================
 
 util.AddNetworkString("P11_Order")
@@ -36,7 +36,7 @@ end
 
 function POLUS11.SendOrder(ply, text)
     if not POLUS11.CanOrder(ply) then
-        return false, "приказы отдаёт командный состав (Офицер) и администрация"
+        return false, "приказы отдаёт командный состав (Генерал, Особист) и администрация"
     end
     text = string.Trim(tostring(text or ""))
     if text == "" then return false, "пустой приказ" end
@@ -65,7 +65,7 @@ end
 
 function POLUS11.ToggleWanted(ply, namePart, reason)
     if not POLUS11.CanOrder(ply) then
-        return false, "розыск объявляет командный состав (Офицер) и администрация"
+        return false, "розыск объявляет командный состав (Генерал, Особист) и администрация"
     end
     if not namePart or namePart == "" then
         return false, "использование: !розыск <ник> [причина] (повтор — снять)"

@@ -172,17 +172,18 @@ function P11.OpenCMenu()
         RunConsoleCommand("use", "weapon_polus11_hands")
     end)
 
+    -- внешность — для ВСЕХ (v3.9: вариант своей должности надевается сразу)
+    CButton(f, 370, 276, 176, 42, "🧍 Меню моделей", "внешность по должности", CC.gold, function()
+        P11.CloseCMenu()
+        P11.OpenModelMenu()
+    end)
+
     -- админская секция
     if P11FW.Config.Admin(me) then
         local al = vgui.Create("DLabel", f)
-        al:SetPos(370, 280) al:SetSize(176, 16)
+        al:SetPos(370, 330) al:SetSize(176, 16)
         al:SetFont("P11.CM.Small") al:SetTextColor(CC.bad)
         al:SetText("АДМИНИСТРАЦИИ:")
-
-        CButton(f, 370, 300, 176, 42, "🧍 Меню моделей", "браузер внешности", CC.gold, function()
-            P11.CloseCMenu()
-            P11.OpenModelMenu()
-        end)
 
         CButton(f, 370, 348, 176, 42, "🛡 Админ-панель", "то же, что /menu", CC.bad, function()
             P11.CloseCMenu()
@@ -245,10 +246,12 @@ hook.Add("PlayerBindPress", "P11.CMenuBind", function(ply, bind, pressed)
 end)
 
 -- ============================================================
---  МЕНЮ МОДЕЛЕЙ (АДМИН) — знакомый браузер внешности
---  v3.8: модели, которых нет на клиенте (воркшоп-паки), показаны
---  красными ячейками-подсказками вместо розовых ERROR, и выезд
---  снизу + затемнение, как у C-меню.
+--  МЕНЮ МОДЕЛЕЙ — браузер внешности (v3.9: ДЛЯ ВСЕХ)
+--  Раздел «МОЯ ДОЛЖНОСТЬ» кликом надевает вариант своей профы
+--  (теперь видны и модели РККА/НКВД-пресетов — до этого список был
+--  только движковый, потому кастом-модели «не появлялись» в меню).
+--  Админам — все должности станции + стандартный список движка.
+--  v3.8: модели без воркшоп-пака — красными ячейками-подсказками.
 -- ============================================================
 
 function P11.OpenModelMenu()
@@ -310,47 +313,106 @@ function P11.OpenModelMenu()
     local function Fill(filter)
         grid:Clear()
         filter = string.lower(string.Trim(filter or ""))
-        local opts = list.Get("PlayerOptionsModel") or {}
-        local names = {}
-        for name in pairs(opts) do names[#names + 1] = name end
-        table.sort(names)
+        local me = LocalPlayer()
+        local isAdmin = P11FW.Config.Admin(me)
         local shown, missing = 0, 0
-        for _, name in ipairs(names) do
-            local mdl = string.lower(tostring(opts[name]))
-            if shown + missing < 260 and (filter == "" or string.find(mdl, filter, 1, true)) then
-                if file.Exists(mdl, "GAME") then
-                    shown = shown + 1
-                    local ic = vgui.Create("SpawnIcon", grid)
-                    ic:SetSize(72, 72)
-                    ic:SetModel(opts[name])
-                    ic:SetTooltip(mdl)
-                    ic.DoClick = function()
-                        surface.PlaySound("buttons/button15.wav")
-                        net.Start("P11_AdminModel")
-                            net.WriteString(opts[name])
-                        net.SendToServer()
-                    end
-                else
-                    -- модели клиент НЕ видит: пак не смонтирован (см. P11FW.Config.WorkshopAddons)
-                    missing = missing + 1
-                    local bad = vgui.Create("DButton", grid)
-                    bad:SetSize(72, 72)
-                    bad:SetText("")
-                    bad:SetTooltip(mdl .. "\n\n⚠ модель не смонтирована на этом клиенте\n(путь из воркшоп-пака — подключи его на сервере)")
-                    bad.Paint = function(s, w, h)
-                        draw.RoundedBox(4, 0, 0, w, h, s:IsHovered() and Color(60, 26, 26) or Color(36, 20, 22))
-                        surface.SetDrawColor(CC.bad)
-                        surface.DrawOutlinedRect(0, 0, w, h, 1)
-                        draw.SimpleText("ВОРК-", "P11.CM.Small", w / 2, h / 2 - 12, CC.bad, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-                        draw.SimpleText("ШОП?", "P11.CM.Small", w / 2, h / 2, CC.bad, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-                        draw.SimpleText("нет на ПК", "P11.CM.Small", w / 2, h / 2 + 12, CC.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-                    end
-                    bad.DoClick = function()
-                        surface.PlaySound("buttons/button10.wav")
+
+        local function Header(text, col)
+            local l = grid:Add("DLabel")
+            l:SetFont("P11.CM.Small")
+            l:SetTextColor(col or CC.gold)
+            l:SetText(text)
+            l:SizeToContents()
+            l:SetWide(720)
+        end
+
+        local function AddTile(mdl, onwear)
+            mdl = string.lower(tostring(mdl))
+            if shown + missing >= 400 then return end
+            if filter ~= "" and not string.find(mdl, filter, 1, true) then return end
+            if file.Exists(mdl, "GAME") then
+                shown = shown + 1
+                local ic = vgui.Create("SpawnIcon", grid)
+                ic:SetSize(72, 72)
+                ic:SetModel(mdl)
+                ic:SetTooltip(mdl)
+                ic.DoClick = function()
+                    surface.PlaySound("buttons/button15.wav")
+                    onwear(mdl)
+                end
+            else
+                missing = missing + 1
+                local bad = vgui.Create("DButton", grid)
+                bad:SetSize(72, 72)
+                bad:SetText("")
+                bad:SetTooltip(mdl .. "\n\n⚠ модель не смонтирована на этом клиенте\n(путь из воркшоп-пака — подключи его на сервере)")
+                bad.Paint = function(bs, w, h)
+                    draw.RoundedBox(4, 0, 0, w, h, bs:IsHovered() and Color(60, 26, 26) or Color(36, 20, 22))
+                    surface.SetDrawColor(CC.bad)
+                    surface.DrawOutlinedRect(0, 0, w, h, 1)
+                    draw.SimpleText("ВОРК-", "P11.CM.Small", w / 2, h / 2 - 12, CC.bad, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+                    draw.SimpleText("ШОП?", "P11.CM.Small", w / 2, h / 2, CC.bad, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+                    draw.SimpleText("нет на ПК", "P11.CM.Small", w / 2, h / 2 + 12, CC.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+                end
+                bad.DoClick = function() surface.PlaySound("buttons/button10.wav") end
+            end
+        end
+
+        local function WearAdmin(mdl)
+            net.Start("P11_AdminModel")
+                net.WriteString(mdl)
+            net.SendToServer()
+        end
+
+        -- ===== МОЯ ДОЛЖНОСТЬ (видят и носят ВСЕ) =====
+        local myId = P11FW.GetJobId and P11FW.GetJobId(me) or "recruit"
+        local myJob = P11FW.Jobs and P11FW.Jobs[myId] or nil
+        if myJob and istable(myJob.models) and #myJob.models > 0 then
+            Header("МОЯ ДОЛЖНОСТЬ: " .. string.upper(myJob.name or myId) .. " — клик надевает вариант")
+            for i, m in ipairs(myJob.models) do
+                local idx = i
+                AddTile(m, function()
+                    net.Start("P11FW_TakeJob")
+                        net.WriteString(myId)
+                        net.WriteUInt(idx, 5)
+                    net.SendToServer()
+                    f:Remove()
+                end)
+            end
+        end
+
+        -- ===== ВСЕ ДОЛЖНОСТИ СТАНЦИИ (админ-косметика) =====
+        if isAdmin then
+            Header("ВСЕ ДОЛЖНОСТИ СТАНЦИИ (админская косметика):")
+            local seen = {}
+            for _, jobId in ipairs(P11FW.JobIds or {}) do
+                local jb = P11FW.Jobs[jobId]
+                if jb and istable(jb.models) then
+                    for _, m in ipairs(jb.models) do
+                        local key = string.lower(tostring(m))
+                        if not seen[key] then
+                            seen[key] = true
+                            AddTile(m, WearAdmin)
+                        end
                     end
                 end
             end
         end
+
+        -- ===== СТАНДАРТНЫЕ МОДЕЛИ ДВИЖКА =====
+        local opts = list.Get("PlayerOptionsModel") or {}
+        local names = {}
+        for name in pairs(opts) do names[#names + 1] = name end
+        table.sort(names)
+        if #names > 0 then
+            Header("СТАНДАРТНЫЕ МОДЕЛИ ИГРЫ" .. (isAdmin and ":" or " (надевание — только админам):"), CC.text)
+        end
+        for _, name in ipairs(names) do
+            AddTile(opts[name], isAdmin and WearAdmin or function()
+                surface.PlaySound("buttons/button10.wav")
+            end)
+        end
+
         if shown + missing == 0 then
             local l = grid:Add("DLabel")
             l:SetFont("P11.CM.Small") l:SetTextColor(CC.dim)
@@ -365,5 +427,5 @@ function P11.OpenModelMenu()
 end
 
 concommand.Add("p11_models", function()
-    if P11FW.Config.Admin(LocalPlayer()) then P11.OpenModelMenu() end
+    P11.OpenModelMenu() -- v3.9: всем (своя должность), админам — полная косметика
 end)

@@ -165,12 +165,15 @@ function POLUS11.TriggerSiren(ply)
         end
     end
 
-    -- замер построения через 7 сек: офицер, рядом с которым ≥40% станции → задача сделана
+    -- замер построения через 7 сек: командир, рядом с которым ≥40% станции → задача сделана
+    -- v3.9: id должности «officer» упразднён — проверяем флаг command
+    -- (генералы РККА, особисты НКВД и любые правки из админки).
     timer.Simple(7, function()
         local all = #player.GetAll()
         if all < 2 then return end
         for _, off in ipairs(player.GetAll()) do
-            if P11FW and P11FW.GetJobId(off) == "officer" then
+            local offJob = P11FW and P11FW.GetJob and P11FW.GetJob(off) or nil
+            if offJob and offJob.command == true then
                 local near = 0
                 for _, p in ipairs(player.GetAll()) do
                     if p:Alive() and p:GetPos():DistToSqr(off:GetPos()) <= 600 * 600 then

@@ -81,6 +81,7 @@ local sv = {
     "modules/p11_sv_command.lua",    -- приказы командира / розыск / репорты
     "modules/p11_sv_shift.lua",      -- распорядок смены + авто-буря
     "modules/p11_sv_cold.lua",       -- переохлаждение: тепло как ресурс (v3.7)
+    "modules/p11_sv_thingoffer.lua", -- вакансия Нечто у кадровика, появляется/исчезает (v3.9)
 }
 
 local function Safe(f)

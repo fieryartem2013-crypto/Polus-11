@@ -19,5 +19,11 @@ function ENT:Draw()
             Color(255, 210, 110, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 2, Color(0, 0, 0, 220))
         draw.SimpleTextOutlined("[ E ] — устроиться на должность", "P11FW.NPC.Small", 0, 46,
             Color(200, 230, 255, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 2, Color(0, 0, 0, 220))
+        -- v3.9: «ОСОБАЯ ВАКАНСИЯ» — пульсирующая строка, пока окно открыто
+        if GetGlobalFloat("P11_ThingOfferUntil", 0) > CurTime() then
+            local k = 0.6 + math.sin(CurTime() * 6) * 0.4
+            draw.SimpleTextOutlined("⚠ ОСОБАЯ ВАКАНСИЯ — успей нажать [ E ]", "P11FW.NPC.Small", 0, 92,
+                Color(255, 80 + 60 * k, 60 + 40 * k, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 2, Color(0, 0, 0, 230))
+        end
     cam.End3D2D()
 end
