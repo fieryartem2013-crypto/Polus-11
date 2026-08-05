@@ -1,0 +1,8 @@
+"polus"
+{
+	"base"		"sandbox"
+	"title"		"POLUS-11 RP"
+	"maps"		"^gm_|^rp_"
+	"menusystem"	"1"
+	"workshopid"	""
+}
