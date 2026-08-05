@@ -1,14 +1,17 @@
 -- ============================================================
---  ПОЛЮС FRAMEWORK — АВТО-СИД ПРЕСЕТНЫХ ФРАКЦИЙ/ДОЛЖНОСТЕЙ (server) v3.8.2
+--  ПОЛЮС FRAMEWORK — АВТО-СИД ПРЕСЕТНЫХ ФРАКЦИЙ/ДОЛЖНОСТЕЙ (server) v3.8.3
 --  Завозит готовый штат «чтобы было хоть что-то на альфа-тесте»:
 --   • фракция РККА — 8 должностей по списку владельца сервера
 --     (оружие ARC9/DOI, модели hts/comradebear: pm0v3);
+--   • фракция НКВД — 5 должностей v3.8.3 (особый отдел: охота
+--     на Нечто = «шпион, который притворяется человеком»);
 --   • научный блок — 6 должностей (модели UIF scientists);
 --   • фракция НЕЧТО — 4 ИВЕНТОВЫЕ формы (выдаёт ТОЛЬКО администрация,
 --     в F4 для обычных игроков кнопка «взять» ответит отказом).
 --  Пресеты — обычные КАСТОМНЫЕ должности: правятся/сносятся из
 --  админ-меню (F4 → Админ → Профы), переживают рестарт. Повторный
---  запуск сервера дубликатов не создаёт (проверка по id).
+--  запуск сервера дубликатов не создаёт (проверка по id), а новые
+--  пресеты (как НКВД) доедут при любом рестарте.
 --  Отключение: P11FW.Config.SeedRkkaPresets = false (fw_sh_config.lua).
 --  Редактирование пресетов — таблицы ниже; после правки удали
 --  data/polus_framework/jobs_custom.json, чтобы сид прошёл заново.
@@ -27,6 +30,11 @@ local SEED_FACTIONS = {
         id = "rkka", name = "РККА", order = 5,
         desc = "Гарнизон станции от Рабоче-Крестьянской Красной Армии: от новобранца до генерала. Держит периметр, посты и дисциплину.",
         color = Color(175, 165, 95),
+    },
+    {
+        id = "nkvd", name = "НКВД", order = 6,
+        desc = "Народный комиссариат внутренних дел. Особый отдел станции: госбезопасность, допросы, контрразведка — охота на того, кто притворяется человеком.",
+        color = Color(120, 140, 175),
     },
     {
         id = "nechto", name = "НЕЧТО", order = 99,
@@ -135,6 +143,66 @@ local SEED_JOBS = {
         color = Color(195, 175, 85),
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/infantry/gen/m40_1941_s1_02.mdl",
+        },
+    },
+
+    -- ================= ФРАКЦИЯ НКВД (v3.8.3) =================
+    -- Модели: пока стоят комиссарские/штабные из пака pm0v3 — если найдёшь
+    -- пак с «синими фуражками», смени пути тут или прямо в админке.
+    {
+        id = "seed_nkvd_convoy", category = "nkvd", order = 50,
+        name = "Конвоир НКВД",
+        desc = "Конвой и караул задержанных, охрана допросной и склада вещдоков. Двустволка MR-43 — уговаривать долго не приходится. 100 ХП / 100 брони.",
+        weapons = { "arc9_eft_mr43" }, hp = 100, armor = 100, max = 2,
+        color = Color(110, 130, 165),
+        models = {
+            "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m35_1941_s1_02.mdl",
+            "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m35_1941_s1_03.mdl",
+            "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m35_1941_s1_04.mdl",
+        },
+    },
+    {
+        id = "seed_nkvd_oper", category = "nkvd", order = 51,
+        name = "Оперуполномоченный НКВД",
+        desc = "Оперативная работа: наружное наблюдение, агентурная сеть, тихие допросы «для протокола». АКС-74У под полой шинели. 100 ХП / 100 брони.",
+        weapons = { "arc9_eft_aks74u" }, hp = 100, armor = 100, max = 3,
+        color = Color(120, 140, 175),
+        models = {
+            "models/hts/comradebear/pm0v3/player/rkka/commissar/co/m35_1941_s1_02.mdl",
+            "models/hts/comradebear/pm0v3/player/rkka/commissar/co/m35_1941_s1_03.mdl",
+            "models/hts/comradebear/pm0v3/player/rkka/commissar/co/m35_1941_s1_04.mdl",
+            "models/hts/comradebear/pm0v3/player/rkka/commissar/co/m35_1941_s1_05.mdl",
+        },
+    },
+    {
+        id = "seed_nkvd_sledovatel", category = "nkvd", order = 52,
+        name = "Следователь НКВД",
+        desc = "Протоколы, вещдоки, досье на каждого жителя станции. Имеет право требовать принудительный тест крови ПОД СВОИМ НАДЗОРОМ — шприц в сейфе следопера. 100 ХП / 50 брони.",
+        weapons = { "weapon_polus11_syringe", "arc9_doi_k98" }, hp = 100, armor = 50, max = 2, terminal = true,
+        color = Color(130, 150, 185),
+        models = {
+            "models/hts/comradebear/pm0v3/player/rkka/commissar/co/m35_1941_s1_03.mdl",
+            "models/hts/comradebear/pm0v3/player/rkka/commissar/co/m35_1941_s1_05.mdl",
+        },
+    },
+    {
+        id = "seed_nkvd_osobist", category = "nkvd", order = 53,
+        name = "Особист НКВД",
+        desc = "Контрразведка станции. Может объявлять РОЗЫСК (!розыск) и отдавать ПРИКАЗЫ (!приказ) без санкции генерала, если подозревает Нечто. Одно место. 115 ХП / 100 брони.",
+        weapons = { "arc9_doi_k98" }, hp = 115, armor = 100, max = 1, terminal = true, command = true,
+        color = Color(145, 155, 195),
+        models = {
+            "models/hts/comradebear/pm0v3/player/rkka/commissar/co/m35_1941_s1_02.mdl",
+        },
+    },
+    {
+        id = "seed_nkvd_nachalnik", category = "nkvd", order = 54,
+        name = "Начальник Особого Отдела НКВД",
+        desc = "Высшее слово станции по вопросам внутренней безопасности. Его подпись в ордере на расстрел равна приговору Военного трибунала. Одно место. 125 ХП / 125 брони.",
+        weapons = { "arc9_doi_k98" }, hp = 125, armor = 125, max = 1, terminal = true, command = true,
+        color = Color(160, 165, 205),
+        models = {
+            "models/hts/comradebear/pm0v3/player/rkka/general_staff/gen/m40_1941_s1_05.mdl",
         },
     },
 
