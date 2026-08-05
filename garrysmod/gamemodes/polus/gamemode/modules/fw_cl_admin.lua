@@ -64,6 +64,11 @@ net.Receive("P11FW_AdminData", function()
             left  = 0,
         }
         if p.pun ~= "" then p.left = net.ReadUInt(10) end
+        -- v1.6: ранг / варны / мут для вкладки МОДЕРАЦИЯ
+        p.rank     = net.ReadString()
+        p.warns    = net.ReadUInt(8)
+        p.muted    = net.ReadBool()
+        p.muteLeft = p.muted and net.ReadUInt(16) or 0
         d.players[#d.players + 1] = p
     end
 
@@ -80,6 +85,7 @@ net.Receive("P11FW_AdminData", function()
     f.AdminData = d
     if f.RefreshPlayers  then f:RefreshPlayers() end
     if f.RefreshActs     then f:RefreshActs() end
+    if f.RefreshMod      then f:RefreshMod() end
     if f.RefreshFactions then f:RefreshFactions() end
     if f.RefreshUtils    then f:RefreshUtils() end
 end)
@@ -173,6 +179,7 @@ function P11FW.OpenAdminMenu()
 
     local tabs = {
         { id = "players",  name = "ИГРОКИ" },
+        { id = "mod",      name = "МОДЕРАЦИЯ" },
         { id = "acts",     name = "ДЕЙСТВИЯ" },
         { id = "jobs",     name = "ДОЛЖНОСТИ" },
         { id = "factions", name = "ФРАКЦИИ" },
@@ -183,8 +190,8 @@ function P11FW.OpenAdminMenu()
 
     for i, t in ipairs(tabs) do
         local tb = vgui.Create("DButton", f)
-        tb:SetPos(12 + (i - 1) * 137, 58)
-        tb:SetSize(131, 32)
+        tb:SetPos(12 + (i - 1) * 143, 58)
+        tb:SetSize(137, 32)
         tb:SetText("")
         tb.TabId = t.id
         tb.Paint = function(s, w, h)
@@ -195,7 +202,7 @@ function P11FW.OpenAdminMenu()
         tb.DoClick = function()
             f.ActiveTab = t.id
             for id, p in pairs(f.TabPanels) do p:SetVisible(id == t.id) end
-            if t.id == "players" or t.id == "utils" or t.id == "acts" then RequestAdminData() end
+            if t.id == "players" or t.id == "utils" or t.id == "acts" or t.id == "mod" then RequestAdminData() end
             surface.PlaySound("buttons/button15.wav")
         end
         f.TabButtons[t.id] = tb
@@ -299,6 +306,12 @@ function P11FW.OpenAdminMenu()
                 end)
             end)
             b:SetSize(138, 36)
+            -- v1.6: спрятать то, чего не позволяет ранг
+            local need = (actId == 3) and "ban" or "arrest"
+            if not P11FW.CanMod(LocalPlayer(), need) then
+                b.PColor = AC.dim
+                b:SetEnabled(false)
+            end
         end
 
         PunishBtn("АРЕСТ", 1, Color(255, 130, 110))
@@ -340,6 +353,218 @@ function P11FW.OpenAdminMenu()
 
         local refr = MakeBtn(act, "ОБНОВИТЬ СПИСОК", AC.dim, function() RequestAdminData() end)
         refr:SetPos(10, 396) refr:SetSize(286, 30)
+    end
+
+    -- ==================================================
+    --  ВКЛАДКА: МОДЕРАЦИЯ (варн/мут/кик/бан — права по рангам)
+    -- ==================================================
+    do
+        local p = NewTab("mod")
+        local me = LocalPlayer()
+        local function Can(perm) return P11FW.CanMod(me, perm) end
+
+        local lv = vgui.Create("DListView", p)
+        lv:SetPos(10, 10)
+        lv:SetSize(396, 450)
+        lv:SetMultiSelect(false)
+        lv:AddColumn("Ник"):SetFixedWidth(160)
+        lv:AddColumn("Ранг"):SetFixedWidth(112)
+        lv:AddColumn("Варны"):SetFixedWidth(55)
+        lv:AddColumn("Мут")
+
+        function f:RefreshMod()
+            lv:Clear()
+            for _, pl in ipairs((self.AdminData and self.AdminData.players) or {}) do
+                local r = P11FW.RankById and P11FW.RankById[pl.rank or "user"]
+                local rname = r and r.name or (pl.rank or "user")
+                local muteTxt = pl.muted and (pl.muteLeft .. " мин") or "—"
+                local line = lv:AddLine(pl.nick, rname, pl.warns or 0, muteTxt)
+                if r and r.color then line.Columns[2]:SetTextColor(r.color) end
+                if (pl.warns or 0) > 0 then line.Columns[3]:SetTextColor(AC.gold) end
+                if pl.muted then line.Columns[4]:SetTextColor(Color(235, 145, 90)) end
+                line.PlayerIdx = pl.idx
+            end
+        end
+
+        local ap = vgui.Create("DPanel", p)
+        ap:SetPos(416, 10)
+        ap:SetSize(430, 450)
+        ap.Paint = function(s, w, h) draw.RoundedBox(6, 0, 0, w, h, AC.panel2) end
+
+        local ttl = vgui.Create("DLabel", ap)
+        ttl:SetPos(10, 8) ttl:SetSize(410, 22)
+        ttl:SetFont("P11FW.Big") ttl:SetTextColor(AC.text)
+        ttl:SetText("Цель: — выбери игрока слева")
+
+        lv.OnRowSelected = function(s, id, line)
+            ttl:SetText("Цель: " .. (line:GetValue(1) or "?"))
+        end
+
+        local function Sel()
+            local id = lv:GetSelectedLine()
+            if not id then return nil end
+            local line = lv:GetLine(id)
+            return line and line.PlayerIdx or nil
+        end
+
+        local rsLbl = vgui.Create("DLabel", ap)
+        rsLbl:SetPos(10, 32) rsLbl:SetSize(410, 16)
+        rsLbl:SetFont("P11FW.Small") rsLbl:SetTextColor(AC.dim)
+        rsLbl:SetText("Причина (общая для всех кнопок ниже):")
+
+        local reason = vgui.Create("DTextEntry", ap)
+        reason:SetPos(10, 50) reason:SetSize(410, 26)
+        reason:SetPlaceholderText("например: стрельба по своим / флуд в чат...")
+
+        local mutLbl = vgui.Create("DLabel", ap)
+        mutLbl:SetPos(10, 84) mutLbl:SetSize(140, 16)
+        mutLbl:SetFont("P11FW.Small") mutLbl:SetTextColor(AC.dim)
+        mutLbl:SetText("Минут для МУТА:")
+
+        local mutW = vgui.Create("DNumberWang", ap)
+        mutW:SetPos(120, 80) mutW:SetSize(90, 24)
+        local mutLim = P11FW.PunishLimit(me, "mute")
+        mutW:SetMinMax(1, mutLim and (mutLim > 0 and mutLim or 20160) or 1)
+        mutW:SetValue(10)
+
+        -- ---- кнопки простых действий ----
+        local function Guarded(col, fn)
+            return function()
+                local idx = Sel()
+                if not idx then surface.PlaySound("buttons/button10.wav") return end
+                fn(idx)
+            end
+        end
+
+        local bWarn = MakeBtn(ap, "ВЫДАТЬ ВАРН", AC.gold, Guarded(AC.gold, function(idx)
+            SendAction(25, function()
+                net.WriteUInt(idx, 8)
+                net.WriteString(reason:GetValue())
+            end)
+        end))
+        bWarn:SetPos(10, 112) bWarn:SetSize(202, 32)
+
+        local bMute = MakeBtn(ap, "ЗАМУТИТЬ", Color(235, 145, 90), Guarded(nil, function(idx)
+            SendAction(26, function()
+                net.WriteUInt(idx, 8)
+                net.WriteUInt(math.max(1, mutW:GetValue()), 16)
+                net.WriteString(reason:GetValue())
+            end)
+        end))
+        bMute:SetPos(218, 112) bMute:SetSize(202, 32)
+
+        local bUnmute = MakeBtn(ap, "СНЯТЬ МУТ", AC.ok, Guarded(nil, function(idx)
+            SendAction(27, function() net.WriteUInt(idx, 8) end)
+        end))
+        bUnmute:SetPos(10, 148) bUnmute:SetSize(202, 32)
+
+        local bKick = MakeBtn(ap, "КИКНУТЬ", Color(240, 105, 95), Guarded(nil, function(idx)
+            SendAction(28, function()
+                net.WriteUInt(idx, 8)
+                net.WriteString(reason:GetValue())
+            end)
+        end))
+        bKick:SetPos(218, 148) bKick:SetSize(202, 32)
+
+        local bUnwarn = MakeBtn(ap, "ОЧИСТИТЬ ВАРНЫ", Color(170, 195, 140), Guarded(nil, function(idx)
+            SendAction(30, function() net.WriteUInt(idx, 8) end)
+        end))
+        bUnwarn:SetPos(10, 184) bUnwarn:SetSize(202, 32)
+
+        -- ---- секция БАНА ----
+        local banHead = vgui.Create("DLabel", ap)
+        banHead:SetPos(10, 226) banHead:SetSize(410, 20)
+        banHead:SetFont("P11FW.Big") banHead:SetTextColor(AC.bad)
+        banHead:SetText("— БАН —")
+
+        local banSub = vgui.Create("DLabel", ap)
+        banSub:SetPos(10, 248) banSub:SetSize(410, 14)
+        banSub:SetFont("P11FW.Small") banSub:SetTextColor(AC.dim)
+        banSub:SetText("Срок: дни / часы / минуты (или галочка навсегда):")
+
+        local banD = vgui.Create("DNumberWang", ap)
+        banD:SetPos(50, 268) banD:SetSize(60, 24)
+        banD:SetMinMax(0, 365) banD:SetValue(0)
+        local dl = vgui.Create("DLabel", ap)
+        dl:SetPos(10, 272) dl:SetSize(40, 16)
+        dl:SetFont("P11FW.Small") dl:SetTextColor(AC.text) dl:SetText("Дни:")
+
+        local banH = vgui.Create("DNumberWang", ap)
+        banH:SetPos(156, 268) banH:SetSize(54, 24)
+        banH:SetMinMax(0, 23) banH:SetValue(0)
+        local hl = vgui.Create("DLabel", ap)
+        hl:SetPos(116, 272) hl:SetSize(40, 16)
+        hl:SetFont("P11FW.Small") hl:SetTextColor(AC.text) hl:SetText("Часы:")
+
+        local banM = vgui.Create("DNumberWang", ap)
+        banM:SetPos(256, 268) banM:SetSize(54, 24)
+        banM:SetMinMax(0, 59) banM:SetValue(30)
+        local ml = vgui.Create("DLabel", ap)
+        ml:SetPos(216, 272) ml:SetSize(40, 16)
+        ml:SetFont("P11FW.Small") ml:SetTextColor(AC.text) ml:SetText("Мин.:")
+
+        local permC = vgui.Create("DCheckBoxLabel", ap)
+        permC:SetPos(318, 272) permC:SetSize(102, 16)
+        permC:SetFont("P11FW.Small") permC:SetTextColor(AC.bad)
+        permC:SetText("НАВСЕГДА")
+        permC:SetChecked(false)
+
+        local lim = P11FW.PunishLimit(me, "ban")
+        local limLbl = vgui.Create("DLabel", ap)
+        limLbl:SetPos(10, 298) limLbl:SetSize(410, 16)
+        limLbl:SetFont("P11FW.Small") limLbl:SetTextColor(AC.gold)
+        if lim == nil then
+            limLbl:SetText("БАН недоступен — нужен ранг Админ (4) и выше.")
+        elseif lim == 0 then
+            limLbl:SetText("Твой лимит: БЕЗЛИМИТ (можно навсегда).")
+        else
+            limLbl:SetText("Твой лимит: до " .. P11FW.FmtMinutes(lim) .. " — перманент только у Главы.")
+        end
+
+        local bBan = MakeBtn(ap, "ЗАБАНИТЬ", AC.bad, Guarded(nil, function(idx)
+            local total = math.floor(banD:GetValue()) * 1440
+                + math.floor(banH:GetValue()) * 60
+                + math.floor(banM:GetValue())
+            if permC:GetChecked() then total = 0 end
+            if not permC:GetChecked() and total < 1 then
+                surface.PlaySound("buttons/button10.wav")
+                return
+            end
+            SendAction(29, function()
+                net.WriteUInt(idx, 8)
+                net.WriteUInt(total, 20)
+                net.WriteString(reason:GetValue())
+            end)
+        end))
+        bBan:SetPos(10, 318) bBan:SetSize(410, 34)
+
+        -- памятка лестницы прав
+        local info = vgui.Create("DLabel", ap)
+        info:SetPos(10, 360) info:SetSize(410, 60)
+        info:SetFont("P11FW.Small") info:SetTextColor(AC.dim)
+        info:SetAutoStretchVertical(true)
+        info:SetText("Лестница прав: Хелпер — варн + мут до 30 мин.;\n" ..
+            "Модератор — кик, арест до 1 ч., мут до 4 ч.;\n" ..
+            "Админ — бан до 3 сут.; Куратор — 7 сут.;\n" ..
+            "Суперадмин — 30 сут. + разбан; Глава — навсегда.")
+
+        -- серые кнопки по правам
+        local function Gate(btn, perm)
+            if not Can(perm) then
+                btn.PColor = AC.dim
+                btn:SetEnabled(false)
+            end
+        end
+        Gate(bWarn, "warn")   Gate(bMute, "mute")  Gate(bUnmute, "mute")
+        Gate(bUnwarn, "warn") Gate(bKick, "kick")  Gate(bBan, "ban")
+        if not Can("mute") then mutW:SetEnabled(false) end
+        if not Can("ban") then
+            banD:SetEnabled(false) banH:SetEnabled(false) banM:SetEnabled(false)
+        end
+        if lim ~= 0 then permC:SetEnabled(false) end
+
+        local refr = MakeBtn(ap, "ОБНОВИТЬ СПИСОК", AC.dim, function() RequestAdminData() end)
+        refr:SetPos(10, 418) refr:SetSize(410, 26)
     end
 
     -- ==================================================
@@ -574,6 +799,8 @@ function P11FW.OpenAdminMenu()
         grid:SetPos(12, 76) grid:SetSize(372, 340)
         grid:SetSpaceX(6) grid:SetSpaceY(6)
 
+        local canHeal = P11FW.CanMod(LocalPlayer(), "heal")
+
         local function ActBtn(name, actId, col)
             local b = MakeBtn(grid, name, col, function()
                 local idx = Sel()
@@ -581,6 +808,10 @@ function P11FW.OpenAdminMenu()
                 SendAction(actId, function() net.WriteUInt(idx, 8) end)
             end)
             b:SetSize(180, 44)
+            if not canHeal then -- v1.6: быстрые действия — с ранга Админ (4)
+                b.PColor = AC.dim
+                b:SetEnabled(false)
+            end
         end
 
         ActBtn("ЛЕЧИТЬ ПОЛНОСТЬЮ", 14, AC.ok)
@@ -614,6 +845,10 @@ function P11FW.OpenAdminMenu()
             end)
         end)
         rankBtn:SetPos(12, 298) rankBtn:SetSize(372, 30)
+        if not (P11FW.CanManageRank and P11FW.CanManageRank(LocalPlayer(), nil)) then
+            rankBtn.PColor = AC.dim
+            rankBtn:SetEnabled(false)
+        end
 
         local rankNote = vgui.Create("DLabel", ap)
         rankNote:SetPos(12, 334) rankNote:SetSize(372, 60)
@@ -817,6 +1052,10 @@ function P11FW.OpenAdminMenu()
             end
         end)
         unban:SetPos(10, 424) unban:SetSize(300, 34)
+        if not P11FW.CanMod(LocalPlayer(), "unban") then
+            unban.PColor = AC.dim
+            unban:SetEnabled(false)
+        end
 
         local refr = MakeBtn(p, "ОБНОВИТЬ", AC.dim, function() RequestAdminData() end)
         refr:SetPos(648, 424) refr:SetSize(198, 34)

@@ -66,3 +66,90 @@ function P11FW.CanManageRank(ply, targetLevel)
     if targetLevel and targetLevel >= my then return false end
     return true
 end
+
+-- ============================================================
+--  ПРАВА МОДЕРАЦИИ ПО РАНГАМ (v1.6)
+--  Чем выше ранг — тем больше команд и тем ДЛИННЕЕ доступный
+--  срок бана/мута/ареста. Shared: клиенту нужно знать свои
+--  права, чтобы серить кнопки во вкладке «МОДЕРАЦИЯ».
+-- ============================================================
+
+-- минимальный уровень ранга для команды:
+-- 0=User 1=VIP 2=Хелпер 3=Модератор 4=Админ 5=Куратор
+-- 6=Суперадмин 7=Основатель 8=Создатель 9=Глава Полюса-11
+P11FW.PermLevel = {
+    warn    = 2, -- Хелпер
+    mute    = 2, -- Хелпер
+    arrest  = 3, -- Модератор (арест и рабство)
+    kick    = 3, -- Модератор
+    heal    = 4, -- Админ (быстрые действия: лечить/возродить/тп/заморозить/убить)
+    ban     = 4, -- Админ
+    unban   = 6, -- Суперадмин
+}
+
+-- Лимиты СРОКОВ в МИНУТАХ по уровню ранга. 0 = безлимит (включая перму).
+-- Читается сверху вниз: своего уровня в таблице может не быть — берём ближайший снизу.
+P11FW.TimeLimits = {
+    mute = {  -- Хелпер 30м … Создатель 30д … Глава безлимит
+        [2] = 30,      [3] = 240,     [4] = 720,      [5] = 1440,
+        [6] = 10080,   [7] = 20160,   [8] = 43200,    [9] = 0,
+    },
+    arrest = { -- Модератор 1ч … Создатель 7д … Глава безлимит
+        [3] = 60,      [4] = 180,     [5] = 1440,     [6] = 4320,
+        [7] = 10080,   [8] = 10080,   [9] = 0,
+    },
+    ban = {    -- Админ 3д … Куратор 7д … Суперадмин 30д … Основатель 70д … Создатель 300д … Глава НАВСЕГДА
+        [4] = 4320,    [5] = 10080,   [6] = 43200,    [7] = 100800,
+        [8] = 432000,  [9] = 0,
+    },
+}
+
+--- Есть ли у ранга игрока право на действие (perm из P11FW.PermLevel)?
+function P11FW.CanMod(ply, perm)
+    if not IsValid(ply) then return false end
+    if ply:IsListenServerHost() then return true end
+    local need = P11FW.PermLevel and P11FW.PermLevel[perm]
+    if not need then return false end
+    return P11FW.GetRankLevel(ply) >= need
+end
+
+--- Максимальный срок (мин) для kind=mute/arrest/ban.
+--- nil — вообще нельзя; 0 — безлимит (перманент доступен).
+function P11FW.PunishLimit(ply, kind)
+    if not IsValid(ply) then return nil end
+    if not P11FW.CanMod(ply, kind) then return nil end
+    if ply:IsListenServerHost() then return 0 end
+    local lvl = math.Clamp(P11FW.GetRankLevel(ply), 0, 9)
+    local t = P11FW.TimeLimits and P11FW.TimeLimits[kind]
+    if not t then return 0 end
+    for l = lvl, 0, -1 do
+        if t[l] ~= nil then return t[l] end
+    end
+    return 0
+end
+
+--- Можно ли наказать ЭТОГО игрока? Нельзя трогать равных и выше,
+--- Глава — всех кроме других Глав.
+function P11FW.CanTarget(ply, target)
+    if not IsValid(ply) or not IsValid(target) then return false end
+    if not target:IsPlayer() then return false end
+    if ply:IsListenServerHost() then return true end
+    local mine   = P11FW.GetRankLevel(ply)
+    local theirs = P11FW.GetRankLevel(target)
+    if mine >= 9 then return theirs < 9 end
+    return mine > theirs
+end
+
+--- Человекочитаемый срок минут: «3 дн. 4 ч.», «45 мин.», «НАВСЕГДА»
+function P11FW.FmtMinutes(mins)
+    mins = tonumber(mins) or 0
+    if mins == 0 then return "НАВСЕГДА" end
+    local d = math.floor(mins / 1440)
+    local h = math.floor((mins % 1440) / 60)
+    local m = mins % 60
+    local out = {}
+    if d > 0 then out[#out + 1] = d .. " дн." end
+    if h > 0 then out[#out + 1] = h .. " ч." end
+    if m > 0 or #out == 0 then out[#out + 1] = m .. " мин." end
+    return table.concat(out, " ")
+end

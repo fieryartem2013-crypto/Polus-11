@@ -8,7 +8,8 @@ local cl = {
     "modules/fw_cl_f4.lua",        -- F4-меню профессий
     "modules/fw_cl_punish.lua",    -- красный плакат наказания
     "modules/fw_cl_admin.lua",     -- админ-меню P11FW
-    "modules/p11_cl_hud.lua",      -- HUD станции
+    "modules/p11_cl_hud.lua",      -- HUD станции (фазы, улей, тест крови)
+    "modules/p11_cl_vitals.lua",   -- HUD жизни: HP / броня / патроны / тосты
     "modules/p11_cl_admin.lua",    -- пульт Нечто (клиент)
     "modules/p11_cl_scoreboard.lua", -- TAB-табло
     "modules/p11_cl_nametags.lua", -- ники/должности над головами

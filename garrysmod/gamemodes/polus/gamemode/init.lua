@@ -17,6 +17,7 @@ local send = {
     "modules/fw_cl_punish.lua",
     "modules/fw_cl_admin.lua",
     "modules/p11_cl_hud.lua",
+    "modules/p11_cl_vitals.lua",
     "modules/p11_cl_admin.lua",
     "modules/p11_cl_scoreboard.lua",
     "modules/p11_cl_nametags.lua",
@@ -59,6 +60,7 @@ local sv = {
     "modules/fw_sv_npc.lua",         -- NPC-кадровик
     "modules/fw_sv_setup.lua",       -- точки спавна/ареста
     "modules/fw_sv_punish.lua",      -- арест / рабство / бан
+    "modules/fw_sv_mod.lua",         -- варны / мут / кик + ворота прав рангов + журнал
     "modules/fw_sv_ranks.lua",       -- ранги + секретный ключ основателя
     "modules/p11_sv_infection.lua",  -- заражение Нечто
     "modules/p11_sv_power.lua",      -- генератор / топливо / блэкаут

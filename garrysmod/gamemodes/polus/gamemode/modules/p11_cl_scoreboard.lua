@@ -40,6 +40,16 @@ local function MakeRow(frame, ply, amAdmin)
     nameLab:SetText(nick .. extra)
     nameLab:SizeToContents()
 
+    -- v3.4: значок ранга администрации рядом с ником (от Хелпера и выше)
+    if P11FW and P11FW.GetRankLevel and P11FW.GetRankLevel(ply) >= 2 then
+        local chip = vgui.Create("DLabel", row)
+        chip:SetFont("P11.SB.Small")
+        chip:SetText("«" .. P11FW.GetRankName(ply) .. "»")
+        chip:SetTextColor(P11FW.GetRankColor(ply))
+        chip:SizeToContents()
+        chip:SetPos(12 + nameLab:GetWide() + 8, 6)
+    end
+
     -- должность (справа от ника, приглушённо)
     if P11FW and P11FW.GetJobName then
         local jobLab = vgui.Create("DLabel", row)
@@ -145,7 +155,10 @@ local function OpenSB()
     frame.Think = function(s)
         s.NextRefresh = s.NextRefresh or 0
         if CurTime() >= s.NextRefresh then
-            s.NextRefresh = CurTime() + 0.5
+            -- v3.4: адаптивный ребилд — чем больше народу, тем реже
+            -- (полная перестройка каждые 0.5с давала микрофризы на 20+)
+            local n = player.GetCount()
+            s.NextRefresh = CurTime() + (n > 16 and 3 or n > 8 and 2 or 1.2)
             BuildList(s)
         end
     end

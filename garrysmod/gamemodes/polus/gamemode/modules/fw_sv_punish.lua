@@ -298,7 +298,13 @@ local function PunishCmd(ptype)
         if not IsValid(t) then print("[P11FW] игрок не найден: " .. tostring(args[1])) return end
         local mins = tonumber(args[2]) or 5
         local reason = table.concat(args, " ", 3)
-        P11FW.Punish(t, ptype, mins, reason, ply)
+        -- v1.6: через ворота рангов (проверка прав и лимитов срока)
+        if P11FW.RequestPunish then
+            local ok, err = P11FW.RequestPunish(IsValid(ply) and ply or nil, t, ptype, mins, reason)
+            if IsValid(ply) and not ok then P11FW.Notify(ply, "ОТКАЗ: " .. tostring(err)) end
+        else
+            P11FW.Punish(t, ptype, mins, reason, ply)
+        end
     end
 end
 
@@ -307,12 +313,23 @@ concommand.Add("polus_fw_slavery", PunishCmd("slavery"))
 concommand.Add("polus_fw_ban",     PunishCmd("ban"))
 
 concommand.Add("polus_fw_free", function(ply, cmd, args)
-    if IsValid(ply) and not P11FW.Config.Admin(ply) then return end
+    if IsValid(ply) and not P11FW.CanMod(ply, "arrest") then
+        P11FW.Notify(ply, "Освобождать может Модератор+.")
+        return
+    end
     local t = FindPlayer(args[1])
     if IsValid(t) then P11FW.Release(t) P11FW.Notify(t, "Вы освобождены.") end
 end)
 
 concommand.Add("polus_fw_unban", function(ply, cmd, args)
-    if IsValid(ply) and not P11FW.Config.Admin(ply) then return end
-    if args[1] then P11FW.Unban(args[1]) print("[P11FW] Разбанен: " .. args[1]) end
+    if IsValid(ply) and not P11FW.CanMod(ply, "unban") then
+        P11FW.Notify(ply, "Разбан доступен Суперадмину и выше.")
+        return
+    end
+    if args[1] then
+        P11FW.Unban(args[1])
+        if P11FW.ModLog then P11FW.ModLog("unban", ply, args[1], nil) end
+        print("[P11FW] Разбанен: " .. args[1])
+        if IsValid(ply) then P11FW.Notify(ply, "Разбанен: " .. args[1]) end
+    end
 end)

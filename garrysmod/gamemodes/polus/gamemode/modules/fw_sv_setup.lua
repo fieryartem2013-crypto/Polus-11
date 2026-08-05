@@ -100,6 +100,16 @@ net.Receive("P11FW_AdminData", function(len, ply)
                 local left = math.max(0, (p.P11FW_PunishUntil or os.time()) - os.time())
                 net.WriteUInt(math.floor(left / 60), 10) -- минут (грубо, для меню)
             end
+            -- v1.6: ранг, варны и мут для вкладки МОДЕРАЦИЯ
+            local sid = p:SteamID64()
+            if not sid or sid == "0" then sid = p:SteamID() end
+            net.WriteString(p:GetNWString("P11FW_Rank", "user"))
+            net.WriteUInt(P11FW.WarnCountBySid and P11FW.WarnCountBySid(sid) or 0, 8)
+            local muted = P11FW.IsMuted and P11FW.IsMuted(p) or false
+            net.WriteBool(muted)
+            if muted then
+                net.WriteUInt(math.min(P11FW.MuteLeftMin(p), 60000), 16)
+            end
         end
 
         -- баны
@@ -129,7 +139,7 @@ net.Receive("P11FW_AdminAction", function(len, ply)
 
     local act = net.ReadUInt(5)
 
-    if act == 1 or act == 2 or act == 3 then -- арест / рабство / бан
+    if act == 1 or act == 2 or act == 3 then -- арест / рабство / бан (через ворота рангов)
         local idx = net.ReadUInt(8)
         local mins = net.ReadUInt(16)
         local reason = string.sub(net.ReadString(), 1, 120)
@@ -137,10 +147,13 @@ net.Receive("P11FW_AdminAction", function(len, ply)
         if not IsValid(target) or not target:IsPlayer() then return end
         local ptype = (act == 1 and "arrest") or (act == 2 and "slavery") or "ban"
         if mins < 1 then mins = 5 end
-        P11FW.Punish(target, ptype, mins, reason, ply)
-        P11FW.Notify(ply, "Применено: " .. target:Nick() .. " → " .. ptype .. " на " .. mins .. " мин.")
+        local ok, err = P11FW.RequestPunish(ply, target, ptype, mins, reason)
+        P11FW.Notify(ply, ok
+            and ("Применено: " .. target:Nick() .. " → " .. ptype)
+            or ("ОТКАЗ: " .. tostring(err)))
 
     elseif act == 4 then -- освободить
+        if not P11FW.CanMod(ply, "arrest") then P11FW.Notify(ply, "Освобождать может Модератор+.") return end
         local target = Entity(net.ReadUInt(8))
         if IsValid(target) and target:IsPlayer() then
             P11FW.Release(target)
@@ -173,12 +186,20 @@ net.Receive("P11FW_AdminAction", function(len, ply)
     elseif act == 11 then P11FW.CreateNPC(ply)
     elseif act == 12 then P11FW.RemoveNPC(ply)
 
-    elseif act == 13 then -- снять бан
+    elseif act == 13 then -- снять бан (Суперадмин+)
+        if not P11FW.CanMod(ply, "unban") then
+            P11FW.Notify(ply, "Разбан доступен Суперадмину и выше.")
+            return
+        end
         local sid = net.ReadString()
         P11FW.Unban(sid)
+        if P11FW.ModLog then P11FW.ModLog("unban", ply, sid, nil) end
         P11FW.Notify(ply, "Бан снят: " .. sid)
 
-    -- ============ БЫСТРЫЕ ДЕЙСТВИЯ С ИГРОКОМ ============
+    -- ============ БЫСТРЫЕ ДЕЙСТВИЯ С ИГРОКОМ (Админ+) ============
+
+    elseif act >= 14 and act <= 19 and not P11FW.CanMod(ply, "heal") then
+        P11FW.Notify(ply, "Быстрые действия доступны Админу и выше.")
 
     elseif act == 14 then -- полное лечение
         local target = Entity(net.ReadUInt(8))
@@ -257,6 +278,57 @@ net.Receive("P11FW_AdminAction", function(len, ply)
             POLUS11.RemoveTerminalNear(ply)
         else
             P11FW.Notify(ply, "Модуль терминала не загружен.")
+        end
+
+    -- ============ v1.6: МОДЕРАЦИЯ (варн/мут/кик/бан по рангам) ============
+
+    elseif act == 25 then -- варн (Хелпер+)
+        local target = Entity(net.ReadUInt(8))
+        local reason = string.sub(net.ReadString(), 1, 120)
+        if IsValid(target) and target:IsPlayer() then
+            local ok, err = P11FW.Warn(ply, target, reason)
+            if not ok then P11FW.Notify(ply, "ОТКАЗ: " .. tostring(err)) end
+        end
+
+    elseif act == 26 then -- мут (Хелпер+, лимит по рангу)
+        local target = Entity(net.ReadUInt(8))
+        local mins = net.ReadUInt(16)
+        local reason = string.sub(net.ReadString(), 1, 120)
+        if IsValid(target) and target:IsPlayer() then
+            local ok, err = P11FW.Mute(ply, target, mins, reason)
+            if not ok then P11FW.Notify(ply, "ОТКАЗ: " .. tostring(err)) end
+        end
+
+    elseif act == 27 then -- снять мут (Хелпер+)
+        local target = Entity(net.ReadUInt(8))
+        if IsValid(target) and target:IsPlayer() then
+            local ok, err = P11FW.Unmute(ply, target)
+            P11FW.Notify(ply, ok and ("Мут снят: " .. target:Nick()) or ("ОТКАЗ: " .. tostring(err)))
+        end
+
+    elseif act == 28 then -- кик (Модератор+)
+        local target = Entity(net.ReadUInt(8))
+        local reason = string.sub(net.ReadString(), 1, 120)
+        if IsValid(target) and target:IsPlayer() then
+            local ok, err = P11FW.Kick(ply, target, reason)
+            if not ok then P11FW.Notify(ply, "ОТКАЗ: " .. tostring(err)) end
+        end
+
+    elseif act == 29 then -- расширенный бан: минуты 20 бит (0 = ПЕРМАНЕНТ)
+        local target = Entity(net.ReadUInt(8))
+        local mins = net.ReadUInt(20)
+        local reason = string.sub(net.ReadString(), 1, 120)
+        if IsValid(target) and target:IsPlayer() then
+            mins = math.min(mins, 525600) -- потолок: один год
+            local ok, err = P11FW.RequestPunish(ply, target, "ban", mins, reason)
+            P11FW.Notify(ply, ok and "Бан поставлен." or ("ОТКАЗ: " .. tostring(err)))
+        end
+
+    elseif act == 30 then -- очистить варны (Хелпер+)
+        local target = Entity(net.ReadUInt(8))
+        if IsValid(target) and target:IsPlayer() then
+            local ok, err = P11FW.ClearWarns(ply, target)
+            P11FW.Notify(ply, ok and "Варны очищены." or ("ОТКАЗ: " .. tostring(err)))
         end
     end
 
