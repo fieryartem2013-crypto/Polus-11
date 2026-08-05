@@ -236,6 +236,28 @@ net.Receive("P11FW_AdminAction", function(len, ply)
         local fid = net.ReadString()
         local ok, err = P11FW.DeleteFaction(fid)
         P11FW.Notify(ply, ok and "Фракция удалена." or ("Ошибка: " .. tostring(err)))
+
+    elseif act == 22 then -- выдать ранг (Куратор+)
+        local target = Entity(net.ReadUInt(8))
+        local rid = net.ReadString()
+        if IsValid(target) and target:IsPlayer() then
+            local ok, err = P11FW.SetRank(target, rid, ply)
+            if not ok then P11FW.Notify(ply, "Ошибка: " .. tostring(err)) end
+        end
+
+    elseif act == 23 then -- поставить терминал
+        if POLUS11 and POLUS11.SpawnTerminal then
+            POLUS11.SpawnTerminal(ply)
+        else
+            P11FW.Notify(ply, "Модуль терминала не загружен.")
+        end
+
+    elseif act == 24 then -- убрать ближайший терминал
+        if POLUS11 and POLUS11.RemoveTerminalNear then
+            POLUS11.RemoveTerminalNear(ply)
+        else
+            P11FW.Notify(ply, "Модуль терминала не загружен.")
+        end
     end
 
     -- свежие данные в меню

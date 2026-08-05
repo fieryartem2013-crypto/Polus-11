@@ -53,7 +53,7 @@ P11FW.Jobs = {
     },
 
     officer = {
-        order = 3, category = "garrison",
+        order = 3, category = "garrison", terminal = true,
         name = "Начкар / Офицер",
         desc = "Командир караула станции. Расставляет посты, ведёт переговоры, объявляет тревогу. Единственная должность с автоматом. Одно место.",
         models = {
@@ -93,7 +93,7 @@ P11FW.Jobs = {
     },
 
     virologist = {
-        order = 6, category = "science",
+        order = 6, category = "science", terminal = true,
         name = "Вирусолог",
         desc = "Старший по лаборатории. Единственный, кому доверяют официальное заключение теста крови. Если он заражён и подменит результат — его никто не проверит...",
         models = {
@@ -220,6 +220,7 @@ function P11FW.RegisterCustomJobs(records)
             local c = istable(rec.color) and rec.color or {}
             P11FW.Jobs[rec.id] = {
                 custom   = true,
+                terminal = rec.terminal == true,
                 order    = tonumber(rec.order) or 100,
                 category = isstring(rec.category) and rec.category or "misc",
                 name     = rec.name,

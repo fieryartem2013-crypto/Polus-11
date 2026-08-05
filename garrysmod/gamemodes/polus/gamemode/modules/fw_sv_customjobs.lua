@@ -62,6 +62,7 @@ local function SanitizeRecord(rec)
     out.category = catOk and rec.category or "misc"
 
     out.desc = string.sub(tostring(rec.desc or ""), 1, 400)
+    out.terminal = rec.terminal == true
     out.max = math.Clamp(tonumber(rec.max) or 0, 0, 32)
 
     local c = istable(rec.color) and rec.color or {}

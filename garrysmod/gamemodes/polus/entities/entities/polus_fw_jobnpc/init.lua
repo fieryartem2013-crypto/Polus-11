@@ -5,7 +5,8 @@ include("shared.lua")
 util.AddNetworkString("P11FW_OpenMenu")
 
 function ENT:Initialize()
-    local model = P11FW.Config.NPCModel
+    local cfg = (P11FW and P11FW.Config) or {}
+    local model = cfg.NPCModel or "models/player/barney.mdl"
     if not file.Exists(model, "GAME") then
         model = "models/player/barney.mdl"
     end
@@ -38,11 +39,17 @@ end
 
 -- поворачиваемся к ближайшему игроку (без NPC-капабилити, чистая геометрия)
 function ENT:Think()
+    -- v1.5 fix: при воскрешении/дубле энтитя может оказаться без Initialize
+    -- (поле NextGaze = nil -> краш "compare nil with number" в строке ниже).
+    -- Лечим самовосстановлением.
+    self.NextGaze = tonumber(self.NextGaze) or 0
+
     if CurTime() >= self.NextGaze then
         self.NextGaze = CurTime() + 0.25
 
         local best, dist
-        local maxD = (P11FW.Config.NPCGazeDistance or 260) ^ 2
+        local cfg = (P11FW and P11FW.Config) or {}
+        local maxD = (cfg.NPCGazeDistance or 260) ^ 2
         for _, ply in ipairs(player.GetAll()) do
             if ply:Alive() then
                 local d = ply:GetPos():DistToSqr(self:GetPos())

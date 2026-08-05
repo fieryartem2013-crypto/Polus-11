@@ -34,15 +34,28 @@ hook.Add("HUDPaint", "P11_TasksHud", function()
     end
 
     local h = 34 + #rows * 22
+    local hasExtra = false
+    for _, r in ipairs(rows) do if r.extra then hasExtra = true break end end
+    if hasExtra then h = h + 22 end
+
     draw.RoundedBox(8, x - 8, y0 - 8, widest + 28, h, Color(8, 12, 18, 150))
     draw.SimpleText("ЗАДАЧИ СМЕНЫ", "P11.Task.Title", x, y0 + 6, Color(140, 190, 235))
 
+    local shownSep = false
     for i, r in ipairs(rows) do
         local yy = y0 + 28 + (i - 1) * 22
+        if r.extra and not shownSep then
+            shownSep = true
+            yy = yy + 16
+            draw.SimpleText("— НАЗНАЧЕННЫЕ С ТЕРМИНАЛА", "P11.Task.Text", x - 8, yy, Color(230, 190, 100))
+            yy = yy + 6
+        elseif shownSep then
+            yy = yy + 22
+        end
         local txt = r.done
             and ("✔ " .. r.name)
             or  ("• " .. r.name .. "  —  " .. r.cur .. "/" .. r.max)
         draw.SimpleText(txt, "P11.Task.Text", x, yy,
-            r.done and Color(120, 220, 140) or Color(210, 218, 228))
+            r.done and Color(120, 220, 140) or (r.extra and Color(230, 200, 130) or Color(210, 218, 228)))
     end
 end)

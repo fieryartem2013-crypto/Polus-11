@@ -16,12 +16,12 @@ DeriveGamemode("sandbox")
 
 -- версии (в аддон-версии лежали в autorun-загрузчиках)
 P11FW = P11FW or {}
-P11FW.Version = "1.4.0"
+P11FW.Version = "1.5.0"
 
 POLUS11 = POLUS11 or {}
-POLUS11.Version = "2.6"
+POLUS11.Version = "2.7"
 
-POLUS_BUILD = "3.2" -- версия сборки-гейммода
+POLUS_BUILD = "3.3" -- версия сборки-гейммода
 
 -- ============ ОБЩИЕ МОДУЛИ (shared) ============
 
@@ -29,6 +29,7 @@ local sh = {
     "modules/fw_sh_config.lua",   -- конфиг фреймворка
     "modules/fw_sh_jobs.lua",     -- профессии / команды
     "modules/fw_sh_factions.lua",  -- фракции (расширенные категории)
+    "modules/fw_sh_ranks.lua",     -- ранги администрации (User..Глава Полюса-11)
     "modules/p11_sh_config.lua",  -- конфиг ПОЛЮС-11
     "modules/p11_sh_core.lua",    -- общая логика Нечто/заражения
 }
@@ -125,13 +126,17 @@ function GM:PlayerNoClip(ply, on)
     return IsPolusAdmin(ply)
 end
 
---- Физган (выдаётся только админам): чужих игроков таскает только суперадмин.
+--- Физган есть у всех (v2.7), но не-админ может поднимать ТОЛЬКО свои
+--- призрачные пропы — чужие твёрдые, мировые и игроков нельзя.
+--- Игроков вообще таскает только суперадмин.
 function GM:PhysgunPickup(ply, ent)
-    if not IsPolusAdmin(ply) then return false end
-    if IsValid(ent) and ent:IsPlayer() then
-        return ply:IsSuperAdmin()
+    if not IsValid(ent) then return false end
+    if IsPolusAdmin(ply) then
+        if ent:IsPlayer() then return ply:IsSuperAdmin() end
+        return true
     end
-    return true
+    if ent.P11_Ghost and ent.P11_GhostOwner == ply then return true end
+    return false
 end
 
 --- Фонарик разрешён всем — на тёмной станции это базовая потребность.

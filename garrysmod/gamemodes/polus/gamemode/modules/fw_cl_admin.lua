@@ -447,10 +447,17 @@ function P11FW.OpenAdminMenu()
         descE:SetMultiline(true)
         descE:SetPlaceholderText("Что делает эта должность на станции...")
 
+        -- v1.5: допуск к сменному терминалу
+        local termC = vgui.Create("DCheckBoxLabel", form)
+        termC:SetPos(10, 358) termC:SetSize(440, 18)
+        termC:SetFont("P11FW.Small") termC:SetTextColor(Color(120, 210, 240))
+        termC:SetText("Допуск к СМЕННОМУ ТЕРМИНАЛУ (выдача доп-задач экипажу)")
+        termC:SetChecked(false)
+
         -- выбранная строка списка → заполнить форму
         local editingId = nil
         local status = vgui.Create("DLabel", form)
-        status:SetPos(10, 360) status:SetSize(446, 18)
+        status:SetPos(10, 378) status:SetSize(446, 18)
         status:SetFont("P11FW.Small") status:SetTextColor(AC.gold)
         status:SetText("Новая должность (или выбери КАСТОМ из списка для правки)")
 
@@ -461,6 +468,7 @@ function P11FW.OpenAdminMenu()
                 category = catId or "misc",
                 desc     = descE:GetValue(),
                 max      = maxW:GetValue(),
+                terminal = termC:GetChecked(),
                 color    = { r = colors[1]:GetValue(), g = colors[2]:GetValue(), b = colors[3]:GetValue() },
                 models   = ParseListEntry(modelsE:GetValue()),
                 weapons  = ParseListEntry(wepsE:GetValue()),
@@ -482,6 +490,7 @@ function P11FW.OpenAdminMenu()
             if job.color then
                 colors[1]:SetValue(job.color.r) colors[2]:SetValue(job.color.g) colors[3]:SetValue(job.color.b)
             end
+            termC:SetChecked(job.terminal == true)
             editingId = job.custom and jobId or nil
             status:SetText(job.custom and ("Правим КАСТОМНУЮ: " .. job.name) or "ВСТРОЕННАЯ — можно только скопировать в новую")
         end
@@ -492,7 +501,7 @@ function P11FW.OpenAdminMenu()
             SendJobEdit(1, rec)
             status:SetText("Отправлено на сервер...")
         end)
-        btnCreate:SetPos(10, 384) btnCreate:SetSize(146, 40)
+        btnCreate:SetPos(10, 402) btnCreate:SetSize(146, 40)
 
         local btnUpdate = MakeBtn(form, "СОХРАНИТЬ ПРАВКУ", AC.accent, function()
             if not editingId then status:SetText("⚠ это встроенная или не выбрана кастомная!") surface.PlaySound("buttons/button10.wav") return end
@@ -500,14 +509,14 @@ function P11FW.OpenAdminMenu()
             rec.id = editingId
             SendJobEdit(2, rec)
         end)
-        btnUpdate:SetPos(162, 384) btnUpdate:SetSize(146, 40)
+        btnUpdate:SetPos(162, 402) btnUpdate:SetSize(146, 40)
 
         local btnDelete = MakeBtn(form, "УДАЛИТЬ", AC.bad, function()
             if not editingId then status:SetText("⚠ удалить можно только кастомную!") surface.PlaySound("buttons/button10.wav") return end
             SendJobEdit(3, { id = editingId })
             editingId = nil
         end)
-        btnDelete:SetPos(314, 384) btnDelete:SetSize(142, 40)
+        btnDelete:SetPos(314, 402) btnDelete:SetSize(142, 40)
 
         -- авто-обновление списка при синке с сервера
         f.JobsTabStatus = status
@@ -580,6 +589,38 @@ function P11FW.OpenAdminMenu()
         ActBtn("ТЕЛЕПОРТ К НЕМУ", 17, Color(150, 190, 240))
         ActBtn("ЗАМОРОЗИТЬ/РАЗМ.",18, Color(170, 175, 190))
         ActBtn("УБИТЬ",           19, AC.bad)
+
+        -- v1.5: выдача рангов (сервер пустит только Куратор+)
+        local rankLbl = vgui.Create("DLabel", ap)
+        rankLbl:SetPos(12, 246) rankLbl:SetSize(372, 16)
+        rankLbl:SetFont("P11FW.Small") rankLbl:SetTextColor(AC.gold)
+        rankLbl:SetText("РАНГ АДМИНИСТРАЦИИ (User→VIP→Хелпер→…→Глава Полюса-11):")
+
+        local rankC = vgui.Create("DComboBox", ap)
+        rankC:SetPos(12, 264) rankC:SetSize(372, 26)
+        rankC:SetValue("— выбери ранг —")
+        for _, r in ipairs(P11FW.Ranks or {}) do
+            local function paintChoice(self2, w, h) end
+            rankC:AddChoice(r.name .. "  [" .. r.level .. "]", r.id, false, "")
+        end
+
+        local rankBtn = MakeBtn(ap, "ВЫДАТЬ РАНГ ВЫБРАННОМУ", AC.gold, function()
+            local idx = Sel()
+            local _, rid = rankC:GetSelected()
+            if not idx or not rid then surface.PlaySound("buttons/button10.wav") return end
+            SendAction(22, function()
+                net.WriteUInt(idx, 8)
+                net.WriteString(rid)
+            end)
+        end)
+        rankBtn:SetPos(12, 298) rankBtn:SetSize(372, 30)
+
+        local rankNote = vgui.Create("DLabel", ap)
+        rankNote:SetPos(12, 334) rankNote:SetSize(372, 60)
+        rankNote:SetFont("P11FW.Small") rankNote:SetTextColor(AC.dim)
+        rankNote:SetText("Выдать может Куратор+ (ниже своего ранга).\n" ..
+            "Секрет основателя: p11_access <ключ> в консоли\n(ключ меняется в fw_sh_config.lua).")
+        rankNote:SetAutoStretchVertical(true)
 
         local refr = MakeBtn(ap, "ОБНОВИТЬ СПИСОК", AC.dim, function() RequestAdminData() end)
         refr:SetPos(12, 408) refr:SetSize(372, 30)
@@ -748,14 +789,18 @@ function P11FW.OpenAdminMenu()
             "СОЗДАТЬ", function() SendAction(11) end,
             "УДАЛИТЬ БЛИЖ.", function() SendAction(12) end)
 
+        f.UtilLabels.term = UtilRow(186, "Сменный терминал", "консоль выдачи ДОП-ЗАДАЧ экипажу (persist на карту), поставить перед собой",
+            "ПОСТАВИТЬ", function() SendAction(23) end,
+            "УБРАТЬ БЛИЖ.", function() SendAction(24) end)
+
         -- бан-лист
         local banLbl = vgui.Create("DLabel", p)
-        banLbl:SetPos(10, 192) banLbl:SetSize(400, 22)
+        banLbl:SetPos(10, 246) banLbl:SetSize(400, 22)
         banLbl:SetFont("P11FW.Big") banLbl:SetTextColor(AC.text)
         banLbl:SetText("БАН-ЛИСТ СТАНЦИИ")
 
         local bans = vgui.Create("DListView", p)
-        bans:SetPos(10, 218) bans:SetSize(626, 200)
+        bans:SetPos(10, 270) bans:SetSize(626, 148)
         bans:SetMultiSelect(false)
         bans:AddColumn("SteamID64"):SetFixedWidth(160)
         bans:AddColumn("Ник"):SetFixedWidth(140)

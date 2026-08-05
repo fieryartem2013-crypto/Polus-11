@@ -84,6 +84,10 @@ function POLUS11.SyncTasks(ply)
     for _, t in ipairs(ply.P11_Tasks or {}) do
         rows[#rows + 1] = { name = t.name, cur = math.floor(t.cur), max = t.max, done = t.done }
     end
+    -- v2.7: назначенные через терминал доп-задачи — отдельной секцией
+    for _, t in ipairs(ply.P11_XTasks or {}) do
+        rows[#rows + 1] = { name = t.name, cur = math.floor(t.cur), max = t.max, done = t.done, extra = true }
+    end
     net.Start("P11_TaskSync")
         net.WriteString(util.TableToJSON(rows))
     net.Send(ply)
@@ -91,19 +95,28 @@ end
 
 -- событие: ply сделал что-то (key), кол-во по умолчанию 1
 function POLUS11.TaskEvent(ply, key, add)
-    if not IsValid(ply) or not ply.P11_Tasks then return end
+    if not IsValid(ply) then return end
     add = add or 1
 
-    for _, t in ipairs(ply.P11_Tasks) do
-        if t.key == key and not t.done then
-            t.cur = math.min(t.max, t.cur + add)
-            if t.cur >= t.max then
-                t.done = true
-                ply:EmitSound("buttons/button9.wav", 60, 110)
-                POLUS11.Notify(ply, "Задача выполнена: " .. t.name)
+    -- сменные задачи должности
+    if ply.P11_Tasks then
+        for _, t in ipairs(ply.P11_Tasks) do
+            if t.key == key and not t.done then
+                t.cur = math.min(t.max, t.cur + add)
+                if t.cur >= t.max then
+                    t.done = true
+                    ply:EmitSound("buttons/button9.wav", 60, 110)
+                    POLUS11.Notify(ply, "Задача выполнена: " .. t.name)
+                end
             end
         end
     end
+
+    -- назначенные через терминал доп-задачи (v2.7)
+    if POLUS11.XTaskEvent then
+        POLUS11.XTaskEvent(ply, key, add)
+    end
+
     POLUS11.SyncTasks(ply)
     POLUS11.CheckAllTasks(ply)
 end
@@ -148,15 +161,31 @@ end)
 -- тики задач-таймеров (просто живи)
 timer.Create("P11_TaskTimer", 5, 0, function()
     for _, ply in ipairs(player.GetAll()) do
-        if ply:Alive() and ply.P11_Tasks then
+        if ply:Alive() then
             local changed = false
-            for _, t in ipairs(ply.P11_Tasks) do
-                if t.time and not t.done then
-                    t.cur = math.min(t.max, t.cur + 5)
-                    changed = true
-                    if t.cur >= t.max then
-                        t.done = true
-                        POLUS11.Notify(ply, "Задача выполнена: " .. t.name)
+            if ply.P11_Tasks then
+                for _, t in ipairs(ply.P11_Tasks) do
+                    if t.time and not t.done then
+                        t.cur = math.min(t.max, t.cur + 5)
+                        changed = true
+                        if t.cur >= t.max then
+                            t.done = true
+                            POLUS11.Notify(ply, "Задача выполнена: " .. t.name)
+                        end
+                    end
+                end
+            end
+            -- v2.7: доп-задачи-патрули от терминала тоже тикают временем
+            if ply.P11_XTasks then
+                for _, t in ipairs(ply.P11_XTasks) do
+                    if t.key == "alive" and not t.done then
+                        t.cur = math.min(t.max, t.cur + 5)
+                        changed = true
+                        if t.cur >= t.max then
+                            t.done = true
+                            ply:EmitSound("buttons/button9.wav", 60, 130)
+                            POLUS11.Notify(ply, "Доп-задача выполнена: " .. t.name)
+                        end
                     end
                 end
             end
@@ -165,6 +194,21 @@ timer.Create("P11_TaskTimer", 5, 0, function()
                 POLUS11.CheckAllTasks(ply)
             end
         end
+    end
+end)
+
+-- v2.7: закрепил призрачный проп — событие стройки (терминал: «закрепи 3 предмета»)
+hook.Add("P11.PropSolidified", "P11_TasksBuild", function(ent, owner)
+    if IsValid(owner) and owner:IsPlayer() then
+        POLUS11.TaskEvent(owner, "build_up")
+        POLUS11.TaskEvent(owner, "build_solidify")
+    end
+end)
+
+-- v2.7: удар кулаками — событие спарринга
+hook.Add("P11.FistHit", "P11_TasksFist", function(ply, ent)
+    if IsValid(ply) then
+        POLUS11.TaskEvent(ply, "fist_hit")
     end
 end)
 

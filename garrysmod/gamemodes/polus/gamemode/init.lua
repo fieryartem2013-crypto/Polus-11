@@ -12,6 +12,7 @@ local send = {
     "modules/p11_sh_config.lua",
     "modules/p11_sh_core.lua",
     "modules/fw_sh_factions.lua",
+    "modules/fw_sh_ranks.lua",
     "modules/fw_cl_f4.lua",
     "modules/fw_cl_punish.lua",
     "modules/fw_cl_admin.lua",
@@ -24,6 +25,8 @@ local send = {
     "modules/p11_cl_propmenu.lua",
     "modules/p11_cl_thinghud.lua",
     "modules/p11_cl_intro.lua",
+    "modules/p11_cl_terminal.lua",
+    "modules/p11_cl_help.lua",
 }
 for _, f in ipairs(send) do
     AddCSLuaFile(f)
@@ -56,6 +59,7 @@ local sv = {
     "modules/fw_sv_npc.lua",         -- NPC-кадровик
     "modules/fw_sv_setup.lua",       -- точки спавна/ареста
     "modules/fw_sv_punish.lua",      -- арест / рабство / бан
+    "modules/fw_sv_ranks.lua",       -- ранги + секретный ключ основателя
     "modules/p11_sv_infection.lua",  -- заражение Нечто
     "modules/p11_sv_power.lua",      -- генератор / топливо / блэкаут
     "modules/p11_sv_bloodtest.lua",  -- анализ крови
@@ -65,6 +69,7 @@ local sv = {
     "modules/p11_sv_persist.lua",    -- сохранение станции
     "modules/p11_sv_nechto.lua",     -- Нечто: классы, крик, формы
     "modules/p11_sv_build.lua",      -- строительство: призрачные пропы
+    "modules/p11_sv_terminal.lua",   -- сменный терминал + доп-задачи
 }
 
 local function Safe(f)
@@ -111,7 +116,7 @@ local function PrintStatus(ply)
     for cls in pairs({
         polus11_generator = true, polus11_fuelbarrel = true,
         polus11_labtable = true, polus11_vial = true, polus11_acidspit = true,
-        polus_fw_jobnpc = true,
+        polus_fw_jobnpc = true, polus11_terminal = true,
     }) do
         out[#out + 1] = "  энтити " .. cls .. ": " .. #ents.FindByClass(cls)
     end

@@ -17,6 +17,8 @@ local cl = {
     "modules/p11_cl_propmenu.lua", -- только вкладка «Пропы» не-админам
     "modules/p11_cl_thinghud.lua", -- HUD Нечто (форма/маскировка/кулдауны)
     "modules/p11_cl_intro.lua",    -- интро-заставка станции
+    "modules/p11_cl_terminal.lua", -- меню сменного терминала
+    "modules/p11_cl_help.lua",     -- F1-справка новичка
 }
 
 local loaded = 0
