@@ -21,6 +21,7 @@ local cl = {
     "modules/p11_cl_terminal.lua", -- меню сменного терминала
     "modules/p11_cl_help.lua",     -- F1-справка новичка
     "modules/p11_cl_alerts.lua",   -- приказ-баннер / метель / розыск / распорядок
+    "modules/p11_cl_view.lua",     -- F2 третье лицо / F3 курсор / голос-панели (v3.8)
     "modules/p11_cl_cmenu.lua",    -- C-меню: жесты / действия / меню моделей
 }
 

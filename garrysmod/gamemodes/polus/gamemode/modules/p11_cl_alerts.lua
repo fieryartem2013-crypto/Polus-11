@@ -30,8 +30,10 @@ net.Receive("P11_Order", function()
 end)
 
 hook.Add("HUDPaint", "P11.OrderBanner", function()
+    P11.OrderLive = nil -- v3.8: сигнал виджету задач «баннер идёт» → он сползает ниже
     if not ORDER or CurTime() > ORDER.till then return end
     if P11.IntroOpen then return end
+    P11.OrderLive = ORDER.till
 
     local left = ORDER.till - CurTime()
     local a = math.Clamp(left / 1.2, 0, 1)
@@ -164,14 +166,15 @@ hook.Add("HUDPaint", "P11.FrostVignette", function()
     if IsValid(POLUS11 and POLUS11.Scoreboard) then return end
 
     local w, h = ScrW(), ScrH()
-    local storm = GetGlobalBool("P11_Storm", false) and 2 or 1
+    -- v3.8: вечную изморозь по краям УБРАЛИ (закрывала края интерфейса).
+    -- Корка появляется только в БУРЮ или при реальном ПЕРЕОХЛАЖДЕНИИ.
+    local storm = GetGlobalBool("P11_Storm", false)
     local wm = me:GetNWFloat("P11_Warmth", 100)
-    local a = 9 * storm
-
-    -- v3.7: ПЕРЕОХЛАЖДЕНИЕ сжимает ледяную корку по краям вдвое-втрое
+    local a = storm and 16 or 0
     if wm < 65 then
-        a = a + (65 - wm) * 0.55
+        a = a + (65 - wm) * 0.55 -- чем холоднее, тем гуще лёд
     end
+    if a < 1 then return end
     a = math.floor(math.min(a, 120))
 
     -- углы и кромки подёрнуты инеем

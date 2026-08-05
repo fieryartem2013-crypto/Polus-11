@@ -23,6 +23,11 @@ hook.Add("HUDPaint", "P11_TasksHud", function()
     if not IsValid(me) then return end
     local y0 = 150
     if me:GetNWString("P11FW_Punish", "") ~= "" then y0 = 200 end
+    -- v3.8: идёт баннер приказа командира — список задач сползает ниже,
+    -- чтобы не наезжать друг на друга
+    if P11 and P11.OrderLive and CurTime() < P11.OrderLive and y0 < 234 then
+        y0 = 234
+    end
 
     local x = 16
     local widest = 0

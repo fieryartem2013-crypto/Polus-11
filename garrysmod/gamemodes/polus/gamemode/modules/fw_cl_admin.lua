@@ -651,19 +651,97 @@ function P11FW.OpenAdminMenu()
         maxW:SetPos(10, 76) maxW:SetSize(80, 26)
         maxW:SetMinMax(0, 32) maxW:SetValue(0)
 
-        Lbl("Цвет (R/G/B):", 100, 58)
-        local colors = {}
-        for i, cname in ipairs({ "R", "G", "B" }) do
-            local s = vgui.Create("DNumSlider", form)
-            s:SetPos(100 + (i - 1) * 120, 66) s:SetSize(110, 22)
-            s:SetText(cname) s:SetMin(0) s:SetMax(255) s:SetDecimals(0)
-            s:SetValue(i == 1 and 210 or i == 2 and 170 or 120)
-            colors[i] = s
+        Lbl("Цвет должности:", 190, 58)
+
+        -- v3.8: вместо трёх ползунков R/G/B — УДОБНАЯ ПАЛИТРА:
+        -- быстрые квадратики станционных цветов + точный подбор
+        -- через DColorMixer (клик по превью). Всё в одном месте и
+        -- больше не залезает на поле «Название должности».
+        local jobCol = Color(210, 170, 120)
+
+        local colPrev = vgui.Create("DButton", form)
+        colPrev:SetPos(190, 76) colPrev:SetSize(52, 30)
+        colPrev:SetText("")
+        colPrev:SetTooltip("клик — точная палитра (цветовое колесо и числа RGB)")
+        colPrev.Paint = function(s, w, h)
+            draw.RoundedBox(5, 0, 0, w, h, jobCol)
+            surface.SetDrawColor(255, 255, 255, 110)
+            surface.DrawOutlinedRect(0, 0, w, h, 1)
+            if s:IsHovered() then
+                draw.RoundedBox(5, 0, 0, w, h, Color(255, 255, 255, 20))
+            end
+        end
+        colPrev.DoClick = function()
+            surface.PlaySound("buttons/button15.wav")
+            if IsValid(P11FW.JobColorMixer) then
+                P11FW.JobColorMixer:Remove()
+                P11FW.JobColorMixer = nil
+                return
+            end
+            local mx = vgui.Create("DFrame")
+            P11FW.JobColorMixer = mx
+            mx:SetSize(300, 324)
+            local fx, fy = 60, 110
+            if IsValid(P11FW.AdminFrame) then fx, fy = P11FW.AdminFrame:GetPos() end
+            mx:SetPos(fx + 420, fy + 84)
+            mx:SetTitle("")
+            mx:MakePopup()
+            mx:SetDeleteOnClose(true)
+            mx.btnMaxim:SetVisible(false) mx.btnMinim:SetVisible(false)
+            mx.Paint = function(s, w, h)
+                Derma_DrawBackgroundBlur(s, s.T0 or SysTime())
+                draw.RoundedBox(8, 0, 0, w, h, Color(16, 18, 24, 248))
+                draw.RoundedBoxEx(8, 0, 0, w, 30, Color(26, 30, 40), true, true, false, false)
+                draw.SimpleText("ПАЛИТРА ЦВЕТА ДОЛЖНОСТИ", "P11FW.Small", 10, 15,
+                    AC.gold, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+            end
+            mx.T0 = SysTime()
+            mx.OnRemove = function() P11FW.JobColorMixer = nil end
+            local mixer = vgui.Create("DColorMixer", mx)
+            mixer:Dock(FILL)
+            mixer:DockMargin(8, 36, 8, 8)
+            mixer:SetPalette(true)
+            mixer:SetAlphaBar(false)
+            mixer:SetWangs(true)
+            mixer:SetColor(jobCol)
+            mixer.ValueChanged = function(s, col)
+                jobCol = Color(col.r, col.g, col.b)
+            end
+            -- самоликвидация, когда админ-окно закрыли
+            mx.Think = function()
+                if not IsValid(P11FW.AdminFrame) and IsValid(mx) then mx:Remove() end
+            end
         end
 
-        Lbl("Модели (по одной через запятую):", 10, 108)
+        local PRESETS = {
+            Color(120, 190, 235),  Color(150, 230, 190),  Color(100, 210, 130),  Color(90, 150, 110),
+            Color(255, 205, 110),  Color(230, 160, 90),   Color(185, 160, 110),  Color(140, 220, 240),
+            Color(235, 120, 110),  Color(220, 190, 90),   Color(130, 170, 230),  Color(200, 120, 235),
+            Color(220, 220, 230),  Color(160, 170, 180),  Color(120, 120, 145),  Color(235, 90, 85),
+        }
+        for i, pc in ipairs(PRESETS) do
+            local pcx, prow = (i - 1) % 8, math.floor((i - 1) / 8)
+            local sw = vgui.Create("DButton", form)
+            sw:SetPos(190 + pcx * 30, 112 + prow * 30)
+            sw:SetSize(26, 26)
+            sw:SetText("")
+            sw:SetTooltip(string.format("RGB %d/%d/%d", pc.r, pc.g, pc.b))
+            sw.Paint = function(s, w, h)
+                draw.RoundedBox(4, 0, 0, w, h, pc)
+                local sel = pc.r == jobCol.r and pc.g == jobCol.g and pc.b == jobCol.b
+                surface.SetDrawColor(255, 255, 255, sel and 235 or (s:IsHovered() and 130 or 50))
+                surface.DrawOutlinedRect(0, 0, w, h, sel and 2 or 1)
+            end
+            sw.DoClick = function()
+                jobCol = Color(pc.r, pc.g, pc.b)
+                surface.PlaySound("buttons/button9.wav")
+                if IsValid(P11FW.JobColorMixer) then P11FW.JobColorMixer:Remove() end
+            end
+        end
+
+        Lbl("Модели (по одной через запятую):", 10, 174)
         local modelsE = vgui.Create("DTextEntry", form)
-        modelsE:SetPos(10, 126) modelsE:SetSize(360, 52)
+        modelsE:SetPos(10, 192) modelsE:SetSize(360, 46)
         modelsE:SetMultiline(true)
         modelsE:SetPlaceholderText("models/player/kleiner.mdl, models/player/eli.mdl")
 
@@ -672,11 +750,11 @@ function P11FW.OpenAdminMenu()
             local cur = string.Trim(modelsE:GetValue())
             modelsE:SetValue(cur == "" and m or (cur .. ", " .. m))
         end)
-        addMyModel:SetPos(376, 126) addMyModel:SetSize(80, 24)
+        addMyModel:SetPos(376, 192) addMyModel:SetSize(80, 24)
 
-        Lbl("Оружие (классы через запятую):", 10, 186)
+        Lbl("Оружие (классы через запятую):", 10, 248)
         local wepsE = vgui.Create("DTextEntry", form)
-        wepsE:SetPos(10, 204) wepsE:SetSize(360, 52)
+        wepsE:SetPos(10, 266) wepsE:SetSize(360, 46)
         wepsE:SetMultiline(true)
         wepsE:SetPlaceholderText("weapon_polus11_radio, weapon_pistol")
 
@@ -687,17 +765,17 @@ function P11FW.OpenAdminMenu()
             local cur = string.Trim(wepsE:GetValue())
             wepsE:SetValue(cur == "" and cls or (cur .. ", " .. cls))
         end)
-        addMyWep:SetPos(376, 204) addMyWep:SetSize(80, 24)
+        addMyWep:SetPos(376, 266) addMyWep:SetSize(80, 24)
 
-        Lbl("Описание (видно в F4):", 10, 262)
+        Lbl("Описание (видно в F4):", 10, 322)
         local descE = vgui.Create("DTextEntry", form)
-        descE:SetPos(10, 280) descE:SetSize(446, 74)
+        descE:SetPos(10, 340) descE:SetSize(446, 46)
         descE:SetMultiline(true)
         descE:SetPlaceholderText("Что делает эта должность на станции...")
 
         -- v1.5: допуск к сменному терминалу
         local termC = vgui.Create("DCheckBoxLabel", form)
-        termC:SetPos(10, 358) termC:SetSize(440, 18)
+        termC:SetPos(10, 390) termC:SetSize(440, 16)
         termC:SetFont("P11FW.Small") termC:SetTextColor(Color(120, 210, 240))
         termC:SetText("Допуск к СМЕННОМУ ТЕРМИНАЛУ (выдача доп-задач экипажу)")
         termC:SetChecked(false)
@@ -705,7 +783,7 @@ function P11FW.OpenAdminMenu()
         -- выбранная строка списка → заполнить форму
         local editingId = nil
         local status = vgui.Create("DLabel", form)
-        status:SetPos(10, 378) status:SetSize(446, 18)
+        status:SetPos(10, 406) status:SetSize(446, 14)
         status:SetFont("P11FW.Small") status:SetTextColor(AC.gold)
         status:SetText("Новая должность (или выбери КАСТОМ из списка для правки)")
 
@@ -717,7 +795,7 @@ function P11FW.OpenAdminMenu()
                 desc     = descE:GetValue(),
                 max      = maxW:GetValue(),
                 terminal = termC:GetChecked(),
-                color    = { r = colors[1]:GetValue(), g = colors[2]:GetValue(), b = colors[3]:GetValue() },
+                color    = { r = jobCol.r, g = jobCol.g, b = jobCol.b },
                 models   = ParseListEntry(modelsE:GetValue()),
                 weapons  = ParseListEntry(wepsE:GetValue()),
             }
@@ -736,7 +814,7 @@ function P11FW.OpenAdminMenu()
                 if c.id == job.category then catC:SetValue(c.name) end
             end
             if job.color then
-                colors[1]:SetValue(job.color.r) colors[2]:SetValue(job.color.g) colors[3]:SetValue(job.color.b)
+                jobCol = Color(job.color.r, job.color.g, job.color.b)
             end
             termC:SetChecked(job.terminal == true)
             editingId = job.custom and jobId or nil
@@ -749,7 +827,7 @@ function P11FW.OpenAdminMenu()
             SendJobEdit(1, rec)
             status:SetText("Отправлено на сервер...")
         end)
-        btnCreate:SetPos(10, 402) btnCreate:SetSize(146, 40)
+        btnCreate:SetPos(10, 424) btnCreate:SetSize(146, 24)
 
         local btnUpdate = MakeBtn(form, "СОХРАНИТЬ ПРАВКУ", AC.accent, function()
             if not editingId then status:SetText("⚠ это встроенная или не выбрана кастомная!") surface.PlaySound("buttons/button10.wav") return end
@@ -757,14 +835,14 @@ function P11FW.OpenAdminMenu()
             rec.id = editingId
             SendJobEdit(2, rec)
         end)
-        btnUpdate:SetPos(162, 402) btnUpdate:SetSize(146, 40)
+        btnUpdate:SetPos(162, 424) btnUpdate:SetSize(146, 24)
 
         local btnDelete = MakeBtn(form, "УДАЛИТЬ", AC.bad, function()
             if not editingId then status:SetText("⚠ удалить можно только кастомную!") surface.PlaySound("buttons/button10.wav") return end
             SendJobEdit(3, { id = editingId })
             editingId = nil
         end)
-        btnDelete:SetPos(314, 402) btnDelete:SetSize(142, 40)
+        btnDelete:SetPos(314, 424) btnDelete:SetSize(142, 24)
 
         -- авто-обновление списка при синке с сервера
         f.JobsTabStatus = status
@@ -779,16 +857,29 @@ function P11FW.OpenAdminMenu()
         local lv = vgui.Create("DListView", p)
         lv:SetPos(10, 10) lv:SetSize(430, 450)
         lv:SetMultiSelect(false)
-        lv:AddColumn("Ник"):SetFixedWidth(180)
-        lv:AddColumn("Должность"):SetFixedWidth(160)
+        lv:AddColumn("Ник"):SetFixedWidth(150)
+        lv:AddColumn("Должность"):SetFixedWidth(110)
+        lv:AddColumn("Фракция"):SetFixedWidth(95) -- v3.8: сразу видно, чья профа и толпа
         lv:AddColumn("Статус")
+
+        local function FactionNameOf(job)
+            local cid = job and (job.faction or job.category) or nil
+            for _, c in ipairs(P11FW.CategoryList or {}) do
+                if c.id == cid then return c.name, c.color end
+            end
+            return "—", nil
+        end
 
         function f:RefreshActs()
             lv:Clear()
             for _, pl in ipairs((self.AdminData and self.AdminData.players) or {}) do
                 local job = P11FW.Jobs[pl.jobId]
+                local facName, facColor = FactionNameOf(job)
                 local status = pl.pun == "arrest" and "АРЕСТ" or pl.pun == "slavery" and "РАБСТВО" or pl.pun == "ban" and "БАН" or "—"
-                local line = lv:AddLine(pl.nick, job and job.name or pl.jobId, status)
+                local line = lv:AddLine(pl.nick, job and job.name or pl.jobId, facName, status)
+                -- цветные столбики для читаемости (v3.8)
+                if facColor then line.Columns[3]:SetTextColor(facColor) end
+                if status ~= "—" then line.Columns[4]:SetTextColor(AC.bad) end
                 line.PlayerIdx = pl.idx
             end
         end
@@ -936,35 +1027,104 @@ function P11FW.OpenAdminMenu()
         orderW:SetPos(300, 26) orderW:SetSize(60, 26)
         orderW:SetMinMax(1, 999) orderW:SetValue(50)
 
-        Lbl("Цвет (R/G/B):", 10, 58)
-        local colors = {}
-        for i, cname in ipairs({ "R", "G", "B" }) do
-            local s = vgui.Create("DNumSlider", form)
-            s:SetPos(10 + (i - 1) * 146, 66) s:SetSize(138, 22)
-            s:SetText(cname) s:SetMin(0) s:SetMax(255) s:SetDecimals(0)
-            s:SetValue(i == 1 and 200 or i == 2 and 160 or 110)
-            colors[i] = s
+        Lbl("Цвет фракции:", 10, 58)
+
+        -- v3.8: палитра как у должностей — быстрые квадратики +
+        -- точный подбор через DColorMixer (клик по квадрату справа)
+        local facCol = Color(200, 160, 110)
+
+        local fPrevBtn = vgui.Create("DButton", form)
+        fPrevBtn:SetPos(132, 54) fPrevBtn:SetSize(44, 22)
+        fPrevBtn:SetText("")
+        fPrevBtn:SetTooltip("клик — точная палитра (цветовое колесо и RGB)")
+        fPrevBtn.Paint = function(s, w, h)
+            draw.RoundedBox(4, 0, 0, w, h, facCol)
+            surface.SetDrawColor(255, 255, 255, 110)
+            surface.DrawOutlinedRect(0, 0, w, h, 1)
+        end
+        fPrevBtn.DoClick = function()
+            surface.PlaySound("buttons/button15.wav")
+            if IsValid(P11FW.FacColorMixer) then
+                P11FW.FacColorMixer:Remove()
+                P11FW.FacColorMixer = nil
+                return
+            end
+            local mx = vgui.Create("DFrame")
+            P11FW.FacColorMixer = mx
+            mx:SetSize(300, 324)
+            local fx, fy = 60, 110
+            if IsValid(P11FW.AdminFrame) then fx, fy = P11FW.AdminFrame:GetPos() end
+            mx:SetPos(fx + 420, fy + 84)
+            mx:SetTitle("")
+            mx:MakePopup()
+            mx:SetDeleteOnClose(true)
+            mx.btnMaxim:SetVisible(false) mx.btnMinim:SetVisible(false)
+            mx.T0 = SysTime()
+            mx.Paint = function(s, w, h)
+                Derma_DrawBackgroundBlur(s, s.T0 or SysTime())
+                draw.RoundedBox(8, 0, 0, w, h, Color(16, 18, 24, 248))
+                draw.RoundedBoxEx(8, 0, 0, w, 30, Color(26, 30, 40), true, true, false, false)
+                draw.SimpleText("ПАЛИТРА ЦВЕТА ФРАКЦИИ", "P11FW.Small", 10, 15,
+                    AC.gold, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+            end
+            mx.OnRemove = function() P11FW.FacColorMixer = nil end
+            local mixer = vgui.Create("DColorMixer", mx)
+            mixer:Dock(FILL)
+            mixer:DockMargin(8, 36, 8, 8)
+            mixer:SetPalette(true)
+            mixer:SetAlphaBar(false)
+            mixer:SetWangs(true)
+            mixer:SetColor(facCol)
+            mixer.ValueChanged = function(s, col)
+                facCol = Color(col.r, col.g, col.b)
+            end
+            mx.Think = function()
+                if not IsValid(P11FW.AdminFrame) and IsValid(mx) then mx:Remove() end
+            end
+        end
+
+        local F_PRESETS = {
+            Color(120, 190, 235),  Color(150, 230, 190),  Color(100, 210, 130),  Color(90, 150, 110),
+            Color(255, 205, 110),  Color(230, 160, 90),   Color(185, 160, 110),  Color(140, 220, 240),
+            Color(235, 120, 110),  Color(220, 190, 90),   Color(130, 170, 230),  Color(200, 120, 235),
+            Color(220, 220, 230),  Color(160, 170, 180),  Color(120, 120, 145),  Color(235, 90, 85),
+        }
+        for i, pc in ipairs(F_PRESETS) do
+            local pcx, prow = (i - 1) % 8, math.floor((i - 1) / 8)
+            local sw = vgui.Create("DButton", form)
+            sw:SetPos(10 + pcx * 30, 80 + prow * 30)
+            sw:SetSize(26, 26)
+            sw:SetText("")
+            sw:SetTooltip(string.format("RGB %d/%d/%d", pc.r, pc.g, pc.b))
+            sw.Paint = function(s, w, h)
+                draw.RoundedBox(4, 0, 0, w, h, pc)
+                local sel = pc.r == facCol.r and pc.g == facCol.g and pc.b == facCol.b
+                surface.SetDrawColor(255, 255, 255, sel and 235 or (s:IsHovered() and 130 or 50))
+                surface.DrawOutlinedRect(0, 0, w, h, sel and 2 or 1)
+            end
+            sw.DoClick = function()
+                facCol = Color(pc.r, pc.g, pc.b)
+                surface.PlaySound("buttons/button9.wav")
+                if IsValid(P11FW.FacColorMixer) then P11FW.FacColorMixer:Remove() end
+            end
         end
 
         -- v1.7: живой превью-чип (цвет + id) — как будет выглядеть секция
         local prev = vgui.Create("DPanel", form)
-        prev:SetPos(368, 8) prev:SetSize(88, 44)
+        prev:SetPos(368, 58) prev:SetSize(88, 44)
         prev.SelText = "новая"
         prev.Paint = function(s, w, h)
-            local r = math.floor(colors[1]:GetValue())
-            local g = math.floor(colors[2]:GetValue())
-            local b = math.floor(colors[3]:GetValue())
-            draw.RoundedBox(6, 0, 0, w, h, Color(r, g, b, 42))
-            draw.RoundedBoxEx(6, 0, 0, 3, h, Color(r, g, b), true, false, true, false)
+            draw.RoundedBox(6, 0, 0, w, h, Color(facCol.r, facCol.g, facCol.b, 42))
+            draw.RoundedBoxEx(6, 0, 0, 3, h, Color(facCol.r, facCol.g, facCol.b), true, false, true, false)
             draw.SimpleText(s.SelText, "P11FW.Small", w / 2 + 1, h / 2 - 8,
-                Color(r, g, b), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+                Color(facCol.r, facCol.g, facCol.b), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
             draw.SimpleText("превью", "P11FW.Small", w / 2 + 1, h / 2 + 9,
-                Color(r, g, b, 150), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+                Color(facCol.r, facCol.g, facCol.b, 150), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
         end
 
-        Lbl("Описание (для админов):", 10, 108)
+        Lbl("Описание (для админов):", 10, 148)
         local descE = vgui.Create("DTextEntry", form)
-        descE:SetPos(10, 126) descE:SetSize(426, 70)
+        descE:SetPos(10, 166) descE:SetSize(426, 60)
         descE:SetMultiline(true)
         descE:SetPlaceholderText("Кто входит во фракцию и чем занимается...")
 
@@ -973,9 +1133,7 @@ function P11FW.OpenAdminMenu()
             nameE:SetValue(line.CatData.name or "")
             descE:SetValue(line.CatData.desc or "")
             orderW:SetValue(line.CatData.order or 50)
-            colors[1]:SetValue(line.CatData.color.r)
-            colors[2]:SetValue(line.CatData.color.g)
-            colors[3]:SetValue(line.CatData.color.b)
+            facCol = Color(line.CatData.color.r, line.CatData.color.g, line.CatData.color.b)
             prev.SelText = line.CatData.custom and line.CatId or "встроенная"
         end
 
@@ -984,7 +1142,7 @@ function P11FW.OpenAdminMenu()
             nameE:SetValue("") descE:SetValue("") orderW:SetValue(50)
             prev.SelText = "новая"
         end)
-        newB:SetPos(10, 210) newB:SetSize(206, 30)
+        newB:SetPos(10, 238) newB:SetSize(206, 30)
 
         local function Collect()
             return {
@@ -992,23 +1150,23 @@ function P11FW.OpenAdminMenu()
                 name  = string.Trim(nameE:GetValue()),
                 desc  = descE:GetValue(),
                 order = orderW:GetValue(),
-                color = { r = colors[1]:GetValue(), g = colors[2]:GetValue(), b = colors[3]:GetValue() },
+                color = { r = facCol.r, g = facCol.g, b = facCol.b },
             }
         end
 
         local saveB = MakeBtn(form, "СОЗДАТЬ / СОХРАНИТЬ", AC.ok, function()
             SendAction(20, function() net.WriteString(util.TableToJSON(Collect()) or "{}") end)
         end)
-        saveB:SetPos(226, 210) saveB:SetSize(210, 30)
+        saveB:SetPos(226, 238) saveB:SetSize(210, 30)
 
         local delB = MakeBtn(form, "УДАЛИТЬ (только кастом)", AC.bad, function()
             if not f.SelFactionId then surface.PlaySound("buttons/button10.wav") return end
             SendAction(21, function() net.WriteString(f.SelFactionId) end)
         end)
-        delB:SetPos(10, 250) delB:SetSize(426, 30)
+        delB:SetPos(10, 276) delB:SetSize(426, 30)
 
         local note = vgui.Create("DLabel", form)
-        note:SetPos(10, 292) note:SetSize(426, 120)
+        note:SetPos(10, 318) note:SetSize(426, 118)
         note:SetFont("P11FW.Small") note:SetTextColor(AC.dim)
         note:SetAutoStretchVertical(true)
         note:SetText("Фракция — это группа должностей.\n" ..
@@ -1016,7 +1174,7 @@ function P11FW.OpenAdminMenu()
             "(поле «Фракция»), в F4 и в табе вопросов (TAB)\n" ..
             "как цветная секция. Сохраняется навсегда:")
         local note2 = vgui.Create("DLabel", form)
-        note2:SetPos(10, 372) note2:SetSize(426, 20)
+        note2:SetPos(10, 400) note2:SetSize(426, 20)
         note2:SetFont("P11FW.Small") note2:SetTextColor(AC.gold)
         note2:SetText("data/polus_framework/factions.json")
     end

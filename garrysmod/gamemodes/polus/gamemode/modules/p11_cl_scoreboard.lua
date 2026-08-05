@@ -268,7 +268,7 @@ local function OpenSB()
         draw.RoundedBoxEx(10, 0, hh - 26, ww, 26, Color(26, 29, 37, 255), false, false, true, true)
         local meNick = IsValid(me) and me:Nick() or "?"
         draw.SimpleText(meNick .. foot, "P11.SB.Tiny", 12, hh - 13, Color(140, 150, 168), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-        draw.SimpleText("F1 — памятка · C (удерж.) — действия · F4 — должности", "P11.SB.Tiny",
+        draw.SimpleText("F1 — памятка · F2 — вид · F3 — курсор · C (удерж.) — действия · F4 — должности", "P11.SB.Tiny",
             ww - 12, hh - 13, Color(105, 112, 128), TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
     end
 

@@ -87,7 +87,9 @@ if CLIENT then
         local name = (POLUS11.RadioChannels and POLUS11.RadioChannels[ch]) or ch
 
         local w, h = ScrW(), ScrH()
-        draw.RoundedBox(6, 14, h - 110, 250, 36, Color(0, 0, 0, 150))
+        -- v3.8: сдвинуто ВПРАВО от панели состояния (та занимает x 8..296)
+        -- и чуть ниже — больше не перекрывает чужой HUD
+        draw.RoundedBox(6, 306, h - 110, 250, 36, Color(8, 12, 18, 170))
 
         local col = Color(120, 220, 120)
         local prefix = "РАЦИЯ: "
@@ -96,6 +98,7 @@ if CLIENT then
             prefix = "БУРЯ! "
         end
 
-        draw.SimpleText(prefix .. name, "DermaDefaultBold", 24, h - 100, col, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+        draw.SimpleText("📻", "DermaDefaultBold", 318, h - 100, Color(170, 190, 210), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+        draw.SimpleText(prefix .. name, "DermaDefaultBold", 340, h - 100, col, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
     end
 end

@@ -46,19 +46,31 @@ hook.Add("HUDPaint", "P11_Nametags", function()
 
                         draw.SimpleTextOutlined(name, "P11.HUD.Mid", pos.x, pos.y, col, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 2, Color(0, 0, 0, a * 0.8))
 
-                        -- должность из ПОЛЮС FRAMEWORK (если установлен)
+                        -- должность + ФРАКЦИЯ (v3.8) из ПОЛЮС FRAMEWORK
+                        local bottomY = 6 -- где кончается табличка (для динамика ниже)
                         if P11FW and P11FW.GetJobName then
                             local jn = P11FW.GetJobName(ply)
                             if jn ~= "" then
+                                bottomY = 30
                                 local job = P11FW.GetJob(ply)
                                 local jc = (job and job.color) or Color(150, 190, 235)
-                                draw.SimpleTextOutlined(jn, "P11.HUD.Text", pos.x, pos.y + 30, Color(jc.r, jc.g, jc.b, a), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 2, Color(0, 0, 0, a * 0.8))
+                                -- «чья эта профа»: фракция бледным префиксом к строке
+                                local facName = nil
+                                if job and P11FW.CategoryList then
+                                    local cid = job.faction or job.category
+                                    for _, c in ipairs(P11FW.CategoryList) do
+                                        if c.id == cid then facName = c.name break end
+                                    end
+                                end
+                                local line = facName and (facName .. " · " .. jn) or jn
+                                draw.SimpleTextOutlined(line, "P11.HUD.Text", pos.x, pos.y + 30, Color(jc.r, jc.g, jc.b, a), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 2, Color(0, 0, 0, a * 0.8))
                             end
                         end
 
                         -- v2.9: ранг администрации под должностью (Хелпер+)
                         -- v3.4: высокие ранги ПЕРЕЛИВАЮТСЯ (RankFxColor)
                         if P11FW and P11FW.GetRankLevel and P11FW.GetRankLevel(ply) >= 2 then
+                            bottomY = 56
                             local rc = P11FW.RankFxColor and P11FW.RankFxColor(ply) or P11FW.GetRankColor(ply)
                             if P11FW.RankHasFx and P11FW.RankHasFx(ply) then
                                 -- мягкое свечение за текстом для «живых» рангов
@@ -70,6 +82,15 @@ hook.Add("HUDPaint", "P11_Nametags", function()
                             draw.SimpleTextOutlined("◆ " .. P11FW.GetRankName(ply), "P11.HUD.Text",
                                 pos.x, pos.y + 56, Color(rc.r, rc.g, rc.b, a),
                                 TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 2, Color(0, 0, 0, a * 0.8))
+                        end
+
+                        -- v3.8: динамик говорящего — ПОД табличкой (чуть ниже),
+                        -- чтобы не залезать на имя и должность
+                        if ply.IsSpeaking and ply:IsSpeaking() then
+                            local pulse = 0.55 + math.sin(CurTime() * 10) * 0.45
+                            draw.SimpleTextOutlined("🔊", "P11.HUD.Text", pos.x, pos.y + bottomY + 24,
+                                Color(130, 220, 250, a * pulse), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER,
+                                2, Color(0, 0, 0, a * 0.7))
                         end
                     end
                 end

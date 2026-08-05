@@ -29,6 +29,7 @@ local send = {
     "modules/p11_cl_terminal.lua",
     "modules/p11_cl_help.lua",
     "modules/p11_cl_alerts.lua",
+    "modules/p11_cl_view.lua",
     "modules/p11_cl_cmenu.lua",
 }
 for _, f in ipairs(send) do

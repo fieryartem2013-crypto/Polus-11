@@ -26,6 +26,27 @@ local C = {
     cyan    = Color(110, 205, 240),
 }
 
+-- v3.8: плавное появление окна — выезд снизу + проявление
+-- + затемнение всего экрана под меню (как у С-меню)
+local TW_LEN = 0.22
+local function TweenK(s)
+    local k = math.Clamp((SysTime() - (s.AnimT or 0)) / TW_LEN, 0, 1)
+    return 1 - (1 - k) ^ 3
+end
+
+local function AnimateIn(s)
+    s.AnimT = SysTime()
+    local tx, ty = s:GetPos()
+    s:SetPos(tx, ty + 22)
+    s.Think = function() s:SetPos(tx, ty + 22 * (1 - TweenK(s))) end
+end
+
+local function DrawDim(s, strength)
+    local x, y = s:GetPos()
+    surface.SetDrawColor(5, 9, 13, (strength or 150) * TweenK(s))
+    surface.DrawRect(-x, -y, ScrW(), ScrH())
+end
+
 -- ============================================================
 --  ГЛАВНОЕ МЕНЮ
 -- ============================================================
@@ -44,6 +65,7 @@ function P11FW.OpenJobMenu()
     f:SetDraggable(true)
     f:MakePopup()
     f:SetDeleteOnClose(true)
+    AnimateIn(f) -- v3.8
     f.btnClose:SetVisible(false)
     f.btnMaxim:SetVisible(false)
     f.btnMinim:SetVisible(false)
@@ -52,6 +74,8 @@ function P11FW.OpenJobMenu()
     f.ModelIdx = 1
 
     function f:Paint(w, h)
+        DrawDim(f, 155) -- v3.8: затемнение экрана под картотекой
+        surface.SetAlphaMultiplier(0.22 + 0.78 * TweenK(f))
         Derma_DrawBackgroundBlur(f, f.P11FW_Start or 0)
         draw.RoundedBox(10, 0, 0, w, h, C.bg)
 
@@ -86,6 +110,7 @@ function P11FW.OpenJobMenu()
             w - 46, 31, jc, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
 
         draw.SimpleText("F4 / ESC — закрыть", "P11FW.Small", w - 14, h - 12, C.dim, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
+        surface.SetAlphaMultiplier(1)
     end
 
     function f:OnKeyCodePressed(key)

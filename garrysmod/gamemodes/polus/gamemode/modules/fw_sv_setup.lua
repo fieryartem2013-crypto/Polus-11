@@ -361,3 +361,24 @@ hook.Add("PlayerSay", "P11FW.AdminChat", function(ply, text)
     net.Send(ply)
     return ""
 end)
+
+-- ============================================================
+--  v3.8: ВОРКШОП-ПАКИ МОДЕЛЕЙ (починка розовых ERROR у игроков)
+--  Впиши ID паков в P11FW.Config.WorkshopAddons (fw_sh_config.lua)
+--  — сервер сам разошлёт их клиентам (resource.AddWorkshop).
+--  ID — это цифры в конце ссылки пака: steamcommunity.com/sharedfiles/filedetails/?id=XXXXXXX
+-- ============================================================
+hook.Add("Initialize", "P11FW.WorkshopPacks", function()
+    local packs = P11FW.Config and P11FW.Config.WorkshopAddons or {}
+    local n = 0
+    for _, id in ipairs(packs) do
+        local sid = tostring(id)
+        if sid ~= "" and sid ~= "0" then
+            resource.AddWorkshop(sid)
+            n = n + 1
+        end
+    end
+    if n > 0 then
+        print("[P11FW] Воркшоп-паков разослано клиентам: " .. n)
+    end
+end)
