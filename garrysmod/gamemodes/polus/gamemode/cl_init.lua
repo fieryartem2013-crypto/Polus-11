@@ -15,6 +15,8 @@ local cl = {
     "modules/p11_cl_tasks.lua",    -- виджет задач
     "modules/p11_cl_panic.lua",    -- эффекты паники
     "modules/p11_cl_propmenu.lua", -- только вкладка «Пропы» не-админам
+    "modules/p11_cl_thinghud.lua", -- HUD Нечто (форма/маскировка/кулдауны)
+    "modules/p11_cl_intro.lua",    -- интро-заставка станции
 }
 
 local loaded = 0

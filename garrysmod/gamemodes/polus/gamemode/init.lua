@@ -11,6 +11,7 @@ local send = {
     "modules/fw_sh_jobs.lua",
     "modules/p11_sh_config.lua",
     "modules/p11_sh_core.lua",
+    "modules/fw_sh_factions.lua",
     "modules/fw_cl_f4.lua",
     "modules/fw_cl_punish.lua",
     "modules/fw_cl_admin.lua",
@@ -21,6 +22,8 @@ local send = {
     "modules/p11_cl_tasks.lua",
     "modules/p11_cl_panic.lua",
     "modules/p11_cl_propmenu.lua",
+    "modules/p11_cl_thinghud.lua",
+    "modules/p11_cl_intro.lua",
 }
 for _, f in ipairs(send) do
     AddCSLuaFile(f)
@@ -28,10 +31,27 @@ end
 
 include("shared.lua")
 
+util.AddNetworkString("P11_IntroShow")
+
+-- интро при ПЕРВОМ входе за сессию
+local introShown = {}
+hook.Add("PlayerInitialSpawn", "P11_IntroTrigger", function(ply)
+    local sid = ply:SteamID()
+    if introShown[sid] then return end
+    introShown[sid] = true
+    timer.Simple(4, function()
+        if IsValid(ply) then
+            net.Start("P11_IntroShow")
+            net.Send(ply)
+        end
+    end)
+end)
+
 -- ============ СЕРВЕРНЫЕ МОДУЛИ ============
 
 local sv = {
     "modules/fw_sv_jobs.lua",        -- логика профессий
+    "modules/fw_sv_factions.lua",    -- фракции из админки (data/*.json)
     "modules/fw_sv_customjobs.lua",  -- профессии из админки (data/*.json)
     "modules/fw_sv_npc.lua",         -- NPC-кадровик
     "modules/fw_sv_setup.lua",       -- точки спавна/ареста

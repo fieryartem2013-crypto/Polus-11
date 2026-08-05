@@ -177,6 +177,65 @@ net.Receive("P11FW_AdminAction", function(len, ply)
         local sid = net.ReadString()
         P11FW.Unban(sid)
         P11FW.Notify(ply, "Бан снят: " .. sid)
+
+    -- ============ БЫСТРЫЕ ДЕЙСТВИЯ С ИГРОКОМ ============
+
+    elseif act == 14 then -- полное лечение
+        local target = Entity(net.ReadUInt(8))
+        if IsValid(target) and target:IsPlayer() and target:Alive() then
+            target:SetHealth(target:GetMaxHealth())
+            P11FW.Notify(ply, "Вылечен: " .. target:Nick())
+        end
+
+    elseif act == 15 then -- возродить
+        local target = Entity(net.ReadUInt(8))
+        if IsValid(target) and target:IsPlayer() and not target:Alive() then
+            target:Spawn()
+            P11FW.Notify(ply, "Возрождён: " .. target:Nick())
+        end
+
+    elseif act == 16 then -- притащить к себе
+        local target = Entity(net.ReadUInt(8))
+        if IsValid(target) and target:IsPlayer() then
+            target:SetPos(ply:GetPos() + ply:GetAimVector() * 60 + Vector(0, 0, 8))
+            P11FW.Notify(ply, "Притащили: " .. target:Nick())
+        end
+
+    elseif act == 17 then -- телепорт к игроку
+        local target = Entity(net.ReadUInt(8))
+        if IsValid(target) and target:IsPlayer() then
+            ply:SetPos(target:GetPos() + target:GetAimVector() * -60 + Vector(0, 0, 8))
+            P11FW.Notify(ply, "Телепорт к " .. target:Nick())
+        end
+
+    elseif act == 18 then -- заморозка-переключение
+        local target = Entity(net.ReadUInt(8))
+        if IsValid(target) and target:IsPlayer() then
+            target.P11FW_Frozen = not target.P11FW_Frozen
+            target:Freeze(target.P11FW_Frozen)
+            P11FW.Notify(ply, (target.P11FW_Frozen and "Заморожен: " or "Разморожен: ") .. target:Nick())
+        end
+
+    elseif act == 19 then -- убить
+        local target = Entity(net.ReadUInt(8))
+        if IsValid(target) and target:IsPlayer() and target:Alive() then
+            target:Kill()
+            P11FW.Notify(ply, "Убит: " .. target:Nick())
+        end
+
+    -- ============ ФРАКЦИИ ============
+
+    elseif act == 20 then -- создать/обновить фракцию
+        local ok, rec = pcall(util.JSONToTable, net.ReadString() or "{}")
+        if ok then
+            local ok2, res = P11FW.UpsertFaction(rec)
+            P11FW.Notify(ply, ok2 and ("Фракция сохранена [" .. tostring(res) .. "]") or ("Ошибка: " .. tostring(res)))
+        end
+
+    elseif act == 21 then -- удалить фракцию
+        local fid = net.ReadString()
+        local ok, err = P11FW.DeleteFaction(fid)
+        P11FW.Notify(ply, ok and "Фракция удалена." or ("Ошибка: " .. tostring(err)))
     end
 
     -- свежие данные в меню

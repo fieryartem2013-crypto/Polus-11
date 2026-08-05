@@ -6,11 +6,12 @@
 --  • Выдача химсвета экипажу на спавне
 -- ============================================================
 
--- классы Нечто: id -> оружие
+-- классы Нечто: id -> оружие + тело монстра (v2.6: у каждой формы СВОЯ модель)
 POLUS11.ThingForms = {
-    imitator     = { wep = "weapon_polus11_thing",     name = "Имитатор" },
-    brute        = { wep = "weapon_polus11_thing_brute", name = "Поглотитель" },
-    spore        = { wep = "weapon_polus11_thing_spore", name = "Споровик" },
+    imitator     = { wep = "weapon_polus11_thing",       name = "Имитатор",    model = "models/zombie/classic.mdl" },
+    brute        = { wep = "weapon_polus11_thing_brute", name = "Поглотитель", model = "models/zombie/poison.mdl" },
+    spore        = { wep = "weapon_polus11_thing_spore", name = "Споровик",    model = "models/zombie/fast.mdl" },
+    split        = { wep = "weapon_polus11_thing_split", name = "Разделённый", model = "models/zombie/fast_torso.mdl" },
 }
 
 local function IsActiveThing(ply)
@@ -32,9 +33,80 @@ function POLUS11.SetThingForm(ply, formId)
 
     ply:Give(form.wep)
     ply.P11_ThingForm = formId
+    ply:SetNWString("P11_ThingForm", formId)
     POLUS11.Notify(ply, "Форма сменена: «" .. form.name .. "».")
     POLUS11.Log(ply:Nick() .. " сменил форму Нечто на " .. form.name)
     return true
+end
+
+-- ============ МАСКИРОВКА (v2.6: единая для ВСЕХ форм) ============
+-- Прячет/являет тело монстра. У Поглотителя вместе с маскировкой
+-- снимается и тяжёлое тело (замаскирован = обычные человеческие 100 хп).
+
+function POLUS11.ToggleMask(ply)
+    if not IsActiveThing(ply) then
+        POLUS11.Notify(ply, "Это доступно только активному Нечто.")
+        return
+    end
+    ply.P11_NextMask = ply.P11_NextMask or 0
+    if CurTime() < ply.P11_NextMask then return end
+    ply.P11_NextMask = CurTime() + 1.2
+
+    if ply.P11_Revealed then
+        -- только что дрался — пусть остынет пару секунд
+        if CurTime() - (ply.P11_RevealedAt or 0) < 4 then
+            POLUS11.Notify(ply, "Нечто слишком разгорячён — подождите пару секунд.")
+            return
+        end
+        POLUS11_HideThing(ply)
+        ply:EmitSound("npc/zombie/zombie_voice_idle2.wav", 60, 90)
+        POLUS11.Notify(ply, "Маскировка: ты снова выглядишь как человек.")
+    else
+        POLUS11_RevealThing(ply, ply:GetActiveWeapon())
+        POLUS11.Notify(ply, "ФОРМА ЯВЛЕНА. Люди поблизости кричат.")
+    end
+end
+
+concommand.Add("p11_mask", function(ply)
+    if IsValid(ply) then POLUS11.ToggleMask(ply) end
+end)
+
+-- ============ РАЗРЫВ СПОРОВИКА (!разрыв) ============
+
+function POLUS11.SporeSelfBurst(ply)
+    if not IsActiveThing(ply) then return end
+    if (ply.P11_ThingForm or "") ~= "spore" then
+        POLUS11.Notify(ply, "Разрыв доступен только форме «Споровик».")
+        return
+    end
+    ply.P11_NextBurst = ply.P11_NextBurst or 0
+    if CurTime() < ply.P11_NextBurst then
+        POLUS11.Notify(ply, "Разрыв не готов (" .. math.ceil(ply.P11_NextBurst - CurTime()) .. " сек)")
+        return
+    end
+    if ply:Health() <= 70 then
+        POLUS11.Notify(ply, "Слишком мало плоти для разрыва (нужно > 70 хп).")
+        return
+    end
+    ply.P11_NextBurst = CurTime() + 20
+
+    ply:EmitSound("npc/zombie/zombie_alert" .. math.random(1, 3) .. ".wav", 90, 70)
+    ply:SetHealth(ply:Health() - 60)
+
+    local cloud = ents.Create("polus11_sporecloud")
+    if IsValid(cloud) then
+        cloud:SetPos(ply:GetPos() + Vector(0, 0, 40))
+        cloud:SetOwner(ply)
+        cloud:Spawn()
+    end
+
+    local ed = EffectData()
+    ed:SetOrigin(ply:GetPos() + Vector(0, 0, 40))
+    util.Effect("BloodImpact", ed, true, true)
+    util.Effect("bloodspray", ed, true, true)
+
+    POLUS11.Notify(ply, "Вы РАЗОРВАЛИСЬ облаком спор. Люди рядом заражаются...")
+    POLUS11.Log("РАЗРЫВ СПОРОВИКА: " .. ply:Nick())
 end
 
 -- ============ КРИК УЖАСА ============
@@ -46,6 +118,7 @@ function POLUS11.ThingScream(ply)
         return
     end
     ply.P11_NextScream = CurTime() + (POLUS11.Config.ScreamCooldown or 45)
+    ply:SetNWFloat("P11_ScreamCd", ply.P11_NextScream)
 
     ply:EmitSound("npc/fast_zombie/fz_scream1.wav", 100, 85)
     timer.Simple(0.4, function()
@@ -102,15 +175,28 @@ end)
 
 hook.Add("PlayerSay", "P11_ThingChat", function(ply, text)
     local t = string.lower(string.Trim(text))
-    if t ~= "!крик" and t ~= "!крик ужаса" and not t:StartWith("!форма") then return end
+    local isMask  = (t == "!маскировка" or t == "!маск" or t == "!маскировка вкл")
+    local isBurst = (t == "!разрыв" or t == "!взрыв")
+    local isScream = (t == "!крик" or t == "!крик ужаса")
+    if not isScream and not isMask and not isBurst and not t:StartWith("!форма") then return end
 
     if not IsActiveThing(ply) then
         POLUS11.Notify(ply, "Это доступно только активному Нечто.")
         return ""
     end
 
-    if t == "!крик" or t == "!крик ужаса" then
+    if isScream then
         POLUS11.ThingScream(ply)
+        return ""
+    end
+
+    if isMask then
+        POLUS11.ToggleMask(ply)
+        return ""
+    end
+
+    if isBurst then
+        POLUS11.SporeSelfBurst(ply)
         return ""
     end
 
@@ -130,17 +216,6 @@ hook.Add("PlayerSay", "P11_ThingChat", function(ply, text)
         ["разделенный"] = "split",
     }
     local formId = map[arg]
-    if formId == "split" then
-        -- старый класс: просто вернуть ему его оружие
-        ply.P11_NextForm = CurTime() + (POLUS11.Config.ClassSwitchCooldown or 60)
-        ply:StripWeapon("weapon_polus11_thing")
-        ply:StripWeapon("weapon_polus11_thing_brute")
-        ply:StripWeapon("weapon_polus11_thing_spore")
-        ply:Give("weapon_polus11_thing_split")
-        ply.P11_ThingForm = "split"
-        POLUS11.Notify(ply, "Форма сменена: «Разделённый».")
-        return ""
-    end
     if not formId then
         POLUS11.Notify(ply, "Формы: !форма поглотитель / споровик / имитатор / разделённый")
         return ""
@@ -148,6 +223,7 @@ hook.Add("PlayerSay", "P11_ThingChat", function(ply, text)
 
     if POLUS11.SetThingForm(ply, formId) then
         ply.P11_NextForm = CurTime() + (POLUS11.Config.ClassSwitchCooldown or 60)
+        ply:SetNWFloat("P11_FormCd", ply.P11_NextForm)
     end
     return ""
 end)

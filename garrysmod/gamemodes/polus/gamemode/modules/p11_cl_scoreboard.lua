@@ -13,52 +13,100 @@ local function DisplayNick(ply)
     return ply:Nick()
 end
 
+-- одна строка игрока
+local function MakeRow(frame, ply, amAdmin)
+    local row = vgui.Create("DPanel", frame.Rows)
+    row:Dock(TOP)
+    row:DockMargin(0, 0, 0, 2)
+    row:SetTall(26)
+
+    local alive = ply:Alive()
+    row.Paint = function(s, w, h)
+        local c = Color(40, 43, 52, 200)
+        if not alive then c = Color(50, 34, 36, 200) end
+        draw.RoundedBox(4, 0, 0, w, h, c)
+        draw.RoundedBoxEx(4, 0, 0, 4, h, team.GetColor(ply:Team()), true, false, true, false)
+    end
+
+    -- имя (украденная личность вместо настоящей!)
+    local nameLab = vgui.Create("DLabel", row)
+    nameLab:SetPos(12, 3)
+    nameLab:SetFont("P11.SB.Text")
+    nameLab:SetTextColor(alive and Color(238, 238, 242) or Color(150, 130, 130))
+    local nick = DisplayNick(ply)
+    local extra = ""
+    if amAdmin and ply:GetNWBool("P11_Infected", false) then extra = "  ☣ НЕЧТО" end
+    if not alive then extra = extra .. "  (мертв)" end
+    nameLab:SetText(nick .. extra)
+    nameLab:SizeToContents()
+
+    -- должность (справа от ника, приглушённо)
+    if P11FW and P11FW.GetJobName then
+        local jobLab = vgui.Create("DLabel", row)
+        jobLab:SetFont("P11.SB.Small")
+        jobLab:SetTextColor(Color(140, 145, 160, 200))
+        jobLab:SetText(P11FW.GetJobName(ply))
+        jobLab:SizeToContents()
+        jobLab:SetPos(468, 6)
+    end
+
+    -- пинг
+    local ping = vgui.Create("DLabel", row)
+    ping:SetFont("P11.SB.Text")
+    ping:SetTextColor(Color(170, 175, 190))
+    ping:SetText(tostring(ply:Ping()))
+    ping:SizeToContents()
+    ping:SetPos(560 - 8, 3)
+    ping:Dock(RIGHT)
+    ping:DockMargin(0, 0, 14, 0)
+end
+
 local function BuildList(frame)
     for _, pnl in ipairs(frame.Rows:GetChildren()) do pnl:Remove() end
-
-    local plys = player.GetAll()
-    table.sort(plys, function(a, b)
-        return string.lower(DisplayNick(a)) < string.lower(DisplayNick(b))
-    end)
 
     local me = LocalPlayer()
     local amAdmin = POLUS11.Config.Admin(me)
 
-    for _, ply in ipairs(plys) do
-        local row = vgui.Create("DPanel", frame.Rows)
-        row:Dock(TOP)
-        row:DockMargin(0, 0, 0, 2)
-        row:SetTall(26)
+    local byNick = function(a, b)
+        return string.lower(DisplayNick(a)) < string.lower(DisplayNick(b))
+    end
 
-        local alive = ply:Alive()
-        row.Paint = function(s, w, h)
-            local c = Color(40, 43, 52, 200)
-            if not alive then c = Color(50, 34, 36, 200) end
-            draw.RoundedBox(4, 0, 0, w, h, c)
-            draw.RoundedBoxEx(4, 0, 0, 4, h, team.GetColor(ply:Team()), true, false, true, false)
+    -- v2.6: секции по ФРАКЦИЯМ (если фреймворк жив)
+    if P11FW and P11FW.CategoryList and P11FW.GetJob then
+        for _, cat in ipairs(P11FW.CategoryList) do
+            local members = {}
+            for _, ply in ipairs(player.GetAll()) do
+                local job = P11FW.GetJob(ply)
+                local cid = job and (job.faction or job.category) or "misc"
+                if cid == cat.id then members[#members + 1] = ply end
+            end
+
+            if #members > 0 then
+                table.sort(members, byNick)
+
+                local head = vgui.Create("DPanel", frame.Rows)
+                head:Dock(TOP)
+                head:SetTall(24)
+                head:DockMargin(0, 6, 0, 2)
+                head.Paint = function(s, w, h)
+                    draw.RoundedBox(3, 0, 0, w, h, Color(cat.color.r, cat.color.g, cat.color.b, 36))
+                    draw.SimpleText(cat.name, "P11.SB.Text", 8, h / 2, cat.color, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+                    draw.SimpleText(#members .. " чел.", "P11.SB.Small", w - 8, h / 2,
+                        Color(150, 155, 170), TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
+                end
+
+                for _, ply in ipairs(members) do
+                    MakeRow(frame, ply, amAdmin)
+                end
+            end
         end
-
-        -- имя (украденная личность вместо настоящей!)
-        local nameLab = vgui.Create("DLabel", row)
-        nameLab:SetPos(12, 3)
-        nameLab:SetFont("P11.SB.Text")
-        nameLab:SetTextColor(alive and Color(238, 238, 242) or Color(150, 130, 130))
-        local nick = DisplayNick(ply)
-        local extra = ""
-        if amAdmin and ply:GetNWBool("P11_Infected", false) then extra = "  ☣ НЕЧТО" end
-        if not alive then extra = extra .. "  (мертв)" end
-        nameLab:SetText(nick .. extra)
-        nameLab:SizeToContents()
-
-        -- пинг
-        local ping = vgui.Create("DLabel", row)
-        ping:SetFont("P11.SB.Text")
-        ping:SetTextColor(Color(170, 175, 190))
-        ping:SetText(tostring(ply:Ping()))
-        ping:SizeToContents()
-        ping:SetPos(560 - 8, 3)
-        ping:Dock(RIGHT)
-        ping:DockMargin(0, 0, 14, 0)
+    else
+        -- фолбэк: плоский список
+        local plys = player.GetAll()
+        table.sort(plys, byNick)
+        for _, ply in ipairs(plys) do
+            MakeRow(frame, ply, amAdmin)
+        end
     end
 end
 

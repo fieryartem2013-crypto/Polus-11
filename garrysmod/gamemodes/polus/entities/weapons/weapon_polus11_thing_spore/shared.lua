@@ -114,7 +114,8 @@ function SWEP:SecondaryAttack()
     SpitSpore(ply)
 end
 
--- ============ R — РАЗРЫВ ============
+-- ============ R — МАСКИРОВКА (v2.6: единый стандарт всех форм) ============
+-- «Разрыв» переехал на чат-команду !разрыв (обработка в sv_nechto).
 
 function SWEP:Reload()
     if CLIENT or not IsFirstTimePredicted() then return end
@@ -123,29 +124,9 @@ function SWEP:Reload()
 
     self.NextR = self.NextR or 0
     if CurTime() < self.NextR then return end
-    self.NextR = CurTime() + 3
+    self.NextR = CurTime() + 1.2
 
-    if ply:Health() <= 70 then
-        POLUS11.Notify(ply, "Слишком мало плоти для разрыва (нужно > 70 хп).")
-        return
+    if POLUS11.ToggleMask then
+        POLUS11.ToggleMask(ply)
     end
-
-    ply:EmitSound("npc/zombie/zombie_alert" .. math.random(1, 3) .. ".wav", 90, 70)
-    ply:SetHealth(ply:Health() - 60)
-
-    -- облако прямо на себе
-    local cloud = ents.Create("polus11_sporecloud")
-    if IsValid(cloud) then
-        cloud:SetPos(ply:GetPos() + Vector(0, 0, 40))
-        cloud:SetOwner(ply)
-        cloud:Spawn()
-    end
-
-    local ed = EffectData()
-    ed:SetOrigin(ply:GetPos() + Vector(0, 0, 40))
-    util.Effect("BloodImpact", ed, true, true)
-    util.Effect("bloodspray", ed, true, true)
-
-    POLUS11.Notify(ply, "Вы РАЗОРВАЛИСЬ облаком спор. Люди рядом заражаются...")
-    POLUS11.Log("РАЗРЫВ СПОРОВИКА: " .. ply:Nick())
 end

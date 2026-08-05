@@ -16,18 +16,19 @@ DeriveGamemode("sandbox")
 
 -- версии (в аддон-версии лежали в autorun-загрузчиках)
 P11FW = P11FW or {}
-P11FW.Version = "1.3.0"
+P11FW.Version = "1.4.0"
 
 POLUS11 = POLUS11 or {}
-POLUS11.Version = "2.5"
+POLUS11.Version = "2.6"
 
-POLUS_BUILD = "3.1" -- версия сборки-гейммода
+POLUS_BUILD = "3.2" -- версия сборки-гейммода
 
 -- ============ ОБЩИЕ МОДУЛИ (shared) ============
 
 local sh = {
     "modules/fw_sh_config.lua",   -- конфиг фреймворка
     "modules/fw_sh_jobs.lua",     -- профессии / команды
+    "modules/fw_sh_factions.lua",  -- фракции (расширенные категории)
     "modules/p11_sh_config.lua",  -- конфиг ПОЛЮС-11
     "modules/p11_sh_core.lua",    -- общая логика Нечто/заражения
 }

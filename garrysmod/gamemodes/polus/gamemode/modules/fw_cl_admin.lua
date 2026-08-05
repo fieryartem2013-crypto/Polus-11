@@ -78,8 +78,10 @@ net.Receive("P11FW_AdminData", function()
     end
 
     f.AdminData = d
-    if f.RefreshPlayers then f:RefreshPlayers() end
-    if f.RefreshUtils   then f:RefreshUtils() end
+    if f.RefreshPlayers  then f:RefreshPlayers() end
+    if f.RefreshActs     then f:RefreshActs() end
+    if f.RefreshFactions then f:RefreshFactions() end
+    if f.RefreshUtils    then f:RefreshUtils() end
 end)
 
 -- сервер просит открыть меню/обновить данные
@@ -170,17 +172,19 @@ function P11FW.OpenAdminMenu()
     -- ============ ВКЛАДКИ ============
 
     local tabs = {
-        { id = "players", name = "ИГРОКИ" },
-        { id = "jobs",    name = "ДОЛЖНОСТИ" },
-        { id = "utils",   name = "УТИЛИТЫ" },
+        { id = "players",  name = "ИГРОКИ" },
+        { id = "acts",     name = "ДЕЙСТВИЯ" },
+        { id = "jobs",     name = "ДОЛЖНОСТИ" },
+        { id = "factions", name = "ФРАКЦИИ" },
+        { id = "utils",    name = "УТИЛИТЫ" },
     }
     f.TabPanels = {}
     f.TabButtons = {}
 
     for i, t in ipairs(tabs) do
         local tb = vgui.Create("DButton", f)
-        tb:SetPos(12 + (i - 1) * 150, 58)
-        tb:SetSize(142, 32)
+        tb:SetPos(12 + (i - 1) * 137, 58)
+        tb:SetSize(131, 32)
         tb:SetText("")
         tb.TabId = t.id
         tb.Paint = function(s, w, h)
@@ -191,7 +195,7 @@ function P11FW.OpenAdminMenu()
         tb.DoClick = function()
             f.ActiveTab = t.id
             for id, p in pairs(f.TabPanels) do p:SetVisible(id == t.id) end
-            if t.id == "players" or t.id == "utils" then RequestAdminData() end
+            if t.id == "players" or t.id == "utils" or t.id == "acts" then RequestAdminData() end
             surface.PlaySound("buttons/button15.wav")
         end
         f.TabButtons[t.id] = tb
@@ -348,7 +352,7 @@ function P11FW.OpenAdminMenu()
         lv:SetPos(10, 10) lv:SetSize(360, 450)
         lv:SetMultiSelect(false)
         lv:AddColumn("Должность"):SetFixedWidth(150)
-        lv:AddColumn("Категория"):SetFixedWidth(110)
+        lv:AddColumn("Фракция"):SetFixedWidth(110)
         lv:AddColumn("Мест"):SetFixedWidth(45)
         lv:AddColumn("Тип")
         f.JobsList = lv
@@ -386,7 +390,7 @@ function P11FW.OpenAdminMenu()
         nameE:SetPos(10, 26) nameE:SetSize(280, 26)
         nameE:SetPlaceholderText("Киномеханик")
 
-        Lbl("Категория:", 300, 8)
+        Lbl("Фракция:", 300, 8)
         local catC = vgui.Create("DComboBox", form)
         catC:SetPos(300, 26) catC:SetSize(156, 26)
         for _, c in ipairs(P11FW.CategoryList) do
@@ -507,6 +511,204 @@ function P11FW.OpenAdminMenu()
 
         -- авто-обновление списка при синке с сервера
         f.JobsTabStatus = status
+    end
+
+    -- ==================================================
+    --  ВКЛАДКА: ДЕЙСТВИЯ С ИГРОКОМ (лечить/возродить/тп/заморозить)
+    -- ==================================================
+    do
+        local p = NewTab("acts")
+
+        local lv = vgui.Create("DListView", p)
+        lv:SetPos(10, 10) lv:SetSize(430, 450)
+        lv:SetMultiSelect(false)
+        lv:AddColumn("Ник"):SetFixedWidth(180)
+        lv:AddColumn("Должность"):SetFixedWidth(160)
+        lv:AddColumn("Статус")
+
+        function f:RefreshActs()
+            lv:Clear()
+            for _, pl in ipairs((self.AdminData and self.AdminData.players) or {}) do
+                local job = P11FW.Jobs[pl.jobId]
+                local status = pl.pun == "arrest" and "АРЕСТ" or pl.pun == "slavery" and "РАБСТВО" or pl.pun == "ban" and "БАН" or "—"
+                local line = lv:AddLine(pl.nick, job and job.name or pl.jobId, status)
+                line.PlayerIdx = pl.idx
+            end
+        end
+
+        local ap = vgui.Create("DPanel", p)
+        ap:SetPos(450, 10) ap:SetSize(396, 450)
+        ap.Paint = function(s, w, h) draw.RoundedBox(6, 0, 0, w, h, AC.panel2) end
+
+        local ttl = vgui.Create("DLabel", ap)
+        ttl:SetPos(12, 8) ttl:SetSize(370, 22)
+        ttl:SetFont("P11FW.Big") ttl:SetTextColor(AC.text)
+        ttl:SetText("Цель: —")
+
+        lv.OnRowSelected = function(s, id, line)
+            ttl:SetText("Цель: " .. (line:GetValue(1) or "?"))
+        end
+
+        local function Sel()
+            local id = lv:GetSelectedLine()
+            if not id then return nil end
+            local line = lv:GetLine(id)
+            return line and line.PlayerIdx or nil
+        end
+
+        local hint = vgui.Create("DLabel", ap)
+        hint:SetPos(12, 32) hint:SetSize(370, 34)
+        hint:SetFont("P11FW.Small") hint:SetTextColor(AC.dim)
+        hint:SetText("Быстрые рабочие действия. Выбери игрока слева,\nпотом жми кнопку. Никаких сроков и записей.")
+
+        local grid = vgui.Create("DIconLayout", ap)
+        grid:SetPos(12, 76) grid:SetSize(372, 340)
+        grid:SetSpaceX(6) grid:SetSpaceY(6)
+
+        local function ActBtn(name, actId, col)
+            local b = MakeBtn(grid, name, col, function()
+                local idx = Sel()
+                if not idx then surface.PlaySound("buttons/button10.wav") return end
+                SendAction(actId, function() net.WriteUInt(idx, 8) end)
+            end)
+            b:SetSize(180, 44)
+        end
+
+        ActBtn("ЛЕЧИТЬ ПОЛНОСТЬЮ", 14, AC.ok)
+        ActBtn("ВОЗРОДИТЬ",       15, Color(230, 200, 120))
+        ActBtn("ПРИТАЩИТЬ К СЕБЕ",16, Color(150, 190, 240))
+        ActBtn("ТЕЛЕПОРТ К НЕМУ", 17, Color(150, 190, 240))
+        ActBtn("ЗАМОРОЗИТЬ/РАЗМ.",18, Color(170, 175, 190))
+        ActBtn("УБИТЬ",           19, AC.bad)
+
+        local refr = MakeBtn(ap, "ОБНОВИТЬ СПИСОК", AC.dim, function() RequestAdminData() end)
+        refr:SetPos(12, 408) refr:SetSize(372, 30)
+    end
+
+    -- ==================================================
+    --  ВКЛАДКА: ФРАКЦИИ (создание своих групп персонала)
+    -- ==================================================
+    do
+        local p = NewTab("factions")
+
+        local lv = vgui.Create("DListView", p)
+        lv:SetPos(10, 10) lv:SetSize(380, 450)
+        lv:SetMultiSelect(false)
+        lv:AddColumn("Фракция"):SetFixedWidth(150)
+        lv:AddColumn("Должностей"):SetFixedWidth(80)
+        lv:AddColumn("Тип")
+
+        function f:RefreshFactions()
+            lv:Clear()
+            for _, cat in ipairs(P11FW.CategoryList or {}) do
+                local jobs = 0
+                for _, jid in ipairs(P11FW.JobIds or {}) do
+                    local jb = P11FW.Jobs[jid]
+                    if jb and (jb.faction or jb.category) == cat.id then jobs = jobs + 1 end
+                end
+                local line = lv:AddLine(cat.name, jobs, cat.custom and "КАСТОМ" or "встроенная")
+                line.CatId   = cat.id
+                line.CatData = cat
+            end
+        end
+        f:RefreshFactions()
+
+        local form = vgui.Create("DPanel", p)
+        form:SetPos(400, 10) form:SetSize(446, 450)
+        form.Paint = function(s, w, h) draw.RoundedBox(6, 0, 0, w, h, AC.panel2) end
+
+        local function Lbl(txt, x, y)
+            local l = vgui.Create("DLabel", form)
+            l:SetPos(x, y) l:SetSize(300, 16)
+            l:SetFont("P11FW.Small") l:SetTextColor(AC.dim)
+            l:SetText(txt)
+            return l
+        end
+
+        f.SelFactionId = nil
+
+        Lbl("Название фракции:", 10, 8)
+        local nameE = vgui.Create("DTextEntry", form)
+        nameE:SetPos(10, 26) nameE:SetSize(280, 26)
+        nameE:SetPlaceholderText("МЕДИКИ / ЛЁТНЫЙ СОСТАВ / КОНВОЙ...")
+
+        Lbl("Порядок в меню:", 300, 8)
+        local orderW = vgui.Create("DNumberWang", form)
+        orderW:SetPos(300, 26) orderW:SetSize(60, 26)
+        orderW:SetMinMax(1, 999) orderW:SetValue(50)
+
+        local idLbl = vgui.Create("DLabel", form)
+        idLbl:SetPos(368, 26) idLbl:SetSize(70, 26)
+        idLbl:SetFont("P11FW.Small") idLbl:SetTextColor(AC.dim)
+        idLbl:SetText("новая")
+
+        Lbl("Цвет (R/G/B):", 10, 58)
+        local colors = {}
+        for i, cname in ipairs({ "R", "G", "B" }) do
+            local s = vgui.Create("DNumSlider", form)
+            s:SetPos(10 + (i - 1) * 146, 66) s:SetSize(138, 22)
+            s:SetText(cname) s:SetMin(0) s:SetMax(255) s:SetDecimals(0)
+            s:SetValue(i == 1 and 200 or i == 2 and 160 or 110)
+            colors[i] = s
+        end
+
+        Lbl("Описание (для админов):", 10, 108)
+        local descE = vgui.Create("DTextEntry", form)
+        descE:SetPos(10, 126) descE:SetSize(426, 70)
+        descE:SetMultiline(true)
+        descE:SetPlaceholderText("Кто входит во фракцию и чем занимается...")
+
+        lv.OnRowSelected = function(s, id, line)
+            f.SelFactionId = line.CatData.custom and line.CatId or nil
+            nameE:SetValue(line.CatData.name or "")
+            descE:SetValue(line.CatData.desc or "")
+            orderW:SetValue(line.CatData.order or 50)
+            colors[1]:SetValue(line.CatData.color.r)
+            colors[2]:SetValue(line.CatData.color.g)
+            colors[3]:SetValue(line.CatData.color.b)
+            idLbl:SetText(line.CatData.custom and line.CatId or "встроенная")
+        end
+
+        local newB = MakeBtn(form, "НОВАЯ ФОРМА", AC.dim, function()
+            f.SelFactionId = nil
+            nameE:SetValue("") descE:SetValue("") orderW:SetValue(50)
+            idLbl:SetText("новая")
+        end)
+        newB:SetPos(10, 210) newB:SetSize(206, 30)
+
+        local function Collect()
+            return {
+                id    = f.SelFactionId,
+                name  = string.Trim(nameE:GetValue()),
+                desc  = descE:GetValue(),
+                order = orderW:GetValue(),
+                color = { r = colors[1]:GetValue(), g = colors[2]:GetValue(), b = colors[3]:GetValue() },
+            }
+        end
+
+        local saveB = MakeBtn(form, "СОЗДАТЬ / СОХРАНИТЬ", AC.ok, function()
+            SendAction(20, function() net.WriteString(util.TableToJSON(Collect()) or "{}") end)
+        end)
+        saveB:SetPos(226, 210) saveB:SetSize(210, 30)
+
+        local delB = MakeBtn(form, "УДАЛИТЬ (только кастом)", AC.bad, function()
+            if not f.SelFactionId then surface.PlaySound("buttons/button10.wav") return end
+            SendAction(21, function() net.WriteString(f.SelFactionId) end)
+        end)
+        delB:SetPos(10, 250) delB:SetSize(426, 30)
+
+        local note = vgui.Create("DLabel", form)
+        note:SetPos(10, 292) note:SetSize(426, 120)
+        note:SetFont("P11FW.Small") note:SetTextColor(AC.dim)
+        note:SetAutoStretchVertical(true)
+        note:SetText("Фракция — это группа должностей.\n" ..
+            "После создания она появится в редакторе ДОЛЖНОСТЕЙ\n" ..
+            "(поле «Фракция»), в F4 и в табе вопросов (TAB)\n" ..
+            "как цветная секция. Сохраняется навсегда:")
+        local note2 = vgui.Create("DLabel", form)
+        note2:SetPos(10, 372) note2:SetSize(426, 20)
+        note2:SetFont("P11FW.Small") note2:SetTextColor(AC.gold)
+        note2:SetText("data/polus_framework/factions.json")
     end
 
     -- ==================================================

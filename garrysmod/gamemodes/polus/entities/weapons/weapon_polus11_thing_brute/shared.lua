@@ -44,7 +44,7 @@ end
 
 -- ============ ТЯЖЁЛОЕ ТЕЛО (пока оружие у тебя) ============
 
-local function ApplyBrute(ply)
+function P11_BruteApply(ply)
     if ply.P11_BruteSaved then return end
     ply.P11_BruteSaved = {
         hp   = ply:GetMaxHealth(),
@@ -58,7 +58,7 @@ local function ApplyBrute(ply)
     ply:SetRunSpeed(ply.P11_BruteSaved.run * BRUTE_SPEED)
 end
 
-local function RemoveBrute(ply)
+function P11_BruteRemove(ply)
     local s = ply.P11_BruteSaved
     if not s then return end
     ply:SetMaxHealth(s.hp > 0 and s.hp or 100)
@@ -70,17 +70,19 @@ end
 
 function SWEP:Deploy()
     self:SetHoldType(self.HoldType)
-    if SERVER then ApplyBrute(self.Owner) end
+    -- тяжёлое тело накидывается/снимается системой маскировки (явление формы),
+    -- но если игрок уже явлен — вернуть тело при взятии оружия в руки
+    if SERVER and IsValid(self.Owner) and self.Owner.P11_Revealed then P11_BruteApply(self.Owner) end
     return true
 end
 
 function SWEP:Holster()
-    if SERVER and IsValid(self.Owner) then RemoveBrute(self.Owner) end
+    if SERVER and IsValid(self.Owner) then P11_BruteRemove(self.Owner) end
     return true
 end
 
 function SWEP:OnRemove()
-    if SERVER and IsValid(self.Owner) then RemoveBrute(self.Owner) end
+    if SERVER and IsValid(self.Owner) then P11_BruteRemove(self.Owner) end
     return true
 end
 

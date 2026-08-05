@@ -54,7 +54,19 @@ function POLUS11_RevealThing(ply, wep)
 
     ply.P11_Revealed = true
     ply.P11_RevealedAt = CurTime()
-    ply:SetModel(POLUS11.MonsterModels.brute)
+    ply:SetNWBool("P11_Revealed", true)
+
+    -- модель монстра по ТЕКУЩЕЙ форме (v2.6: у каждой формы своё тело)
+    local mdl = POLUS11.MonsterModels.brute
+    local forms = POLUS11.ThingForms or {}
+    local form = forms[ply.P11_ThingForm or ""]
+    if form and isstring(form.model) then mdl = form.model end
+    ply:SetModel(mdl)
+
+    -- форма «Поглотитель»: тяжёлое тело возвращается вместе с явлением
+    if (ply.P11_ThingForm == "brute") and ply:HasWeapon("weapon_polus11_thing_brute") and P11_BruteApply then
+        P11_BruteApply(ply)
+    end
 
     ply:EmitSound("npc/zombie_poison/pz_alert2.wav", 90, 90)
 
@@ -76,6 +88,13 @@ end
 function POLUS11_HideThing(ply)
     if not ply.P11_Revealed then return end
     ply.P11_Revealed = false
+    ply:SetNWBool("P11_Revealed", false)
+
+    -- замаскированный Поглотитель теряет тяжёлое тело (полная маскировка)
+    if (ply.P11_ThingForm == "brute") and P11_BruteRemove then
+        P11_BruteRemove(ply)
+    end
+
     if ply.P11_SavedModel then
         ply:SetModel(ply.P11_SavedModel)
         ply.P11_SavedModel = nil
