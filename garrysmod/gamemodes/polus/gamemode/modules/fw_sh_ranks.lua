@@ -1,30 +1,50 @@
 -- ============================================================
---  ПОЛЮС FRAMEWORK — РАНГИ АДМИНИСТРАЦИИ (shared) v1.5
---  10 рангов от User до «Глава Полюса-11». Ранг живёт
+--  ПОЛЮС FRAMEWORK — РАНГИ АДМИНИСТРАЦИИ (shared) v1.9
+--  v3.8.2: НОВАЯ ИЕРАРХИЯ проекта — 16 рангов от User до
+--  «Глава Проекта» (список от владельца сервера). Ранг живёт
 --  отдельно от GMod-групп: хранится у нас (ranks.json),
 --  синхронизируется через NWString; под движковые права
 --  ранг мапится на user/admin/superadmin автоматически.
+--  ВНИМАНИЕ: id «glava» зашит в ключ основателя (p11_access),
+--  верхнюю строчку не переназывай; остальные строки/цвета/уровни
+--  можно править прямо здесь — админка и TAB подхватят сами.
 -- ============================================================
 
 P11FW = P11FW or {}
 
 P11FW.Ranks = {
-    { id = "user",       name = "User",            level = 0, color = Color(170, 170, 170) },
-    { id = "vip",        name = "VIP",             level = 1, color = Color(235, 205, 100) },
-    { id = "helper",     name = "Хелпер",          level = 2, color = Color(140, 220, 150) },
-    { id = "moderator",  name = "Модератор",       level = 3, color = Color(140, 190, 250) },
-    { id = "admin",      name = "Админ",           level = 4, color = Color(235, 150, 90) },
-    { id = "curator",    name = "Куратор",         level = 5, color = Color(225, 120, 110), fx = "shimmer" },
-    { id = "superadmin", name = "Суперадмин",      level = 6, color = Color(240, 100, 100), fx = "shimmer" },
-    { id = "founder",    name = "Основатель",      level = 7, color = Color(255, 90, 90),   fx = "shimmer" },
-    { id = "sozdatel",   name = "Создатель",       level = 8, color = Color(255, 150, 80),  fx = "aurora" },
-    { id = "glava",      name = "Глава Полюса-11", level = 9, color = Color(255, 215, 90),  fx = "aurora" },
+    { id = "user",              name = "User",                  level = 0,  color = Color(170, 170, 170) },
+    { id = "vip",               name = "VIP",                   level = 1,  color = Color(235, 205, 100) },
+    { id = "helper",            name = "Helper",                level = 2,  color = Color(140, 220, 150) },
+    { id = "moderator",         name = "Moderator",             level = 3,  color = Color(140, 190, 250) },
+    { id = "admin",             name = "Administrator",         level = 4,  color = Color(235, 150, 90) },
+    { id = "head_admin",        name = "Head Administrator",    level = 5,  color = Color(240, 135, 75) },
+    { id = "super_admin",       name = "Super Administrator",   level = 6,  color = Color(240, 100, 100), fx = "shimmer" },
+    { id = "global_admin",      name = "Global Administrator",  level = 7,  color = Color(235, 95, 145),  fx = "shimmer" },
+    { id = "anticheat",         name = "Anticheat Helper",      level = 8,  color = Color(120, 220, 210), fx = "shimmer" },
+    { id = "developer",         name = "Developer",             level = 9,  color = Color(110, 205, 255), fx = "shimmer" },
+    { id = "dep_staff_leader",  name = "Deputy Staff Leader",   level = 10, color = Color(185, 145, 235), fx = "shimmer" },
+    { id = "dep_chief_curator", name = "Deputy Chief Curator",  level = 11, color = Color(215, 125, 165), fx = "shimmer" },
+    { id = "curator",           name = "Curator",               level = 12, color = Color(225, 120, 110), fx = "shimmer" },
+    { id = "chief_curator",     name = "Chief Curator",         level = 13, color = Color(205, 105, 220), fx = "aurora" },
+    { id = "staff_leader",      name = "Staff Leader",          level = 14, color = Color(255, 150, 80),  fx = "aurora" },
+    { id = "chief_staff_leader",name = "Chief Staff Leader",    level = 15, color = Color(255, 185, 95),  fx = "aurora" },
+    { id = "glava",             name = "Глава Проекта",         level = 16, color = Color(255, 215, 90),  fx = "aurora" },
 }
 
 P11FW.RankById = {}
 for _, r in ipairs(P11FW.Ranks) do
     P11FW.RankById[r.id] = r
 end
+
+-- v3.8.2: АЛИАСЫ СТАРЫХ ID (сейвы v3.3..v3.8.1 в ranks.json) -> новые id.
+-- Иначе «founder»/«sozdatel» из старого файла слетали бы в user.
+P11FW.RankLegacy = {
+    superadmin = "super_admin",
+    founder    = "global_admin",
+    sozdatel   = "chief_staff_leader",
+    kurator    = "curator",
+}
 
 --- Ранг игрока (таблица) — user, если не выдан.
 function P11FW.GetRank(ply)
@@ -36,6 +56,7 @@ function P11FW.GetRank(ply)
             id = ply:GetNWString("P11FW_Rank", "user")
         end
     end
+    id = P11FW.RankLegacy[id] or id
     return P11FW.RankById[id] or P11FW.RankById.user
 end
 
@@ -104,33 +125,37 @@ end
 --  права, чтобы серить кнопки во вкладке «МОДЕРАЦИЯ».
 -- ============================================================
 
--- минимальный уровень ранга для команды:
--- 0=User 1=VIP 2=Хелпер 3=Модератор 4=Админ 5=Куратор
--- 6=Суперадмин 7=Основатель 8=Создатель 9=Глава Полюса-11
+-- минимальный уровень ранга для команды (v3.8.2, новая шкала):
+-- 0=User 1=VIP 2=Helper 3=Moderator 4=Administrator 5=Head Admin
+-- 6=Super Admin 7=Global Admin 8=Anticheat 9=Developer 10=Dep.Staff
+-- 11=Dep.Chief Curator 12=Curator 13=Chief Curator 14=Staff Leader
+-- 15=Chief Staff Leader 16=Глава Проекта
 P11FW.PermLevel = {
-    warn    = 2, -- Хелпер
-    mute    = 2, -- Хелпер
-    arrest  = 3, -- Модератор (арест и рабство)
-    kick    = 3, -- Модератор
-    heal    = 4, -- Админ (быстрые действия: лечить/возродить/тп/заморозить/убить)
-    ban     = 4, -- Админ
-    unban   = 6, -- Суперадмин
+    warn    = 2, -- Helper
+    mute    = 2, -- Helper
+    arrest  = 3, -- Moderator (арест и рабство)
+    kick    = 3, -- Moderator
+    heal    = 4, -- Administrator (быстрые действия: лечить/возродить/тп/заморозить/убить)
+    ban     = 4, -- Administrator
+    unban   = 6, -- Super Administrator
 }
 
 -- Лимиты СРОКОВ в МИНУТАХ по уровню ранга. 0 = безлимит (включая перму).
 -- Читается сверху вниз: своего уровня в таблице может не быть — берём ближайший снизу.
 P11FW.TimeLimits = {
-    mute = {  -- Хелпер 30м … Создатель 30д … Глава безлимит
-        [2] = 30,      [3] = 240,     [4] = 720,      [5] = 1440,
-        [6] = 10080,   [7] = 20160,   [8] = 43200,    [9] = 0,
+    mute = {  -- Helper 30м … Curator 2сут … Chief Staff Leader безлимит
+        [2] = 30,       [3] = 240,      [4] = 720,      [5] = 1440,
+        [6] = 10080,    [8] = 20160,    [10] = 43200,   [12] = 172800,
+        [15] = 0,
     },
-    arrest = { -- Модератор 1ч … Создатель 7д … Глава безлимит
-        [3] = 60,      [4] = 180,     [5] = 1440,     [6] = 4320,
-        [7] = 10080,   [8] = 10080,   [9] = 0,
+    arrest = { -- Moderator 1ч … Developer 3д … Chief Staff Leader безлимит
+        [3] = 60,       [4] = 180,      [5] = 1440,     [6] = 4320,
+        [7] = 10080,    [9] = 43200,    [12] = 86400,   [15] = 0,
     },
-    ban = {    -- Админ 3д … Куратор 7д … Суперадмин 30д … Основатель 70д … Создатель 300д … Глава НАВСЕГДА
-        [4] = 4320,    [5] = 10080,   [6] = 43200,    [7] = 100800,
-        [8] = 432000,  [9] = 0,
+    ban = {    -- Administrator 3д … Global Admin 70д … Deputy Staff 300д … Staff Leader 2года … Chief Staff Leader НАВСЕГДА
+        [4] = 4320,     [5] = 10080,    [6] = 43200,    [7] = 100800,
+        [8] = 144000,   [9] = 432000,   [10] = 432000,  [11] = 518400,
+        [14] = 1051200, [15] = 0,
     },
 }
 

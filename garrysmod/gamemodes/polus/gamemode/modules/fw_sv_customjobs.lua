@@ -86,6 +86,11 @@ local function SanitizeRecord(rec)
         end
     end
 
+    -- v3.8.2: характеристики (необязательные). nil = оставить как было.
+    if rec.hp ~= nil    then out.hp    = math.Clamp(tonumber(rec.hp) or 100, 1, 1000) end
+    if rec.armor ~= nil then out.armor = math.Clamp(tonumber(rec.armor) or 0, 0, 500) end
+    if rec.event ~= nil then out.event = rec.event == true end
+
     return out
 end
 
@@ -163,6 +168,10 @@ net.Receive("P11FW_JobEdit", function(len, ply)
         clean.team = old.team
         clean.order = old.order
         clean.override = old.override == true
+        -- v3.8.2: админ не редактирует ХП/броню — не теряем их при правке
+        if clean.hp == nil    then clean.hp    = old.hp    end
+        if clean.armor == nil then clean.armor = old.armor end
+        if clean.event == nil then clean.event = old.event end
         for i, r in ipairs(P11FW.CustomJobs) do
             if r.id == old.id then P11FW.CustomJobs[i] = clean end
         end

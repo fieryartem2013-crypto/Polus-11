@@ -19,6 +19,11 @@ P11 = P11 or {}
 -- ============ ПЛАВНОСТЬ БАРОВ ============
 
 local curHp, curAr = 100, 0
+-- v3.8.2 КРИТ-ФИКС: эти счётчики были «голыми» глобалами (local забыт) —
+-- curWarm был nil, строка 111 «число + nil» крашилась КАЖДЫЙ КАДР (xБЕСКОНЕЧНО),
+-- а до lastHp/dmgFlash/healFlash дело просто не доходило из-за падения выше.
+local curWarm, lastHp       = 100, 100
+local dmgFlash, healFlash   = 0, 0
 
 local COL = {
     hpOk   = Color(105, 205, 125),

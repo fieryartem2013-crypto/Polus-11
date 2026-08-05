@@ -19,7 +19,10 @@ local function FactionsToRecords()
             name     = cat.name,
             desc     = cat.desc or "",
             order    = cat.order or 50,
-            override = cat.override == true, -- v3.8.1: правка встроенной
+            -- v3.8.2 FIX: RegisterCustomFactions ставит cat.overridden (а не
+            -- cat.override) — без этого правка встроенной фракции НЕ
+            -- переживала рестарт сервера.
+            override = (cat.override == true) or (cat.overridden == true),
             color    = { r = cat.color.r, g = cat.color.g, b = cat.color.b },
         }
     end

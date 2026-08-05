@@ -309,6 +309,11 @@ function P11FW.RegisterCustomJobs(records)
                 weapons  = istable(rec.weapons) and rec.weapons or {},
                 max      = tonumber(rec.max) or 0,
                 color    = Color(tonumber(c.r) or 210, tonumber(c.g) or 170, tonumber(c.b) or 120),
+                -- v3.8.2: характеристики, ивент-роль, командные полномочия (сид РККА)
+                hp       = tonumber(rec.hp) or 100,
+                armor    = tonumber(rec.armor) or 0,
+                event    = rec.event == true,
+                command  = rec.command == true,
             }
             P11FW.JobTeams[rec.id] = rec.team
             P11FW.TeamJobs[rec.team] = rec.id

@@ -32,11 +32,22 @@ function P11FW.ApplyLoadout(ply, modelIdx)
         ply:Give(class)
     end
 
+    -- v3.8.2: РУКИ выдаются всем (ношение ящиков/бочек, обыск и т.д.)
+    if weapons.Get("weapon_polus11_hands") and not ply:HasWeapon("weapon_polus11_hands") then
+        ply:Give("weapon_polus11_hands")
+    end
+
     for _, a in ipairs(job.ammo or {}) do
         if isstring(a[1]) and isnumber(a[2]) then
             ply:GiveAmmo(a[2], a[1], true)
         end
     end
+
+    -- v3.8.2: ХАРАКТЕРИСТИКИ ДОЛЖНОСТИ (у штурмовика 125ХП/145бр и т.д.)
+    local hp = math.Clamp(tonumber(job.hp) or 100, 1, 1000)
+    ply:SetMaxHealth(hp)
+    if ply:Health() > hp then ply:SetHealth(hp) end
+    ply:SetArmor(math.Clamp(tonumber(job.armor) or 0, 0, 500))
 
     -- внешность: выбранный вариант из меню, иначе случайный из валидных
     local valids = P11FW.ValidModels(job)
@@ -66,6 +77,15 @@ function P11FW.SetJob(ply, jobId, modelIdx, force)
         local pun = ply:GetNWString("P11FW_Punish", "")
         if pun == "arrest" then return false, "вы арестованы — без должности" end
         if pun == "slavery" then return false, "вы в рабстве — без должности" end
+    end
+
+    -- v3.8.2: ИВЕНТОВЫЕ роли (Нечто-формы и пр.) — только админ выдаёт
+    if job.event and not force then
+        local allowed = P11FW.Config.Admin(ply)
+            or (P11FW.GetRankLevel(ply) >= ((P11FW.Config and P11FW.Config.EventJobRankLevel) or 4))
+        if not allowed then
+            return false, "ивентовая роль — выдаёт только администрация"
+        end
     end
 
     if not force and P11FW.JobFull(jobId, ply) then

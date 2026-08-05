@@ -60,6 +60,7 @@ local sv = {
     "modules/fw_sv_jobs.lua",        -- логика профессий
     "modules/fw_sv_factions.lua",    -- фракции из админки (data/*.json)
     "modules/fw_sv_customjobs.lua",  -- профессии из админки (data/*.json)
+    "modules/fw_sv_seed_rkka.lua",   -- v3.8.2: авто-сид пресетов РККА/Наука/Нечто
     "modules/fw_sv_npc.lua",         -- NPC-кадровик
     "modules/fw_sv_setup.lua",       -- точки спавна/ареста
     "modules/fw_sv_punish.lua",      -- арест / рабство / бан

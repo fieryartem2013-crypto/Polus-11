@@ -68,12 +68,25 @@ hook.Add("PlayerSpawn", "P11_ColdSpawn", function(ply)
     ply.P11_Warmth = 100
     ply.P11_WarmthSent = 100
     ply:SetNWFloat("P11_Warmth", 100)
+    -- v3.8.2: передышка после спавна — холод не трогает (альфа-баланс)
+    local g = (POLUS11.Config and POLUS11.Config.ColdGraceSec) or 150
+    ply.P11_ColdGraceUntil = CurTime() + g
+    ply.P11_Froze = false
 end)
 
 timer.Create("P11_ColdTick", 1, 0, function()
     if not POLUS11.Config.ColdEnabled then return end
 
+    -- v3.8.2: живые значения из конфига (можно крутить без рестарта карты)
+    local cfg       = POLUS11.Config
+    local drainOut  = cfg.ColdDrainOut    or COLD.DrainOutside
+    local drainStm  = cfg.ColdDrainStorm  or COLD.DrainStorm
+    local dmgPer    = cfg.ColdDamagePer   or COLD.DamagePer
+    local dmgTick   = cfg.ColdDamageTick  or COLD.DamageTick
+    local warn      = cfg.ColdWarn ~= false
+
     local storm = GetGlobalBool("P11_Storm", false)
+    local now   = CurTime()
 
     for _, ply in ipairs(player.GetAll()) do
         if IsValid(ply) and ply:Alive() then
@@ -86,8 +99,11 @@ timer.Create("P11_ColdTick", 1, 0, function()
                 local outdoors = IsOutdoors(ply)
                 local delta
 
-                if outdoors then
-                    delta = storm and -COLD.DrainStorm or -COLD.DrainOutside
+                -- v3.8.2: после (ре)спавна — передышка: только согрев, без мороза
+                if now < (ply.P11_ColdGraceUntil or 0) then
+                    delta = COLD.RegenInside
+                elseif outdoors then
+                    delta = storm and -drainStm or -drainOut
                 else
                     delta = COLD.RegenInside
                 end
@@ -103,30 +119,33 @@ timer.Create("P11_ColdTick", 1, 0, function()
                 -- дрожь при обморожении
                 if w <= COLD.ShiverAt then
                     ply.P11_NextShiver = ply.P11_NextShiver or 0
-                    if CurTime() >= ply.P11_NextShiver then
-                        ply.P11_NextShiver = CurTime() + math.Rand(2.2, 4.5)
+                    if now >= ply.P11_NextShiver then
+                        ply.P11_NextShiver = now + math.Rand(2.2, 4.5)
                         ply:ViewPunch(Angle(math.Rand(-2, 2), math.Rand(-3, 3), 0))
                         if math.random() < 0.35 then
                             ply:EmitSound("ambient/wind/wind_hit" .. math.random(1, 3) .. ".wav", 42, 120)
                         end
-                        if w > COLD.DamageAt and math.random() < 0.5 then
+                        if warn and w > COLD.DamageAt and math.random() < 0.5 then
                             POLUS11.Notify(ply, "Ты замерзаешь! Ищи тепло — генератор, помещение, горячий паёк.")
                         end
                     end
                 end
 
-                -- обморожение: потеря ХП
+                -- обморожение: потеря ХП (всегда громко объясняем ПРИЧИНУ урона)
                 if w <= COLD.DamageAt then
                     ply.P11_NextFrostDmg = ply.P11_NextFrostDmg or 0
-                    if CurTime() >= ply.P11_NextFrostDmg then
-                        ply.P11_NextFrostDmg = CurTime() + COLD.DamageTick
+                    if now >= ply.P11_NextFrostDmg then
+                        ply.P11_NextFrostDmg = now + dmgTick
                         ply.P11_Froze = true
                         local d = DamageInfo()
-                        d:SetDamage(COLD.DamagePer)
+                        d:SetDamage(dmgPer)
                         d:SetAttacker(game.GetWorld())
                         d:SetInflictor(game.GetWorld())
                         d:SetDamageType(DMG_GENERIC)
                         ply:TakeDamageInfo(d)
+                        if warn then
+                            POLUS11.Notify(ply, "ОБМОРОЖЕНИЕ! Ты теряешь здоровье от холода — беги к генератору или в помещение!")
+                        end
                     end
                 elseif w > COLD.ShiverAt then
                     ply.P11_Froze = false

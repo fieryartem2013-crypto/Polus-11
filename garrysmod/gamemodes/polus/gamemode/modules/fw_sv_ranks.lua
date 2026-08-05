@@ -30,6 +30,7 @@ end)
 
 local function ApplyRank(ply)
     local id = P11FW.RankData[ply:SteamID()] or "user"
+    id = (P11FW.RankLegacy and P11FW.RankLegacy[id]) or id -- v3.8.2: старые id -> новые
     if not P11FW.RankById[id] then id = "user" end
     ply.P11FW_RankId = id
     ply:SetNWString("P11FW_Rank", id)
