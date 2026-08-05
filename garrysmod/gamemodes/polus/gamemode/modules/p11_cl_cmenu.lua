@@ -191,6 +191,18 @@ function P11.OpenCMenu()
         end)
     end
 
+    -- v4.0: багаж (для всех) + постановка объектов (админам)
+    CButton(f, 370, 398, 84, 40, "🎒 Багаж", "инвентарь", CC.gold, function()
+        P11.CloseCMenu()
+        if P11.OpenInventory then P11.OpenInventory() end
+    end)
+    if P11FW.Config.Admin(me) then
+        CButton(f, 462, 398, 84, 40, "📍 Поставить", "генератор/ларёк", CC.gold, function()
+            P11.CloseCMenu()
+            if P11.OpenPlaceMenu then P11.OpenPlaceMenu() end
+        end)
+    end
+
     -- низ: подсказка
     local foot = vgui.Create("DLabel", f)
     foot:SetPos(14, 442) foot:SetSize(532, 18)

@@ -3,27 +3,35 @@ AddCSLuaFile("shared.lua")
 include("shared.lua")
 
 function ENT:Initialize()
-    -- v3.7: модель пульта станции + фолбэки без пака lt_c
+    -- v4.0: модель терминала — монитор лаборатории (по заявке владельца).
+    -- Фолбэки — если вдруг карта/пак переопределил контент.
     local models = {
+        "models/props_lab/monitor01a.mdl",
         "models/lt_c/holo_rails.mdl",
         "models/props_c17/consolebox01a.mdl",
         "models/props_lab/heatplate.mdl",
     }
-    local model = "models/props_c17/consolebox01a.mdl"
+    local model = "models/props_lab/monitor01a.mdl"
     for _, m in ipairs(models) do
         if file.Exists(m, "GAME") then model = m break end
     end
     self:SetModel(model)
 
-    self:SetHullType(HULL_HUMAN)
-    self:SetHullSizeNormal()
-    self:SetMoveType(MOVETYPE_NONE)
-    self:PhysicsInit(SOLID_BBOX)
-    self:SetSolid(SOLID_BBOX)
+    -- v4.0 ФИКС «терминал не физичен»: был HULL + SOLID_BBOX +
+    -- MOVETYPE_NONE (коробка невидимой оболочки, могла парить/плыть).
+    -- Теперь честный VPHYSICS по модели, как у генератора, — твёрдый,
+    -- стоит ровно, по нему работают Use/трейсы.
+    self:PhysicsInit(SOLID_VPHYSICS)
+    self:SetMoveType(MOVETYPE_VPHYSICS)
+    self:SetSolid(SOLID_VPHYSICS)
     self:SetUseType(SIMPLE_USE)
 
     local phys = self:GetPhysicsObject()
-    if IsValid(phys) then phys:EnableMotion(false) end
+    if IsValid(phys) then
+        phys:Wake()
+        phys:SetMass(120)
+        phys:EnableMotion(false) -- прибит к полу, но физичен
+    end
 
     util.DropToFloor(self)
 end

@@ -130,7 +130,7 @@ end
 --  ГЛАВНОЕ АДМИН-МЕНЮ
 -- ============================================================
 
-function P11FW.OpenAdminMenu()
+function P11FW.OpenAdminMenu(forceTab)
     if not IsValid(LocalPlayer()) then return end
     if not P11FW.Config.Admin(LocalPlayer()) then
         chat.AddText(AC.bad, "[P11FW] Только для администрации.")
@@ -151,7 +151,7 @@ function P11FW.OpenAdminMenu()
     f.btnMaxim:SetVisible(false)
     f.btnMinim:SetVisible(false)
 
-    f.ActiveTab = "players"
+    f.ActiveTab = forceTab or "players"
 
     function f:Paint(w, h)
         Derma_DrawBackgroundBlur(f, f.P11FW_Start or 0)
@@ -179,14 +179,28 @@ function P11FW.OpenAdminMenu()
     -- ============ ВКЛАДКИ ============
 
     local myLevel = P11FW.GetRankLevel(LocalPlayer())
+    -- v4.0 (по регламенту владельца): «лишь с ранга Staff Leader — ВСЕ
+    -- вкладки; у админов ниже — только банька-телепорты». Уровни:
+    --   2 Helper+      → МОДЕРАЦИЯ (варны/муты/баны)
+    --   4 Admin+       → ДЕЙСТВИЯ (телепорты/лечки/заморозки)
+    --  10 DepStaff+    → ИГРОКИ (выдача рангов, Config.RankManageLevel)
+    --  14 StaffLeader+ → ДОЛЖНОСТИ / ФРАКЦИИ / УТИЛИТЫ (всё остальное)
     local tabs = {
-        { id = "players",  name = "ИГРОКИ" },
+        { id = "players",  name = "ИГРОКИ",    minLevel = (P11FW.Config and P11FW.Config.RankManageLevel) or 10 },
         { id = "mod",      name = "МОДЕРАЦИЯ", perm = "warn", badge = "!" },
-        { id = "acts",     name = "ДЕЙСТВИЯ" },
-        { id = "jobs",     name = "ДОЛЖНОСТИ" },
-        { id = "factions", name = "ФРАКЦИИ" },
-        { id = "utils",    name = "УТИЛИТЫ" },
+        { id = "acts",     name = "ДЕЙСТВИЯ",  minLevel = 4 },
+        { id = "jobs",     name = "ДОЛЖНОСТИ", minLevel = 14 },
+        { id = "factions", name = "ФРАКЦИИ",   minLevel = 14 },
+        { id = "utils",    name = "УТИЛИТЫ",   minLevel = 14 },
     }
+
+    -- имя ранга по уровню (для красивых отказов)
+    local function RankNameByLevel(lvl)
+        for _, r in ipairs(P11FW.Ranks or {}) do
+            if r.level == lvl then return r.name end
+        end
+        return "ранг " .. tostring(lvl)
+    end
     f.TabPanels = {}
     f.TabButtons = {}
 
@@ -204,9 +218,10 @@ function P11FW.OpenAdminMenu()
                 surface.SetDrawColor(AC.accent)
                 surface.DrawRect(10, h - 2, w - 20, 2)
             end
-            -- v1.6: вкладки под права — без прав текст серый
+            -- вкладки под права/ранг — без них текст серый
             local col = on and AC.accent or AC.dim
-            if t.perm and not P11FW.CanMod(LocalPlayer(), t.perm) then
+            if (t.perm and not P11FW.CanMod(LocalPlayer(), t.perm))
+               or (t.minLevel and myLevel < t.minLevel) then
                 col = Color(90, 95, 105)
             end
             draw.SimpleText(t.name, "P11FW.Adm.Tab", w / 2 - (t.badge and 8 or 0), h / 2, col, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
@@ -218,7 +233,12 @@ function P11FW.OpenAdminMenu()
         tb.DoClick = function()
             if t.perm and not P11FW.CanMod(LocalPlayer(), t.perm) then
                 surface.PlaySound("buttons/button10.wav") -- недоступно рангу
-                chat.AddText(AC.gold, "[P11FW] Вкладка «" .. t.name .. "» доступна с ранга Хелпер (2).")
+                chat.AddText(AC.gold, "[P11FW] Вкладка «" .. t.name .. "» доступна с ранга Helper (2).")
+                return
+            end
+            if t.minLevel and myLevel < t.minLevel then
+                surface.PlaySound("buttons/button10.wav")
+                chat.AddText(AC.gold, "[P11FW] Вкладка «" .. t.name .. "» — с ранга " .. RankNameByLevel(t.minLevel) .. ".")
                 return
             end
             f.ActiveTab = t.id
@@ -1287,4 +1307,10 @@ end
 
 concommand.Add("p11fw_admin", function()
     P11FW.OpenAdminMenu()
+end)
+
+
+-- v4.0: сетевая команда «открыть меню выдачи рангов» (/ранги, ранг 10+)
+net.Receive("P11FW_OpenAdminRanks", function()
+    P11FW.OpenAdminMenu("players")
 end)

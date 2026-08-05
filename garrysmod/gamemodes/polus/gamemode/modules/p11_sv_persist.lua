@@ -9,6 +9,7 @@ local CLASSES = {
     polus11_generator = true,
     polus11_fuelbarrel = true,
     polus11_labtable = true,
+    polus11_terminal = true, -- v4.0: ставленные терминалы тоже переживают рестарт
 }
 
 local function MapFile()

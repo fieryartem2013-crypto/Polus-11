@@ -170,7 +170,12 @@ function POLUS11.XTaskEvent(ply, key, add)
             if t.cur >= t.max then
                 t.done = true
                 ply:EmitSound("buttons/button9.wav", 60, 130)
-                POLUS11.Notify(ply, "Доп-задача выполнена: " .. t.name .. " (+10 хп бодрости)")
+                -- v4.0: доп-задача оплачивается — 500₽
+                local pay = (POLUS11.Config and POLUS11.Config.MoneyTaskExtra) or 500
+                if POLUS11.AddMoney then
+                    POLUS11.AddMoney(ply, pay, "доп-задача: " .. t.name)
+                end
+                POLUS11.Notify(ply, "Доп-задача выполнена: " .. t.name .. " (+" .. pay .. "₽)")
                 local maxhp = ply:GetMaxHealth() > 0 and ply:GetMaxHealth() or 100
                 ply:SetHealth(math.min(maxhp, ply:Health() + 10))
             end

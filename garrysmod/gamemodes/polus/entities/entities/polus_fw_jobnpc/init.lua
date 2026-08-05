@@ -14,14 +14,20 @@ function ENT:Initialize()
 
     self:SetHullType(HULL_HUMAN)
     self:SetHullSizeNormal()
-    self:SetMoveType(MOVETYPE_NONE)
-    self:PhysicsInit(SOLID_BBOX)
-    self:SetSolid(SOLID_BBOX)
+    -- v4.0 ФИКС: был MOVETYPE_NONE + SOLID_BBOX — «фантомная» коробка,
+    -- из-за неё Use/клики местами проходили насквозь. Хул обязателен для
+    -- поворота головы, но тело делаем честным VPHYSICS (как генератор).
+    self:SetMoveType(MOVETYPE_VPHYSICS)
+    self:PhysicsInit(SOLID_VPHYSICS)
+    self:SetSolid(SOLID_VPHYSICS)
     self:SetUseType(SIMPLE_USE)
 
     local phys = self:GetPhysicsObject()
     if IsValid(phys) then
+        phys:Wake()
         phys:EnableMotion(false)
+        -- глазеть и поворачиваться может, а вот упасть/уехать — нет
+        phys:SetMass(90)
     end
 
     util.DropToFloor(self)

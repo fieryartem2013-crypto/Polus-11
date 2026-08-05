@@ -171,6 +171,10 @@ function POLUS11.CheckAllTasks(ply)
     ply.P11_TasksReward = true
     local maxhp = ply:GetMaxHealth() > 0 and ply:GetMaxHealth() or 100
     ply:SetHealth(math.min(maxhp, ply:Health() + 25))
+    -- v4.0: премия за полную смену — 2000₽ (модуль экономики)
+    if POLUS11.AddMoney then
+        POLUS11.AddMoney(ply, (POLUS11.Config and POLUS11.Config.MoneyTaskAll) or 2000, "все задачи смены")
+    end
     PrintMessage(HUD_PRINTTALK, "[СТАНЦИЯ] " .. ply:Nick() .. " выполнил(а) ВСЕ задачи смены. Пример для экипажа!")
     ply:EmitSound("buttons/button15.wav", 70, 100)
     POLUS11.Log("ЗАДАЧИ СМЕНЫ ВЫПОЛНЕНЫ: " .. ply:Nick())
