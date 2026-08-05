@@ -19,9 +19,9 @@ P11FW = P11FW or {}
 P11FW.Version = "1.3.0"
 
 POLUS11 = POLUS11 or {}
-POLUS11.Version = "2.4"
+POLUS11.Version = "2.5"
 
-POLUS_BUILD = "3.0" -- версия сборки-гейммода
+POLUS_BUILD = "3.1" -- версия сборки-гейммода
 
 -- ============ ОБЩИЕ МОДУЛИ (shared) ============
 
@@ -68,12 +68,13 @@ function GM:PlayerLoadout(ply)
     return true
 end
 
---- Спавн пропов/энтити/оружия из меню — только админам.
---- (Станционные предметы НЕ страдают: они создаются сервером
---- через ents.Create в командах, а не через этот хук.)
+--- Спавн энтити/оружия/NPC и инструменты из меню — только админам.
+--- (Пропы обрабатываются ОТДЕЛЬНО ниже — игрокам разрешён вайтлист;
+--- станционные предметы не страдают: они создаются сервером через
+--- ents.Create в командах, а не через эти хуки.)
 local adminOnlyHooks = {
-    "PlayerSpawnProp", "PlayerSpawnRagdoll", "PlayerSpawnEffect",
-    "PlayerSpawnVehicle", "PlayerSpawnNPC", "PlayerSpawnObject",
+    "PlayerSpawnRagdoll", "PlayerSpawnEffect",
+    "PlayerSpawnVehicle", "PlayerSpawnNPC",
     "PlayerSpawnSENT", "PlayerSpawnSWEP", "PlayerGiveSWEP",
     "CanTool", "CanProperty", "CanEditVariable", "CanDrive",
 }
@@ -83,8 +84,39 @@ for _, hookName in ipairs(adminOnlyHooks) do
     end
 end
 
---- Q-меню и C-меню — только админам (там инструменты настройки карты).
-function GM:SpawnMenuOpen(ply)   return IsPolusAdmin(ply) end
+--- ПРОПЫ для всех: не-админам — только модели из вайтлиста
+--- (POLUS11.Config.Building.AllowedProps). Дальше их призраками
+--- занимается модуль p11_sv_build.lua.
+function GM:PlayerSpawnProp(ply, model)
+    if IsPolusAdmin(ply) then return true end
+    local b = POLUS11.Config and POLUS11.Config.Building
+    if not (b and b.Enabled and b.AllowedProps) then return false end
+    model = string.lower(tostring(model or ""))
+    if b.AllowedProps[model] then return true end
+    if IsValid(ply) then
+        ply:ChatPrint("[Склад] Этот предмет недоступен обычному персоналу.")
+    end
+    return false
+end
+
+--- Лимиты спавна: админам — без потолка, игрокам — только пропы
+--- и не больше MaxPerPlayer (остальное всегда «limit reached»).
+function GM:PlayerCheckLimit(ply, name, current, defaultMax)
+    if IsPolusAdmin(ply) then return true end
+    if name == "props" then
+        local b = POLUS11.Config and POLUS11.Config.Building
+        local max = (b and b.MaxPerPlayer) or 8
+        if current >= max then return false end
+        return true
+    end
+    return false
+end
+
+--- Q-меню открыто всем (игрокам нужна вкладка «Пропы» для строительства;
+--- лишние вкладки прячет клиентский модуль p11_cl_propmenu.lua,
+--- а сервер сам режет запрещённые спавны).
+function GM:SpawnMenuOpen(ply)   return true end
+--- C-меню (инструменты/контекст) — только админам.
 function GM:ContextMenuOpen(ply) return IsPolusAdmin(ply) end
 
 --- Ноуклип — только админам.

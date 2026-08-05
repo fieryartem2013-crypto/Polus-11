@@ -14,6 +14,7 @@ local cl = {
     "modules/p11_cl_nametags.lua", -- ники/должности над головами
     "modules/p11_cl_tasks.lua",    -- виджет задач
     "modules/p11_cl_panic.lua",    -- эффекты паники
+    "modules/p11_cl_propmenu.lua", -- только вкладка «Пропы» не-админам
 }
 
 local loaded = 0

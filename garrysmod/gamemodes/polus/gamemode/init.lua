@@ -20,6 +20,7 @@ local send = {
     "modules/p11_cl_nametags.lua",
     "modules/p11_cl_tasks.lua",
     "modules/p11_cl_panic.lua",
+    "modules/p11_cl_propmenu.lua",
 }
 for _, f in ipairs(send) do
     AddCSLuaFile(f)
@@ -43,6 +44,7 @@ local sv = {
     "modules/p11_sv_radio.lua",      -- рация
     "modules/p11_sv_persist.lua",    -- сохранение станции
     "modules/p11_sv_nechto.lua",     -- Нечто: классы, крик, формы
+    "modules/p11_sv_build.lua",      -- строительство: призрачные пропы
 }
 
 local function Safe(f)

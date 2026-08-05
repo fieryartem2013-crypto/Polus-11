@@ -90,4 +90,72 @@ POLUS11.Config = {
 
     -- ============ ФАЗЫ СМЕНЫ ============
     Phases = {"Спокойствие", "Первое исчезновение", "Паника", "Прорыв"},
+
+    -- ============ v2.5: СТРОИТЕЛЬСТВО ИЗ ПРОПОВ (для всех игроков) ============
+    -- Не-админам доступна только вкладка «Пропы» и только модели из списка.
+    -- Свежий проп — ПРИЗРАК (прозрачный, без коллизий с игроками).
+    -- E — взять/поставить. Окаменеет (станет физичным), только когда
+    -- в радиусе SolidifyRadius НЕТ НИ ОДНОГО игрока SolidityTime секунд.
+    Building = {
+        Enabled         = true,
+        MaxPerPlayer    = 8,    -- сколько пропов может держать один игрок
+        SolidifyRadius  = 130,  -- радиус «чистой зоны» для окаменения
+        SolidityTime    = 2,    -- секунд чистой зоны до окаменения
+        CarryDistance   = 90,   -- дистанция переноски перед лицом
+        GhostAlpha      = 120,  -- прозрачность призрака (0-255)
+
+        -- Вайтлист моделей (станционный реквизит; список можно расширять)
+        AllowedProps    = {
+            -- мебель и жилое
+            ["models/props_c17/furniturebed001a.mdl"] = true,             -- койка
+            ["models/props_c17/furniturechair001a.mdl"] = true,           -- стул
+            ["models/props_c17/furnituretable001a.mdl"] = true,           -- стол
+            ["models/props_c17/furnituretable002a.mdl"] = true,           -- стол кухонный
+            ["models/props_c17/furniturecouch001a.mdl"] = true,           -- диван
+            ["models/props_c17/furnituredrawer001a.mdl"] = true,          -- тумба
+            ["models/props_c17/furnituredresser001a.mdl"] = true,         -- комод
+            ["models/props_c17/furnitureshelf001b.mdl"] = true,           -- полка
+            ["models/props_c17/furniturefridge001a.mdl"] = true,          -- холодильник
+            ["models/props_c17/furniturewashingmachine001a.mdl"] = true,  -- стиралка
+            ["models/props_c17/bench01a.mdl"] = true,                     -- скамейка
+            -- склад и снабжение
+            ["models/props_junk/wood_crate001a.mdl"] = true,              -- ящик малый
+            ["models/props_junk/wood_crate002a.mdl"] = true,              -- ящик большой
+            ["models/props_junk/wood_pallet001a.mdl"] = true,             -- паллета
+            ["models/props_junk/cardboard_box001a.mdl"] = true,           -- коробка
+            ["models/props_junk/cardboard_box002a.mdl"] = true,
+            ["models/props_junk/cardboard_box003a.mdl"] = true,
+            ["models/props_junk/cardboard_box004a.mdl"] = true,
+            ["models/props_c17/oildrum001.mdl"] = true,                   -- бочка
+            ["models/props_borealis/bluebarrel001.mdl"] = true,           -- бочка синяя
+            ["models/props_c17/canister01a.mdl"] = true,                  -- канистра
+            ["models/props_c17/canister_propane01a.mdl"] = true,          -- баллон пропановый
+            ["models/props_junk/propane_tank001a.mdl"] = true,            -- газовый баллон
+            ["models/props_junk/metalgascan.mdl"] = true,                 -- канистра с бензином
+            ["models/props_c17/longwood01a.mdl"] = true,                  -- доска-длинная
+            -- хозобих и атмосфера
+            ["models/props_junk/plasticbucket001a.mdl"] = true,           -- ведро
+            ["models/props_junk/trafficcone001a.mdl"] = true,             -- конус
+            ["models/props_junk/shovel01a.mdl"] = true,                   -- лопата (снег!)
+            ["models/props_junk/garbage_bag001a.mdl"] = true,             -- мешок мусора
+            ["models/props_junk/garbage_newspaper001a.mdl"] = true,       -- газета
+            ["models/props_junk/glassjug01.mdl"] = true,                  -- бутыль
+            ["models/props_junk/watermelon01.mdl"] = true,                -- арбуз (юмор)
+            ["models/props_c17/metalpot001a.mdl"] = true,                 -- кастрюля
+            ["models/props_junk/meathook001a.mdl"] = true,                -- мясной крюк
+            -- инструменты и лаборатория
+            ["models/props_c17/tools_wrench01a.mdl"] = true,              -- гаечный ключ
+            ["models/props_c17/tools_pliers01a.mdl"] = true,              -- пассатижи
+            ["models/props_c17/tools_hammer01.mdl"] = true,               -- молоток
+            ["models/props_lab/citizenradio.mdl"] = true,                 -- радиоприёмник
+            ["models/props_lab/desklamp01.mdl"] = true,                   -- настольная лампа
+            ["models/props_lab/clipboard.mdl"] = true,                    -- планшет с бумагами
+            ["models/props_lab/heatplate.mdl"] = true,                    -- плитка лабораторная
+            ["models/props_c17/consolebox01a.mdl"] = true,                -- консоль/компьютер
+            -- личное
+            ["models/props_c17/suitcase_passenger_physics.mdl"] = true,   -- чемодан
+            ["models/props_interiors/radiator01a.mdl"] = true,            -- батарея (тепло!)
+            ["models/props_interiors/vendingmachinesoda01a.mdl"] = true,  -- торговый автомат
+        },
+    },
 }
