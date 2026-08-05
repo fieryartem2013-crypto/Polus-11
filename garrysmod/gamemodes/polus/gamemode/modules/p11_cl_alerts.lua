@@ -152,3 +152,33 @@ hook.Add("HUDPaint", "P11.WantedSelf", function()
     draw.SimpleText("⚠ ВЫ В РОЗЫСКЕ: " .. reason .. "  —  сдайтесь охране или будьте готовы к аресту",
         "P11.Alerts.Small", w / 2, 236, Color(255, 210, 200), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 end)
+
+-- ============ ВЕЧНЫЙ МОРОЗ (v3.0): изморозь по углам экрана ============
+-- Всегда-на-посту VFX: лёгкий ледяной оттенок по краям. В бурю
+-- усиливается вдвое — интеграция с метелью выше.
+
+hook.Add("HUDPaint", "P11.FrostVignette", function()
+    if P11.IntroOpen then return end
+    local me = LocalPlayer()
+    if not IsValid(me) or not me:Alive() then return end
+    if IsValid(POLUS11 and POLUS11.Scoreboard) then return end
+
+    local w, h = ScrW(), ScrH()
+    local storm = GetGlobalBool("P11_Storm", false) and 2 or 1
+    local a = math.floor(9 * storm)
+
+    -- углы подёрнуты инеем
+    surface.SetDrawColor(170, 205, 235, a)
+    surface.DrawRect(0, 0, w, 30)
+    surface.DrawRect(0, h - 30, w, 30)
+    surface.DrawRect(0, 0, 30, h)
+    surface.DrawRect(w - 30, 0, 30, h)
+
+    -- мерцающие искры угловой изморози (очень редко и слабо)
+    if math.random() < 0.006 then
+        local cx = math.random() < 0.5 and math.random(2, 40) or math.random(w - 40, w - 2)
+        local cy = math.random() < 0.5 and math.random(2, 40) or math.random(h - 40, h - 2)
+        surface.SetDrawColor(220, 240, 255, 26)
+        surface.DrawRect(cx, cy, 2, 2)
+    end
+end)

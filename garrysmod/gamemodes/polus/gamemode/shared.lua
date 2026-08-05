@@ -17,12 +17,12 @@ DeriveGamemode("sandbox")
 
 -- версии (в аддон-версии лежали в autorun-загрузчиках)
 P11FW = P11FW or {}
-P11FW.Version = "1.6.0"
+P11FW.Version = "1.7.0"
 
 POLUS11 = POLUS11 or {}
-POLUS11.Version = "2.9"
+POLUS11.Version = "3.0"
 
-POLUS_BUILD = "3.5" -- версия сборки-гейммода
+POLUS_BUILD = "3.6" -- версия сборки-гейммода
 
 -- ============ ОБЩИЕ МОДУЛИ (shared) ============
 
@@ -119,8 +119,10 @@ end
 --- лишние вкладки прячет клиентский модуль p11_cl_propmenu.lua,
 --- а сервер сам режет запрещённые спавны).
 function GM:SpawnMenuOpen(ply)   return true end
---- C-меню (инструменты/контекст) — только админам.
-function GM:ContextMenuOpen(ply) return IsPolusAdmin(ply) end
+--- C-меню песочницы отключено полностью (v3.0): на C теперь висит
+--- станционное меню жестов/действий (p11_cl_cmenu.lua). Админские
+--- инструменты доступны через Q-меню (спавнлисты/настройки тулгана).
+function GM:ContextMenuOpen(ply) return false end
 
 --- Ноуклип — только админам.
 function GM:PlayerNoClip(ply, on)

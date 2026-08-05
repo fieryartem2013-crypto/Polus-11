@@ -29,6 +29,7 @@ local send = {
     "modules/p11_cl_terminal.lua",
     "modules/p11_cl_help.lua",
     "modules/p11_cl_alerts.lua",
+    "modules/p11_cl_cmenu.lua",
 }
 for _, f in ipairs(send) do
     AddCSLuaFile(f)
@@ -63,6 +64,7 @@ local sv = {
     "modules/fw_sv_punish.lua",      -- арест / рабство / бан
     "modules/fw_sv_mod.lua",         -- варны / мут / кик + ворота прав рангов + журнал
     "modules/fw_sv_ranks.lua",       -- ранги + секретный ключ основателя
+    "modules/fw_sv_emotes.lua",      -- жесты C-меню + меню моделей админов
     "modules/p11_sv_infection.lua",  -- заражение Нечто
     "modules/p11_sv_power.lua",      -- генератор / топливо / блэкаут
     "modules/p11_sv_bloodtest.lua",  -- анализ крови

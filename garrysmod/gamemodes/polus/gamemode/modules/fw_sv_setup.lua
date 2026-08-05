@@ -346,10 +346,10 @@ concommand.Add("polus_fw_clearspawn", function(ply) if P11FW.Config.Admin(ply) t
 concommand.Add("polus_fw_setjail", function(ply) if P11FW.Config.Admin(ply) then P11FW.SetPoint("jail", ply:GetPos(), ply:EyeAngles()) P11FW.Notify(ply, "Точка ареста поставлена.") end end)
 concommand.Add("polus_fw_clearjail", function(ply) if P11FW.Config.Admin(ply) then P11FW.ClearPoint("jail") P11FW.Notify(ply, "Точка ареста сброшена.") end end)
 
--- открыть админ-меню из чата
+-- открыть админ-меню из чата: /menu (главная), !menu, !fw, !фвадмин, !p11
 hook.Add("PlayerSay", "P11FW.AdminChat", function(ply, text)
     local t = string.lower(string.Trim(text))
-    if t ~= "!фвадмин" and t ~= "!fw" and t ~= "!p11" then return end
+    if t ~= "/menu" and t ~= "!menu" and t ~= "!фвадмин" and t ~= "!fw" and t ~= "!p11" then return end
     if not P11FW.Config.Admin(ply) then
         P11FW.Notify(ply, "Только для администрации.")
         return ""

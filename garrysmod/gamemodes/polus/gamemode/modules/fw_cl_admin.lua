@@ -913,11 +913,6 @@ function P11FW.OpenAdminMenu()
         orderW:SetPos(300, 26) orderW:SetSize(60, 26)
         orderW:SetMinMax(1, 999) orderW:SetValue(50)
 
-        local idLbl = vgui.Create("DLabel", form)
-        idLbl:SetPos(368, 26) idLbl:SetSize(70, 26)
-        idLbl:SetFont("P11FW.Small") idLbl:SetTextColor(AC.dim)
-        idLbl:SetText("новая")
-
         Lbl("Цвет (R/G/B):", 10, 58)
         local colors = {}
         for i, cname in ipairs({ "R", "G", "B" }) do
@@ -926,6 +921,22 @@ function P11FW.OpenAdminMenu()
             s:SetText(cname) s:SetMin(0) s:SetMax(255) s:SetDecimals(0)
             s:SetValue(i == 1 and 200 or i == 2 and 160 or 110)
             colors[i] = s
+        end
+
+        -- v1.7: живой превью-чип (цвет + id) — как будет выглядеть секция
+        local prev = vgui.Create("DPanel", form)
+        prev:SetPos(368, 8) prev:SetSize(88, 44)
+        prev.SelText = "новая"
+        prev.Paint = function(s, w, h)
+            local r = math.floor(colors[1]:GetValue())
+            local g = math.floor(colors[2]:GetValue())
+            local b = math.floor(colors[3]:GetValue())
+            draw.RoundedBox(6, 0, 0, w, h, Color(r, g, b, 42))
+            draw.RoundedBoxEx(6, 0, 0, 3, h, Color(r, g, b), true, false, true, false)
+            draw.SimpleText(s.SelText, "P11FW.Small", w / 2 + 1, h / 2 - 8,
+                Color(r, g, b), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+            draw.SimpleText("превью", "P11FW.Small", w / 2 + 1, h / 2 + 9,
+                Color(r, g, b, 150), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
         end
 
         Lbl("Описание (для админов):", 10, 108)
@@ -942,13 +953,13 @@ function P11FW.OpenAdminMenu()
             colors[1]:SetValue(line.CatData.color.r)
             colors[2]:SetValue(line.CatData.color.g)
             colors[3]:SetValue(line.CatData.color.b)
-            idLbl:SetText(line.CatData.custom and line.CatId or "встроенная")
+            prev.SelText = line.CatData.custom and line.CatId or "встроенная"
         end
 
         local newB = MakeBtn(form, "НОВАЯ ФОРМА", AC.dim, function()
             f.SelFactionId = nil
             nameE:SetValue("") descE:SetValue("") orderW:SetValue(50)
-            idLbl:SetText("новая")
+            prev.SelText = "новая"
         end)
         newB:SetPos(10, 210) newB:SetSize(206, 30)
 
