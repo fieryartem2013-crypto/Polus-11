@@ -72,8 +72,10 @@ function ENT:StartCarry(ply)
     -- ноша: грузчик привычный, остальные еле идут
     local heavy = P11FW and P11FW.GetJobId and P11FW.GetJobId(ply) ~= "porter"
     ply.P11_CarrySlow = heavy and 0.7 or 0.88
-    ply:SetWalkSpeed(POLUS11.Config.WalkSpeed and (POLUS11.Config.WalkSpeed * ply.P11_CarrySlow) or (200 * ply.P11_CarrySlow))
-    ply:SetRunSpeed((heavy and 400 or 360) * ply.P11_CarrySlow)
+    -- v3.8.1: базовые скорости — из POLUS11.Config.Movement (станция медленнее)
+    local mv = POLUS11.Config.Movement or {}
+    ply:SetWalkSpeed((mv.walk or 170) * ply.P11_CarrySlow)
+    ply:SetRunSpeed((mv.run or 330) * ply.P11_CarrySlow)
     POLUS11.Notify(ply, heavy
         and "Тяжело! Вы еле плетётесь с бочкой. Ещё раз E — поставить."
         or  "Вы вскинули бочку на плечо. Ещё раз E — поставить, E у генератора — заправить.")
@@ -90,8 +92,7 @@ function ENT:StopCarry(ply)
     if IsValid(ply) then
         -- вернуть скорость
         if ply.P11_CarrySlow then
-            ply:SetWalkSpeed(200)
-            ply:SetRunSpeed(400)
+            if POLUS11.ApplyMoveSpeeds then POLUS11.ApplyMoveSpeeds(ply) end -- v3.8.1
             ply.P11_CarrySlow = nil
         end
         -- засчитать переноску грузчику (груз = пройденный путь + время)
@@ -116,7 +117,8 @@ function ENT:Use(activator)
             -- заправили прямо с плеча: скорость назад
             local c = self.P11_Carrier
             if c.P11_CarrySlow then
-                c:SetWalkSpeed(200) c:SetRunSpeed(400) c.P11_CarrySlow = nil
+                if POLUS11.ApplyMoveSpeeds then POLUS11.ApplyMoveSpeeds(c) end -- v3.8.1
+                c.P11_CarrySlow = nil
             end
             self.P11_Carrier = nil
             if POLUS11.TaskEvent then POLUS11.TaskEvent(c, "haul") end

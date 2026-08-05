@@ -44,6 +44,21 @@ end
 
 function P11FW.RegisterCustomFactions(records)
     records = istable(records) and records or {}
+    P11FW.BaseFactions = P11FW.BaseFactions or {} -- заводские копии (v3.8.1)
+
+    -- v3.8.1: откат встроенных, чью ПРАВКУ убрали из records
+    for i, c in ipairs(P11FW.Categories or {}) do
+        if c.overridden and not c.custom then
+            local still = false
+            for _, rec in ipairs(records) do
+                if rec.override and rec.id == c.id then still = true break end
+            end
+            if not still and P11FW.BaseFactions[c.id] then
+                P11FW.Categories[i] = table.Copy(P11FW.BaseFactions[c.id])
+                P11FW.BaseFactions[c.id] = nil
+            end
+        end
+    end
 
     -- 1) снести прежние кастомные из общего списка
     local builtins = {}
@@ -62,7 +77,25 @@ function P11FW.RegisterCustomFactions(records)
             for _, c in ipairs(P11FW.Categories) do
                 if c.id == rec.id then clash = true break end
             end
-            if not clash then
+
+            -- v3.8.1: ПРАВКА ВСТРОЕННОЙ фракции (переопределение)
+            if rec.override and clash then
+                local col = istable(rec.color) and rec.color or {}
+                for _, cat in ipairs(P11FW.Categories) do
+                    if cat.id == rec.id then
+                        if not P11FW.BaseFactions[rec.id] then
+                            P11FW.BaseFactions[rec.id] = table.Copy(cat)
+                        end
+                        cat.name  = string.sub(rec.name, 1, 32)
+                        cat.desc  = string.sub(tostring(rec.desc or ""), 1, 300)
+                        cat.order = tonumber(rec.order) or 50
+                        cat.color = Color(tonumber(col.r) or 200, tonumber(col.g) or 160, tonumber(col.b) or 110)
+                        cat.overridden = true
+                        P11FW.CustomFactions[rec.id] = cat
+                        break
+                    end
+                end
+            elseif not clash then
                 local col = istable(rec.color) and rec.color or {}
                 local cat = {
                     id     = rec.id,

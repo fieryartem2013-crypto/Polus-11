@@ -22,7 +22,7 @@ P11FW.Version = "1.8.0"
 POLUS11 = POLUS11 or {}
 POLUS11.Version = "3.2"
 
-POLUS_BUILD = "3.8" -- версия сборки-гейммода
+POLUS_BUILD = "3.8.1" -- версия сборки-гейммода (hotfix)
 
 -- ============ ОБЩИЕ МОДУЛИ (shared) ============
 
@@ -167,3 +167,46 @@ function GM:CanPlayerSuicide(ply)
     if pun == "arrest" or pun == "slavery" then return false end
     return true
 end
+
+-- ============================================================
+--  v3.8.1: ТЕМП СТАНЦИИ И АНТИ-БАННИХОП (shared для предсказания)
+--  Ходьба медленнее, разбег скромнее, прыжок ниже, а набранный по
+--  бхоп-цепочке импульс гасится при приземлении (скорость в полёте
+--  > разбега → обрезается до разбега ×1.1). Величины — в
+--  POLUS11.Config.Movement (модули их же используют).
+-- ============================================================
+
+local function MoveCfg()
+    local m = POLUS11.Config and POLUS11.Config.Movement or nil
+    return (m and m.walk) or 170, (m and m.run) or 330,
+           (m and m.jump) or 120, (m and m.antiBhop ~= false)
+end
+
+function POLUS11.ApplyMoveSpeeds(ply)
+    if not IsValid(ply) then return end
+    local w, r, j = MoveCfg()
+    ply:SetWalkSpeed(w)
+    ply:SetRunSpeed(r)
+    ply:SetJumpPower(j)
+end
+
+hook.Add("PlayerSpawn", "P11.MoveSpeeds", function(ply)
+    -- после фреймворковского лоадаута, чтобы поверх не перетёрли
+    timer.Simple(0.15, function()
+        if IsValid(ply) and ply:Alive() then POLUS11.ApplyMoveSpeeds(ply) end
+    end)
+end)
+
+hook.Add("OnPlayerHitGround", "P11.AntiBhop", function(ply, inWater, onFloater)
+    if inWater or onFloater then return end
+    local _, r, _, allow = MoveCfg()
+    if not allow then return end
+    local v = ply:GetVelocity()
+    local h = math.sqrt(v.x * v.x + v.y * v.y)
+    local cap = r * 1.1
+    if h > cap then
+        -- обрезка горизонтали до разбега (цепочка прыжков «честная»)
+        local k = cap / h
+        ply:SetVelocity(Vector(-v.x * (1 - k), -v.y * (1 - k), 0))
+    end
+end)

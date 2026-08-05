@@ -248,6 +248,9 @@ end
 -- records = { {id, team, name, category, desc, color={r,g,b}, max, models, weapons, order}, ... }
 
 function P11FW.RegisterCustomJobs(records)
+    records = istable(records) and records or {}
+    P11FW.BaseJobs = P11FW.BaseJobs or {} -- заводские копии для отката правок (v3.8.1)
+
     -- снести прежние кастомные
     for id, job in pairs(P11FW.Jobs) do
         if job.custom then
@@ -258,9 +261,43 @@ function P11FW.RegisterCustomJobs(records)
         end
     end
 
-    for _, rec in ipairs(records or {}) do
+    -- v3.8.1: откат встроенных, чью ПРАВКУ убрали из records
+    for id, job in pairs(P11FW.Jobs) do
+        if job.overridden and not job.custom then
+            local still = false
+            for _, rec in ipairs(records) do
+                if rec.override and rec.id == id then still = true break end
+            end
+            if not still and P11FW.BaseJobs[id] then
+                P11FW.Jobs[id] = table.Copy(P11FW.BaseJobs[id])
+                P11FW.BaseJobs[id] = nil
+                local t = P11FW.JobTeams[id]
+                if t then team.SetUp(t, P11FW.Jobs[id].name, P11FW.Jobs[id].color, true) end
+            end
+        end
+    end
+
+    for _, rec in ipairs(records) do
         if istable(rec) and isstring(rec.id) and isnumber(rec.team) and isstring(rec.name) then
             local c = istable(rec.color) and rec.color or {}
+
+            -- v3.8.1: ПРАВКА ВСТРОЕННОЙ должности (переопределение вместо новой)
+            if rec.override and P11FW.Jobs[rec.id] and not P11FW.Jobs[rec.id].custom then
+                if not P11FW.BaseJobs[rec.id] then
+                    P11FW.BaseJobs[rec.id] = table.Copy(P11FW.Jobs[rec.id])
+                end
+                local job = P11FW.Jobs[rec.id]
+                job.name       = rec.name
+                job.desc       = rec.desc or ""
+                job.category   = isstring(rec.category) and rec.category or job.category
+                job.models     = istable(rec.models) and rec.models or {}
+                job.weapons    = istable(rec.weapons) and rec.weapons or {}
+                job.max        = tonumber(rec.max) or 0
+                job.terminal   = rec.terminal == true
+                job.color      = Color(tonumber(c.r) or 210, tonumber(c.g) or 170, tonumber(c.b) or 120)
+                job.overridden = true
+                team.SetUp(rec.team, job.name, job.color, true)
+            elseif not rec.override then
             P11FW.Jobs[rec.id] = {
                 custom   = true,
                 terminal = rec.terminal == true,
@@ -276,6 +313,7 @@ function P11FW.RegisterCustomJobs(records)
             P11FW.JobTeams[rec.id] = rec.team
             P11FW.TeamJobs[rec.team] = rec.id
             team.SetUp(rec.team, rec.name, P11FW.Jobs[rec.id].color, true)
+            end
         end
     end
 

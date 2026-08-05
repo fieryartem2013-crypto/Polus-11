@@ -614,7 +614,7 @@ function P11FW.OpenAdminMenu()
                     if c.id == job.category then catName = c.name end
                 end
                 local line = lv:AddLine(job.name, catName, (job.max or 0) > 0 and job.max or "∞",
-                    job.custom and "КАСТОМ" or "встроенная")
+                    job.custom and "КАСТОМ" or job.overridden and "ПРАВКА" or "встроенная")
                 line.JobId = jobId
             end
         end
@@ -782,6 +782,7 @@ function P11FW.OpenAdminMenu()
 
         -- выбранная строка списка → заполнить форму
         local editingId = nil
+        local editingKind = nil -- "custom" | "override" | "builtin" (v3.8.1)
         local status = vgui.Create("DLabel", form)
         status:SetPos(10, 406) status:SetSize(446, 14)
         status:SetFont("P11FW.Small") status:SetTextColor(AC.gold)
@@ -817,8 +818,11 @@ function P11FW.OpenAdminMenu()
                 jobCol = Color(job.color.r, job.color.g, job.color.b)
             end
             termC:SetChecked(job.terminal == true)
-            editingId = job.custom and jobId or nil
-            status:SetText(job.custom and ("Правим КАСТОМНУЮ: " .. job.name) or "ВСТРОЕННАЯ — можно только скопировать в новую")
+            editingId = jobId -- v3.8.1: встроенные ТОЖЕ редактируются (переопределением)
+            editingKind = job.custom and "custom" or job.overridden and "override" or "builtin"
+            status:SetText(job.custom and ("Правим КАСТОМНУЮ: " .. job.name)
+                or job.overridden and ("Правим ПРАВКУ: " .. job.name)
+                or ("Встроенная: «" .. job.name .. "» → сохранит как ПРАВКУ"))
         end
 
         local btnCreate = MakeBtn(form, "СОЗДАТЬ НОВУЮ", AC.ok, function()
@@ -830,17 +834,21 @@ function P11FW.OpenAdminMenu()
         btnCreate:SetPos(10, 424) btnCreate:SetSize(146, 24)
 
         local btnUpdate = MakeBtn(form, "СОХРАНИТЬ ПРАВКУ", AC.accent, function()
-            if not editingId then status:SetText("⚠ это встроенная или не выбрана кастомная!") surface.PlaySound("buttons/button10.wav") return end
+            if not editingId then status:SetText("⚠ сначала выбери должность из списка!") surface.PlaySound("buttons/button10.wav") return end
             local rec = CollectForm()
             rec.id = editingId
             SendJobEdit(2, rec)
+            editingKind = "override"
+            status:SetText("Сохранено (" .. (editingKind == "builtin" and "создана ПРАВКА" or "правка") .. "). Синк на сервер...")
         end)
         btnUpdate:SetPos(162, 424) btnUpdate:SetSize(146, 24)
 
-        local btnDelete = MakeBtn(form, "УДАЛИТЬ", AC.bad, function()
-            if not editingId then status:SetText("⚠ удалить можно только кастомную!") surface.PlaySound("buttons/button10.wav") return end
+        local btnDelete = MakeBtn(form, "УДАЛИТЬ/СНЯТЬ", AC.bad, function()
+            if not editingId then status:SetText("⚠ сначала выбери должность!") surface.PlaySound("buttons/button10.wav") return end
+            if editingKind == "builtin" then status:SetText("⚠ заводскую без правки удалять нельзя!") surface.PlaySound("buttons/button10.wav") return end
             SendJobEdit(3, { id = editingId })
-            editingId = nil
+            editingId = nil editingKind = nil
+            status:SetText("Удалено/правка снята.")
         end)
         btnDelete:SetPos(314, 424) btnDelete:SetSize(142, 24)
 
@@ -996,7 +1004,8 @@ function P11FW.OpenAdminMenu()
                     local jb = P11FW.Jobs[jid]
                     if jb and (jb.faction or jb.category) == cat.id then jobs = jobs + 1 end
                 end
-                local line = lv:AddLine(cat.name, jobs, cat.custom and "КАСТОМ" or "встроенная")
+                local line = lv:AddLine(cat.name, jobs,
+                    cat.custom and "КАСТОМ" or cat.overridden and "ПРАВКА" or "встроенная")
                 line.CatId   = cat.id
                 line.CatData = cat
             end
@@ -1129,12 +1138,13 @@ function P11FW.OpenAdminMenu()
         descE:SetPlaceholderText("Кто входит во фракцию и чем занимается...")
 
         lv.OnRowSelected = function(s, id, line)
-            f.SelFactionId = line.CatData.custom and line.CatId or nil
+            f.SelFactionId = line.CatId -- v3.8.1: встроенные правятся как переопределение
             nameE:SetValue(line.CatData.name or "")
             descE:SetValue(line.CatData.desc or "")
             orderW:SetValue(line.CatData.order or 50)
             facCol = Color(line.CatData.color.r, line.CatData.color.g, line.CatData.color.b)
-            prev.SelText = line.CatData.custom and line.CatId or "встроенная"
+            prev.SelText = line.CatData.custom and line.CatId
+                or line.CatData.overridden and ("правка " .. line.CatId) or "встроенная (→правка)"
         end
 
         local newB = MakeBtn(form, "НОВАЯ ФОРМА", AC.dim, function()
@@ -1159,7 +1169,7 @@ function P11FW.OpenAdminMenu()
         end)
         saveB:SetPos(226, 238) saveB:SetSize(210, 30)
 
-        local delB = MakeBtn(form, "УДАЛИТЬ (только кастом)", AC.bad, function()
+        local delB = MakeBtn(form, "УДАЛИТЬ/СНЯТЬ ПРАВКУ", AC.bad, function()
             if not f.SelFactionId then surface.PlaySound("buttons/button10.wav") return end
             SendAction(21, function() net.WriteString(f.SelFactionId) end)
         end)
@@ -1170,7 +1180,9 @@ function P11FW.OpenAdminMenu()
         note:SetFont("P11FW.Small") note:SetTextColor(AC.dim)
         note:SetAutoStretchVertical(true)
         note:SetText("Фракция — это группа должностей.\n" ..
-            "После создания она появится в редакторе ДОЛЖНОСТЕЙ\n" ..
+            "Встроенные фракции тоже правятся — сохранятся как\n" ..
+            "переопределение (правка). После создания появится в\n" ..
+            "редакторе ДОЛЖНОСТЕЙ\n" ..
             "(поле «Фракция»), в F4 и в табе вопросов (TAB)\n" ..
             "как цветная секция. Сохраняется навсегда:")
         local note2 = vgui.Create("DLabel", form)

@@ -7,6 +7,7 @@
 --  Перезашёл — удостоверение перевыпустят. R / ПКМ — предъявить
 --  ближайшему человеку: у него откроется окно «ДОКУМЕНТ»
 --  с именем, должностью, кодом и печатью времени.
+--  ЛКМ — предъявить ближайшему; ПКМ / R — посмотреть СВОИ (v3.8.1).
 --  Замаскированное Нечто показывает УКРАДЕННОЕ имя — как и положено.
 -- ============================================================
 
@@ -43,9 +44,95 @@ function SWEP:Initialize()
     self:SetHoldType(self.HoldType)
 end
 
+-- сервер: собрать строки окна документа для предъявителя ply
+if SERVER then
+    function SWEP:SendDoc(ply, target)
+        local name = ply:GetNWString("P11_FakeNick", "")
+        if name == "" then name = ply:Nick() end
+        local jobName = P11FW.GetJobName and P11FW.GetJobName(ply) or "без назначения"
+
+        -- ФРАКЦИЯ крупно (v3.7)
+        local facName = "ПЕРСОНАЛ СТАНЦИИ"
+        if P11FW.GetJob and P11FW.CategoryList then
+            local job = P11FW.GetJob(ply)
+            local cid = job and (job.faction or job.category) or nil
+            for _, c in ipairs(P11FW.CategoryList) do
+                if c.id == cid then facName = c.name break end
+            end
+        end
+
+        net.Start("P11_DocShow")
+            net.WriteString(name)
+            net.WriteString(jobName)
+            net.WriteString(DocCodeOf(ply))
+            net.WriteString(os.date("%d.%m.%Y %H:%M"))
+            net.WriteString(facName)
+        net.Send(target)
+    end
+end
+
+-- ЛКМ — ПРЕДЪЯВИТЬ ближайшему на виду
+function SWEP:ShowNearest()
+    local ply = self.Owner
+    if not IsValid(ply) then return end
+    if self:GetNextPrimaryFire() > CurTime() then return end
+    self:SetNextPrimaryFire(CurTime() + 1.5)
+    ply:SetAnimation(PLAYER_ATTACK1)
+
+    if CLIENT then return end
+
+    -- найти ближайшего на виду
+    local best, bestDist = nil, 290
+    for _, t in ipairs(player.GetAll()) do
+        if t ~= ply and IsValid(t) and t:Alive() then
+            local d = t:GetPos():DistToSqr(ply:GetPos())
+            if d < bestDist * bestDist then
+                local tr = util.TraceLine({
+                    start  = ply:EyePos(),
+                    endpos = t:EyePos(),
+                    filter = { ply, t },
+                })
+                if not tr.Hit or tr.Entity == t then
+                    best, bestDist = t, math.sqrt(d)
+                end
+            end
+        end
+    end
+
+    if not IsValid(best) then
+        ply:ChatPrint("[ПОЛЮС-11] Некому предъявить документы — рядом никого.")
+        return
+    end
+
+    self:SendDoc(ply, best)
+    ply:ChatPrint("[ПОЛЮС-11] Документы предъявлены: " .. best:Nick())
+    best:ChatPrint("[ПОЛЮС-11] " .. ply:Nick() .. " показывает тебе документы.")
+end
+
+-- v3.8.1: ПКМ / R — посмотреть СВОИ документы
+function SWEP:ShowOwn()
+    local ply = self.Owner
+    if not IsValid(ply) then return end
+    if self:GetNextSecondaryFire() > CurTime() then return end
+    self:SetNextSecondaryFire(CurTime() + 1.2)
+
+    if CLIENT then return end
+
+    self:SendDoc(ply, ply)
+end
+
 function SWEP:PrimaryAttack()
-    -- ЛКМ тоже предъявляет (удобно)
-    self:SecondaryAttack()
+    self:ShowNearest()
+end
+
+function SWEP:SecondaryAttack()
+    self:ShowOwn()
+end
+
+function SWEP:Reload()
+    if CLIENT then return true end
+    self:ShowOwn()
+    return true
 end
 
 -- ============ УНИКАЛЬНЫЙ КОД ============
@@ -80,73 +167,6 @@ if SERVER then
     end)
 end
 
--- ============ ПРЕДЪЯВИТЬ ============
-
-function SWEP:SecondaryAttack()
-    local ply = self.Owner
-    if not IsValid(ply) then return end
-    if self:GetNextSecondaryFire() > CurTime() then return end
-    self:SetNextSecondaryFire(CurTime() + 1.5)
-    ply:SetAnimation(PLAYER_ATTACK1)
-
-    if CLIENT then return end
-
-    -- найти ближайшего на виду
-    local best, bestDist = nil, 290
-    for _, t in ipairs(player.GetAll()) do
-        if t ~= ply and IsValid(t) and t:Alive() then
-            local d = t:GetPos():DistToSqr(ply:GetPos())
-            if d < bestDist * bestDist then
-                local tr = util.TraceLine({
-                    start  = ply:EyePos(),
-                    endpos = t:EyePos(),
-                    filter = { ply, t },
-                })
-                if not tr.Hit or tr.Entity == t then
-                    best, bestDist = t, math.sqrt(d)
-                end
-            end
-        end
-    end
-
-    if not IsValid(best) then
-        ply:ChatPrint("[ПОЛЮС-11] Некому предъявить документы — рядом никого.")
-        return
-    end
-
-    -- личность = украденная, если под маской (как везде на станции)
-    local name = ply:GetNWString("P11_FakeNick", "")
-    if name == "" then name = ply:Nick() end
-    local jobName = P11FW.GetJobName and P11FW.GetJobName(ply) or "без назначения"
-
-    -- v3.7: ФРАКЦИЯ + читаемый формат кода (как в DRP-документах)
-    local facName = "ПЕРСОНАЛ СТАНЦИИ"
-    if P11FW.GetJob and P11FW.CategoryList then
-        local job = P11FW.GetJob(ply)
-        local cid = job and (job.faction or job.category) or nil
-        for _, c in ipairs(P11FW.CategoryList) do
-            if c.id == cid then facName = c.name break end
-        end
-    end
-
-    net.Start("P11_DocShow")
-        net.WriteString(name)
-        net.WriteString(jobName)
-        net.WriteString(DocCodeOf(ply))
-        net.WriteString(os.date("%d.%m.%Y %H:%M"))
-        net.WriteString(facName)
-    net.Send(best)
-
-    ply:ChatPrint("[ПОЛЮС-11] Документы предъявлены: " .. best:Nick())
-    best:ChatPrint("[ПОЛЮС-11] " .. ply:Nick() .. " показывает тебе документы.")
-end
-
-function SWEP:Reload()
-    if CLIENT then return true end
-    self:SecondaryAttack()
-    return true
-end
-
 -- ============ HUD ПОДСКАЗКИ ============
 
 function SWEP:DrawHUD()
@@ -157,7 +177,7 @@ function SWEP:DrawHUD()
     draw.SimpleText("Документы: " .. code,
         "P11.HUD.Text", ScrW() / 2, ScrH() * 0.72, Color(230, 215, 170, 215),
         TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-    draw.SimpleText("ЛКМ / R — предъявить ближайшему",
+    draw.SimpleText("ЛКМ — предъявить ближайшему • ПКМ / R — посмотреть свои",
         "P11.HUD.Text", ScrW() / 2, ScrH() * 0.72 + 24, Color(160, 170, 185, 170),
         TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 end

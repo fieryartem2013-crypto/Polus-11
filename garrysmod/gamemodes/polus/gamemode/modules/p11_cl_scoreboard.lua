@@ -16,6 +16,7 @@ surface.CreateFont("P11.SB.Small", {font = "Roboto", size = 14, weight = 400, ex
 surface.CreateFont("P11.SB.Tiny",  {font = "Roboto", size = 12, weight = 500, extended = true})
 
 local function DisplayNick(ply)
+    if not IsValid(ply) then return "?" end -- v3.8.1: защита сортировки/строк
     local fake = ply:GetNWString("P11_FakeNick", "")
     if fake ~= "" then return fake end
     return ply:Nick()
@@ -78,6 +79,7 @@ local function MakeRow(frame, ply, amAdmin)
     local hovered = false
 
     row.Paint = function(s, w, h)
+        if not IsValid(ply) then return end -- v3.8.1: игрок вышел — строка не падает
         local t = CurTime()
         local base = alive and Color(38, 41, 50, 205) or Color(52, 34, 36, 205)
         draw.RoundedBox(4, 0, 0, w, h, base)
@@ -119,6 +121,7 @@ local function MakeRow(frame, ply, amAdmin)
         chip:SetPos(14 + nameLab:GetWide() + 8, 6)
         if P11FW.RankHasFx and P11FW.RankHasFx(ply) then
             chip.Think = function(s)
+                if not IsValid(ply) then return end -- v3.8.1
                 s:SetTextColor(P11FW.RankFxColor(ply))
             end
         else
@@ -300,10 +303,51 @@ local function CloseSB()
     gui.EnableScreenClicker(false)
 end
 
+-- аварийное компакт-табло: если красивое дважды упало — показываем
+-- простое, но состав всегда виден (v3.8.1, авто-страховка от «краша TAB»)
+local function OpenSafeSB()
+    if IsValid(POLUS11.Scoreboard) then POLUS11.Scoreboard:Remove() end
+
+    local f = vgui.Create("DPanel")
+    POLUS11.Scoreboard = f
+    f:SetSize(360, math.min(ScrH() * 0.8, 560))
+    f:Center()
+    f.Paint = function(s, w, h)
+        draw.RoundedBox(6, 0, 0, w, h, Color(14, 16, 21, 235))
+        draw.SimpleText("СОСТАВ СТАНЦИИ (аварийный режим)", "P11.SB.Small", 10, 8,
+            Color(235, 190, 110))
+    end
+
+    local lv = vgui.Create("DListView", f)
+    lv:SetPos(8, 30) lv:SetSize(344, f:GetTall() - 38)
+    lv:SetMultiSelect(false)
+    lv:AddColumn("Игрок"):SetFixedWidth(170)
+    lv:AddColumn("Должность"):SetFixedWidth(110)
+    lv:AddColumn("Пинг")
+    for _, p in ipairs(player.GetAll()) do
+        if IsValid(p) then
+            local jn = (P11FW and P11FW.GetJobName) and P11FW.GetJobName(p) or ""
+            lv:AddLine(DisplayNick(p), jn, p:Ping())
+        end
+    end
+    gui.EnableScreenClicker(true)
+end
+
+P11.SBFails = 0
+
 hook.Add("ScoreboardShow", "P11.Scoreboard", function()
     if DarkRP then return end
     if not POLUS11.Config.CustomScoreboard then return end
-    OpenSB()
+    local ok, err = pcall(OpenSB)
+    if not ok then
+        P11.SBFails = P11.SBFails + 1
+        print("[POLUS][ERROR] TAB open (x" .. P11.SBFails .. "): " .. tostring(err))
+        if P11.SBFails >= 2 then
+            pcall(OpenSafeSB)
+        end
+    else
+        P11.SBFails = 0
+    end
 end)
 
 hook.Add("ScoreboardHide", "P11.Scoreboard", function()

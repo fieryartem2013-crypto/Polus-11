@@ -15,11 +15,12 @@ local function FactionsToRecords()
     local out = {}
     for id, cat in pairs(P11FW.CustomFactions or {}) do
         out[#out + 1] = {
-            id    = id,
-            name  = cat.name,
-            desc  = cat.desc or "",
-            order = cat.order or 50,
-            color = { r = cat.color.r, g = cat.color.g, b = cat.color.b },
+            id       = id,
+            name     = cat.name,
+            desc     = cat.desc or "",
+            order    = cat.order or 50,
+            override = cat.override == true, -- v3.8.1: правка встроенной
+            color    = { r = cat.color.r, g = cat.color.g, b = cat.color.b },
         }
     end
     table.sort(out, function(a, b) return (a.order or 50) < (b.order or 50) end)
@@ -86,7 +87,14 @@ function P11FW.UpsertFaction(rec)
 
     -- обновление существующей?
     local id = isstring(rec.id) and rec.id or nil
-    if id and not P11FW.CustomFactions[id] then id = nil end
+    -- v3.8.1: редактирование ВСТРОЕННОЙ фракции → создаём override-запись
+    if id and not P11FW.CustomFactions[id] then
+        if P11FW.GetCategory and P11FW.GetCategory(id) and P11FW.GetCategory(id).id == id then
+            clean.override = true -- штамп: это правка заводской фракции
+        else
+            id = nil
+        end
+    end
 
     -- новая: сгенерировать свободный id
     if not id then
@@ -118,6 +126,7 @@ function P11FW.DeleteFaction(id)
     if not P11FW.CustomFactions or not P11FW.CustomFactions[id] then
         return false, "такой кастомной фракции нет (встроенные удалять нельзя)"
     end
+    local wasOverride = P11FW.CustomFactions[id].override == true
     local all = FactionsToRecords()
     for i, r in ipairs(all) do
         if r.id == id then table.remove(all, i) break end
@@ -125,6 +134,6 @@ function P11FW.DeleteFaction(id)
     P11FW.RegisterCustomFactions(all)
     P11FW.SaveFactions()
     P11FW.SyncFactions()
-    P11FW.Log("Фракция удалена: " .. id)
+    P11FW.Log((wasOverride and "Правка фракции снята (встроенная вернулась): " or "Фракция удалена: ") .. id)
     return true
 end

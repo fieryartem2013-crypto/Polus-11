@@ -134,13 +134,35 @@ net.Receive("P11FW_JobEdit", function(len, ply)
 
     elseif act == 2 then
         local old = FindCustom(rec.id)
-        if not old then P11FW.Notify(ply, "Кастомная должность не найдена (встроенные менять нельзя).") return end
+        if not old then
+            -- v3.8.1: ВСТРОЕННУЮ тоже можно править — создаём override
+            local job = P11FW.Jobs[rec.id]
+            if not job or job.custom then
+                P11FW.Notify(ply, "Должность не найдена.")
+                return
+            end
+            local clean = SanitizeRecord(rec)
+            if not clean then P11FW.Notify(ply, "Имя не должно быть пустым.") return end
+            clean.id = rec.id
+            clean.team = P11FW.JobTeams[rec.id]
+            clean.order = job.order or 99
+            clean.override = true
+            P11FW.CustomJobs[#P11FW.CustomJobs + 1] = clean
+
+            P11FW.SaveCustomJobs()
+            P11FW.RegisterCustomJobs(P11FW.CustomJobs)
+            P11FW.SyncCustomJobs()
+            P11FW.Notify(ply, "Встроенная должность «" .. clean.name .. "» перекрыта правкой оружия/моделей/лимита.")
+            P11FW.Log(ply:Nick() .. " перекрыл встроенную должность " .. rec.id)
+            return
+        end
         local clean = SanitizeRecord(rec)
         if not clean then P11FW.Notify(ply, "Имя не должно быть пустым.") return end
 
         clean.id = old.id
         clean.team = old.team
         clean.order = old.order
+        clean.override = old.override == true
         for i, r in ipairs(P11FW.CustomJobs) do
             if r.id == old.id then P11FW.CustomJobs[i] = clean end
         end
@@ -152,7 +174,18 @@ net.Receive("P11FW_JobEdit", function(len, ply)
 
     elseif act == 3 then
         local old, idx = FindCustom(rec.id)
-        if not old then P11FW.Notify(ply, "Удалить можно только кастомную должность.") return end
+        if not old then P11FW.Notify(ply, "Снять можно только кастомную/правку.") return end
+
+        -- v3.8.1: снятие ПРАВКИ встроенной — игроки остаются на должности,
+        -- заводская версия возвращается сама в RegisterCustomJobs
+        if old.override then
+            table.remove(P11FW.CustomJobs, idx)
+            P11FW.SaveCustomJobs()
+            P11FW.RegisterCustomJobs(P11FW.CustomJobs)
+            P11FW.SyncCustomJobs()
+            P11FW.Notify(ply, "Правка снята — должность «" .. old.name .. "» снова заводская.")
+            return
+        end
 
         -- всех, кто на ней, — в новобранцы
         for _, p in ipairs(player.GetAll()) do
