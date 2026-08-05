@@ -115,11 +115,12 @@ local function OpenTerminal()
     clist:AddColumn("×")
 
     local assign = vgui.Create("DButton", cp)
-    assign:SetPos(8, 396) assign:SetSize(284, 32)
+    assign:SetPos(8, 396) assign:SetSize(202, 44)
     assign:SetText("")
     assign.Paint = function(s, w, h)
         draw.RoundedBox(4, 0, 0, w, h, s:IsHovered() and Color(120, 220, 140, 60) or Color(120, 220, 140, 30))
-        draw.SimpleText("◉ НАЗНАЧИТЬ ВЫБРАННОМУ", "P11.Term.Text", w / 2, h / 2, TC.ok, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        draw.SimpleText("◉ НАЗНАЧИТЬ", "P11.Term.Text", w / 2, h / 2 - 9, TC.ok, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        draw.SimpleText("выбранному игроку", "P11.Term.Small", w / 2, h / 2 + 11, TC.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
     end
     assign.DoClick = function()
         surface.PlaySound("buttons/button9.wav")
@@ -127,6 +128,23 @@ local function OpenTerminal()
         if not pl or not ct then surface.PlaySound("buttons/button10.wav") return end
         local pli, cli = plist:GetLine(pl), clist:GetLine(ct)
         Cmd(1, pli.PIdx, cli.CKey)
+    end
+
+    -- v2.9: взять выбранную задачу СЕБЕ
+    local selfB = vgui.Create("DButton", cp)
+    selfB:SetPos(214, 396) selfB:SetSize(78, 44)
+    selfB:SetText("")
+    selfB.Paint = function(s, w, h)
+        draw.RoundedBox(4, 0, 0, w, h, s:IsHovered() and Color(230, 200, 110, 60) or Color(230, 200, 110, 25))
+        draw.SimpleText("◍ СЕБЕ", "P11.Term.Text", w / 2, h / 2 - 9, TC.gold, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        draw.SimpleText("взять самому", "P11.Term.Small", w / 2, h / 2 + 11, TC.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+    end
+    selfB.DoClick = function()
+        surface.PlaySound("buttons/button9.wav")
+        local ct = clist:GetSelectedLine()
+        if not ct then surface.PlaySound("buttons/button10.wav") return end
+        local cli = clist:GetLine(ct)
+        Cmd(3, 0, cli.CKey)
     end
 
     -- ============ КОЛОНКА 3: НАЗНАЧЕННЫЕ ============

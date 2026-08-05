@@ -20,9 +20,9 @@ P11FW = P11FW or {}
 P11FW.Version = "1.6.0"
 
 POLUS11 = POLUS11 or {}
-POLUS11.Version = "2.8"
+POLUS11.Version = "2.9"
 
-POLUS_BUILD = "3.4" -- версия сборки-гейммода
+POLUS_BUILD = "3.5" -- версия сборки-гейммода
 
 -- ============ ОБЩИЕ МОДУЛИ (shared) ============
 

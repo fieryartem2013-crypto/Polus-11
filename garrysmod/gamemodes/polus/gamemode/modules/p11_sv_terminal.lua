@@ -131,12 +131,13 @@ function POLUS11.XAssign(target, catKey, by)
     end
 
     list[#list + 1] = {
-        key  = cat.key,
-        name = cat.name,
-        max  = cat.max,
-        cur  = 0,
-        done = false,
-        by   = IsValid(by) and by:Nick() or "терминал",
+        key   = cat.key,
+        name  = cat.name,
+        max   = cat.max,
+        cur   = 0,
+        done  = false,
+        since = CurTime(), -- v2.9: для ложного прогресса Нечто
+        by    = IsValid(by) and by:Nick() or "терминал",
     }
     POLUS11.SyncTasks(target)
     target:ChatPrint("[ЗАДАНИЕ] Терминал выдал тебе: " .. cat.name)
@@ -198,9 +199,17 @@ function POLUS11.TermSendData(ply)
             net.WriteUInt(p:EntIndex(), 8)
             net.WriteString(p:Nick())
             net.WriteString(P11FW.GetJobName and P11FW.GetJobName(p) or "")
+            -- v2.9: если игрок — замаскированное Нечто, начальству он
+            -- «врёт»: в терминале его прогресс растёт сам собой быстрее
+            -- реальности (ползёт +1 каждые ~25 сек с момента назначения).
+            local masked = POLUS11.IsMaskedThing and POLUS11.IsMaskedThing(p) or false
             local rows = {}
             for _, t in ipairs(p.P11_XTasks or {}) do
-                rows[#rows + 1] = { key = t.key, name = t.name, cur = math.floor(t.cur), max = t.max, done = t.done }
+                local shown = math.floor(t.cur)
+                if masked and not t.done and t.since then
+                    shown = math.min(t.max, shown + math.floor((CurTime() - t.since) / 25))
+                end
+                rows[#rows + 1] = { key = t.key, name = t.name, cur = shown, max = t.max, done = t.done }
             end
             net.WriteString(util.TableToJSON(rows) or "[]")
         end
@@ -228,6 +237,14 @@ net.Receive("P11_TermAct", function(len, ply)
 
     local target = Entity(net.ReadUInt(8))
     local catKey = net.ReadString()
+
+    if act == 3 then -- взять задачу СЕБЕ (у терминала с допуском)
+        local ok, err = POLUS11.XAssign(ply, catKey, ply)
+        P11FW.Notify(ply, ok and "Задача взята себе." or ("Ошибка: " .. tostring(err)))
+        POLUS11.TermSendData(ply)
+        return
+    end
+
     if not (IsValid(target) and target:IsPlayer()) then return end
 
     if act == 1 then -- назначить

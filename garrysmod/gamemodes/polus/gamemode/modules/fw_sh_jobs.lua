@@ -53,9 +53,9 @@ P11FW.Jobs = {
     },
 
     officer = {
-        order = 3, category = "garrison", terminal = true,
+        order = 3, category = "garrison", terminal = true, command = true,
         name = "Начкар / Офицер",
-        desc = "Командир караула станции. Расставляет посты, ведёт переговоры, объявляет тревогу. Единственная должность с автоматом. Одно место.",
+        desc = "Командир караула станции. Расставляет посты, ведёт переговоры, объявляет тревогу. Может отдавать ПРИКАЗЫ (!приказ) и объявлять РОЗЫСК (!розыск). Единственная должность с автоматом. Одно место.",
         models = {
             "models/player/police.mdl",
             "models/player/combine_soldier_prisonguard.mdl",

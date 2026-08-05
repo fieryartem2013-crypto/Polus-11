@@ -37,6 +37,7 @@ local function MakeRow(frame, ply, amAdmin)
     local extra = ""
     if amAdmin and ply:GetNWBool("P11_Infected", false) then extra = "  ☣ НЕЧТО" end
     if not alive then extra = extra .. "  (мертв)" end
+    if ply:GetNWString("P11_Wanted", "") ~= "" then extra = extra .. "  ⚠ РОЗЫСК" end -- v2.9
     nameLab:SetText(nick .. extra)
     nameLab:SizeToContents()
 
@@ -134,6 +135,10 @@ local function OpenSB()
         draw.SimpleText("СТАНЦИЯ «ПОЛЮС-11»", "P11.SB.Title", 16, 14, Color(235, 238, 245))
 
         local status = "Фаза: " .. GetGlobalString("P11_Phase", "?")
+        local shift = GetGlobalString("P11_Shift", "")
+        if shift ~= "" then
+            status = status .. "   |   ☾ " .. shift
+        end
         if GetGlobalBool("P11_Blackout", false) then
             status = status .. "   |   ⚠ АВАРИЯ ЭНЕРГОСИСТЕМЫ"
         end

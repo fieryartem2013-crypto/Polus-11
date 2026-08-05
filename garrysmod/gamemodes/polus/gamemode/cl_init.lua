@@ -20,6 +20,7 @@ local cl = {
     "modules/p11_cl_intro.lua",    -- интро-заставка станции
     "modules/p11_cl_terminal.lua", -- меню сменного терминала
     "modules/p11_cl_help.lua",     -- F1-справка новичка
+    "modules/p11_cl_alerts.lua",   -- приказ-баннер / метель / розыск / распорядок
 }
 
 local loaded = 0

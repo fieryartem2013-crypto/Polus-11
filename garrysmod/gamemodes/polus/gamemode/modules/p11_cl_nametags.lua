@@ -34,6 +34,16 @@ hook.Add("HUDPaint", "P11_Nametags", function()
 
                         -- мёртв/жив
                         local col = Color(235, 238, 245, a)
+
+                        -- v2.9: РОЗЫСК мигает красным над головой
+                        local wanted = ply:GetNWString("P11_Wanted", "")
+                        if wanted ~= "" then
+                            local blink = 0.5 + math.sin(CurTime() * 6) * 0.5
+                            draw.SimpleTextOutlined("⚠ РОЗЫСК", "P11.HUD.Text", pos.x, pos.y - 44,
+                                Color(255, 70, 60, a * (0.45 + blink * 0.55)), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER,
+                                2, Color(0, 0, 0, a * 0.8))
+                        end
+
                         draw.SimpleTextOutlined(name, "P11.HUD.Mid", pos.x, pos.y, col, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 2, Color(0, 0, 0, a * 0.8))
 
                         -- должность из ПОЛЮС FRAMEWORK (если установлен)
@@ -44,6 +54,14 @@ hook.Add("HUDPaint", "P11_Nametags", function()
                                 local jc = (job and job.color) or Color(150, 190, 235)
                                 draw.SimpleTextOutlined(jn, "P11.HUD.Text", pos.x, pos.y + 30, Color(jc.r, jc.g, jc.b, a), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 2, Color(0, 0, 0, a * 0.8))
                             end
+                        end
+
+                        -- v2.9: ранг администрации под должностью (Хелпер+)
+                        if P11FW and P11FW.GetRankLevel and P11FW.GetRankLevel(ply) >= 2 then
+                            local rc = P11FW.GetRankColor(ply)
+                            draw.SimpleTextOutlined("◆ " .. P11FW.GetRankName(ply), "P11.HUD.Text",
+                                pos.x, pos.y + 56, Color(rc.r, rc.g, rc.b, a),
+                                TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 2, Color(0, 0, 0, a * 0.8))
                         end
                     end
                 end

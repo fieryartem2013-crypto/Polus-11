@@ -84,6 +84,11 @@ function POLUS11.SyncTasks(ply)
     for _, t in ipairs(ply.P11_Tasks or {}) do
         rows[#rows + 1] = { name = t.name, cur = math.floor(t.cur), max = t.max, done = t.done }
     end
+    -- v2.9: ложные задачи «прикрытия» замаскированного Нечто —
+    -- выглядят ТОЧНО как обычные дела (в том и смысл лжи)
+    for _, t in ipairs(ply.P11_FakeTasks or {}) do
+        rows[#rows + 1] = { name = t.name, cur = math.floor(t.cur), max = t.max, done = t.done }
+    end
     -- v2.7: назначенные через терминал доп-задачи — отдельной секцией
     for _, t in ipairs(ply.P11_XTasks or {}) do
         rows[#rows + 1] = { name = t.name, cur = math.floor(t.cur), max = t.max, done = t.done, extra = true }

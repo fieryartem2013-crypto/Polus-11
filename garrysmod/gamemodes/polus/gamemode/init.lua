@@ -28,6 +28,7 @@ local send = {
     "modules/p11_cl_intro.lua",
     "modules/p11_cl_terminal.lua",
     "modules/p11_cl_help.lua",
+    "modules/p11_cl_alerts.lua",
 }
 for _, f in ipairs(send) do
     AddCSLuaFile(f)
@@ -72,6 +73,9 @@ local sv = {
     "modules/p11_sv_nechto.lua",     -- Нечто: классы, крик, формы
     "modules/p11_sv_build.lua",      -- строительство: призрачные пропы
     "modules/p11_sv_terminal.lua",   -- сменный терминал + доп-задачи
+    "modules/p11_sv_shadowtasks.lua",-- ложные задачи маскировки Нечто
+    "modules/p11_sv_command.lua",    -- приказы командира / розыск / репорты
+    "modules/p11_sv_shift.lua",      -- распорядок смены + авто-буря
 }
 
 local function Safe(f)
