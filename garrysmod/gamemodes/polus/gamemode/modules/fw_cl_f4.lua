@@ -316,6 +316,7 @@ function P11FW.OpenJobMenu()
         Chip("⌨ ТЕРМИНАЛ", C.cyan, job.terminal)
         Chip("★ КОМАНДИР", C.gold, job.command)
         Chip("🔒 ВАЙТЛИСТ", Color(255, 180, 110), job.whitelist) -- v4.4.0
+        Chip("⏳ " .. (job.time or 0) .. " МИН", Color(150, 200, 255), (job.time or 0) > 0) -- v4.5.0: время игры для профы
 
         -- текстовый блок справа
         local info = vgui.Create("DPanel", right)
@@ -401,6 +402,14 @@ function P11FW.OpenJobMenu()
         local wlBlocked = job.whitelist and not isCurrent
             and not (P11FW.HasWhitelist and P11FW.HasWhitelist(me, jobId))
             and not (P11FW.Config and P11FW.Config.Admin(me))
+            and not (P11FW.GetRankLevel(me) >= 16) -- Глава: вайтлистов нет
+
+        -- v4.5.0: ВРЕМЯ ИГРЫ для профы (Super Admin+ — все профы сразу)
+        local myMin = me:GetNWInt("P11_PlayMin", 0)
+        local needT = job.time or 0
+        local timeBlocked = needT > 0 and not isCurrent
+            and not (P11FW.GetRankLevel and P11FW.GetRankLevel(me) >= 6)
+            and myMin < needT
 
         local take = vgui.Create("DButton", bottom)
         take:Dock(FILL)
@@ -411,6 +420,8 @@ function P11FW.OpenJobMenu()
             state, stateCol = "ВЫ НА ЭТОЙ ДОЛЖНОСТИ ✓", C.dim
         elseif wlBlocked then
             state, stateCol = "🔒 НУЖЕН ДОПУСК — проси офицера НКВД", Color(255, 180, 110)
+        elseif timeBlocked then
+            state, stateCol = "⏳ ОТКРОЕТСЯ С " .. needT .. " МИН — у тебя " .. myMin, Color(150, 200, 255)
         elseif full then
             state, stateCol = "МЕСТ НЕТ — " .. P11FW.TeamCount(jobId, me) .. "/" .. (job.max or 0), C.bad
         else
@@ -418,7 +429,7 @@ function P11FW.OpenJobMenu()
         end
 
         take.Paint = function(s, w, h)
-            local locked = isCurrent or full or wlBlocked
+            local locked = isCurrent or full or wlBlocked or timeBlocked
             local col = locked and Color(66, 72, 80) or Color(38, 88, 56)
             if s:IsHovered() and not locked then col = Color(50, 118, 74) end
             draw.RoundedBox(8, 0, 0, w, h, col)
@@ -440,6 +451,12 @@ function P11FW.OpenJobMenu()
             if wlBlocked then
                 surface.PlaySound("buttons/button10.wav")
                 chat.AddText(Color(255, 180, 110), "[ПОЛЮС-11] Должность 🔒 в ВАЙТЛИСТЕ — допуск выдают: администрация или ранги Faction Officer/Leader (вкладка ВАЙТЛИСТ в /menu).")
+                return
+            end
+            if timeBlocked then
+                surface.PlaySound("buttons/button10.wav")
+                chat.AddText(Color(150, 200, 255), "[ПОЛЮС-11] Профа откроется с " .. needT .. " мин. игры — у тебя " .. myMin ..
+                    " (минуты копятся сами, пока ты на сервере). Super Admin+ обходит время.")
                 return
             end
             net.Start("P11FW_TakeJob")

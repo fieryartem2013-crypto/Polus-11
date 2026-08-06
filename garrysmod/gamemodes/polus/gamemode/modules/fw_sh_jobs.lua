@@ -266,6 +266,7 @@ function P11FW.RegisterCustomJobs(records)
                 job.max        = tonumber(rec.max) or 0
                 job.terminal   = rec.terminal == true
                 job.whitelist  = rec.whitelist == true -- v4.4.0
+                job.time       = tonumber(rec.time) or 0 -- v4.5.0: минут игры для входа
                 job.color      = Color(tonumber(c.r) or 210, tonumber(c.g) or 170, tonumber(c.b) or 120)
                 job.overridden = true
                 team.SetUp(rec.team, job.name, job.color, true)
@@ -287,6 +288,7 @@ function P11FW.RegisterCustomJobs(records)
                 armor    = tonumber(rec.armor) or 0,
                 event    = rec.event == true,
                 command  = rec.command == true,
+                time     = tonumber(rec.time) or 0, -- v4.5.0: минут игры для входа
             }
             P11FW.JobTeams[rec.id] = rec.team
             P11FW.TeamJobs[rec.team] = rec.id

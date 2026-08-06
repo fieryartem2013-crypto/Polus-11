@@ -691,6 +691,14 @@ function P11FW.OpenAdminMenu(forceTab)
         maxW:SetPos(10, 76) maxW:SetSize(80, 26)
         maxW:SetMinMax(0, 32) maxW:SetValue(0)
 
+        -- v4.5.0: ВРЕМЯ ИГРЫ для входа на профу (минут, 0 = без требования;
+        -- Super Admin+ обходит). Галочка 🔒 ВАЙТЛИСТ — правее.
+        Lbl("Время (мин):", 96, 58)
+        local timeW = vgui.Create("DNumberWang", form)
+        timeW:SetPos(96, 76) timeW:SetSize(80, 26)
+        timeW:SetMinMax(0, 50000) timeW:SetValue(0)
+        timeW:SetTooltip("сколько минут игры нужно для этой должности (0 = нет)")
+
         Lbl("Цвет должности:", 190, 58)
 
         -- v3.8: вместо трёх ползунков R/G/B — УДОБНАЯ ПАЛИТРА:
@@ -845,6 +853,7 @@ function P11FW.OpenAdminMenu(forceTab)
                 max      = maxW:GetValue(),
                 terminal = termC:GetChecked(),
                 whitelist = wlC:GetChecked(), -- v4.4.0
+                time     = timeW:GetValue(), -- v4.5.0
                 color    = { r = jobCol.r, g = jobCol.g, b = jobCol.b },
                 models   = ParseListEntry(modelsE:GetValue()),
                 weapons  = ParseListEntry(wepsE:GetValue()),
@@ -868,6 +877,7 @@ function P11FW.OpenAdminMenu(forceTab)
             end
             termC:SetChecked(job.terminal == true)
             wlC:SetChecked(job.whitelist == true) -- v4.4.0
+            timeW:SetValue(job.time or 0) -- v4.5.0
             editingId = jobId -- v3.8.1: встроенные ТОЖЕ редактируются (переопределением)
             editingKind = job.custom and "custom" or job.overridden and "override" or "builtin"
             status:SetText(job.custom and ("Правим КАСТОМНУЮ: " .. job.name)
@@ -1270,26 +1280,73 @@ function P11FW.OpenAdminMenu(forceTab)
             "ПОСТАВИТЬ ЗДЕСЬ", function() SendAction(7) end,
             "УБРАТЬ", function() SendAction(8) end)
 
-        f.UtilLabels.jail = UtilRow(72, "Камера ареста", "арестованных телепортирует сюда (без точки — заморозка на месте)",
+        f.UtilLabels.jail = UtilRow(66, "Камера ареста", "арестованных телепортирует сюда (без точки — заморозка на месте)",
             "ПОСТАВИТЬ ЗДЕСЬ", function() SendAction(9) end,
             "УБРАТЬ", function() SendAction(10) end)
 
-        f.UtilLabels.npc = UtilRow(130, "Кадровик", "NPC выдачи профессий — создать перед собой / убрать ближайшего",
+        f.UtilLabels.npc = UtilRow(118, "Кадровик", "NPC выдачи профессий — создать перед собой / убрать ближайшего",
             "СОЗДАТЬ", function() SendAction(11) end,
             "УДАЛИТЬ БЛИЖ.", function() SendAction(12) end)
 
-        f.UtilLabels.term = UtilRow(186, "Сменный терминал", "консоль выдачи ДОП-ЗАДАЧ экипажу (persist на карту), поставить перед собой",
+        f.UtilLabels.term = UtilRow(170, "Сменный терминал", "консоль выдачи ДОП-ЗАДАЧ экипажу (persist на карту), поставить перед собой",
             "ПОСТАВИТЬ", function() SendAction(23) end,
             "УБРАТЬ БЛИЖ.", function() SendAction(24) end)
 
+        -- ============ v4.5.0: ЗОНА ПРИБЫТИЯ ФРАКЦИИ + ГРУЗОВИК LVS ============
+        local arLbl = vgui.Create("DLabel", p)
+        arLbl:SetPos(10, 224) arLbl:SetSize(410, 18)
+        arLbl:SetFont("P11FW.Big") arLbl:SetTextColor(AC.text)
+        arLbl:SetText("Зона прибытия фракции")
+
+        local arDesc = vgui.Create("DLabel", p)
+        arDesc:SetPos(10, 242) arDesc:SetSize(420, 16)
+        arDesc:SetFont("P11FW.Small") arDesc:SetTextColor(AC.dim)
+        arDesc:SetText("игроки ЭТОЙ фракции спавнятся у точки (спавн колонной; переживает рестарт)")
+
+        local facC = vgui.Create("DComboBox", p)
+        facC:SetPos(10, 262) facC:SetSize(250, 26)
+        for _, c in ipairs(P11FW.CategoryList or {}) do
+            facC:AddChoice(c.name, c.id)
+        end
+        facC:SetValue(P11FW.CategoryList and P11FW.CategoryList[3] and P11FW.CategoryList[3].name or "misc")
+        f.ArrivalFaction = P11FW.CategoryList and P11FW.CategoryList[3] and P11FW.CategoryList[3].id or "misc"
+        facC.OnSelect = function(s2, idx, val, data)
+            f.ArrivalFaction = data
+        end
+        facC:SetTooltip("какой фракции назначить точку спавна")
+
+        local arSet = MakeBtn(p, "ПОСТАВИТЬ ЗДЕСЬ", AC.ok, function()
+            SendAction(33, function() net.WriteString(f.ArrivalFaction or "misc") end)
+        end)
+        arSet:SetPos(440, 240) arSet:SetSize(200, 26)
+        local arClr = MakeBtn(p, "УБРАТЬ", AC.bad, function()
+            SendAction(34, function() net.WriteString(f.ArrivalFaction or "misc") end)
+        end)
+        arClr:SetPos(648, 240) arClr:SetSize(198, 26)
+
+        local trLbl = vgui.Create("DLabel", p)
+        trLbl:SetPos(10, 292) trLbl:SetSize(410, 18)
+        trLbl:SetFont("P11FW.Big") trLbl:SetTextColor(AC.text)
+        trLbl:SetText("Грузовик колонны")
+
+        local trDesc = vgui.Create("DLabel", p)
+        trDesc:SetPos(10, 310) trDesc:SetSize(420, 16)
+        trDesc:SetFont("P11FW.Small") trDesc:SetTextColor(AC.dim)
+        trDesc:SetText("LVS Soviet Pack: ставится перед тобой, сохраняется; в транспорте не морознет")
+
+        local trPut = MakeBtn(p, "ЗАСПАВНИТЬ ПЕРЕД СОБОЙ", AC.ok, function() SendAction(35) end)
+        trPut:SetPos(440, 296) trPut:SetSize(200, 26)
+        local trRem = MakeBtn(p, "УБРАТЬ ГРУЗОВИК", AC.bad, function() SendAction(36) end)
+        trRem:SetPos(648, 296) trRem:SetSize(198, 26)
+
         -- бан-лист
         local banLbl = vgui.Create("DLabel", p)
-        banLbl:SetPos(10, 246) banLbl:SetSize(400, 22)
+        banLbl:SetPos(10, 334) banLbl:SetSize(400, 22)
         banLbl:SetFont("P11FW.Big") banLbl:SetTextColor(AC.text)
         banLbl:SetText("БАН-ЛИСТ СТАНЦИИ")
 
         local bans = vgui.Create("DListView", p)
-        bans:SetPos(10, 270) bans:SetSize(626, 148)
+        bans:SetPos(10, 358) bans:SetSize(626, 96)
         bans:SetMultiSelect(false)
         bans:AddColumn("SteamID64"):SetFixedWidth(160)
         bans:AddColumn("Ник"):SetFixedWidth(140)

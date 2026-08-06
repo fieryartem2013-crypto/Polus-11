@@ -1,5 +1,5 @@
 -- ============================================================
---  ПОЛЮС-11 — ДЕЛО БОЙЦА (server) v4.3.0
+--  ПОЛЮС-11 — ДЕЛО БОЙЦА (server) v4.5.0
 --  Персонаж игрока: ПОЗЫВНОЙ (ник) + ОПИСАНИЕ внешности.
 --   • при первом заходе сервер спрашивает анкету (P11_CharAsk);
 --   • хранится в data/polus11/chars.json по SteamID64 —
@@ -112,9 +112,52 @@ end)
 
 -- редактор по команде
 hook.Add("PlayerSay", "P11.CharsSay", function(ply, text)
-    local t = string.lower(string.Trim(text or ""))
+    local raw = string.Trim(text or "")
+    local t = string.lower(raw)
     if t == "/персонаж" or t == "/char" or t == "/перс" or t == "!персонаж" then
         AskChar(ply)
+        return ""
+    end
+
+    -- v4.5.0: /name <новый позывной> — смена РП-ника НАВСЕГДА
+    -- (персональный серверный ник; стим-ник нигде не трогаем)
+    local off = nil
+    if string.StartWith(t, "/name ") then off = 7
+    elseif string.StartWith(t, "/ник ") then off = 7 -- «/ник » = 4 байта + пробел
+    end
+    if off then
+        if (ply.P11_NameCD or 0) > CurTime() then
+            POLUS11.Notify(ply, "Менять позывной можно раз в 10 секунд.")
+            return ""
+        end
+        local name = string.Trim(string.sub(raw, off))
+        name = string.gsub(name, "[%c\n\r\t]+", " ")
+        name = string.gsub(name, "%s%s+", " ")
+        if #name < 3 then
+            POLUS11.Notify(ply, "Позывной слишком короткий (минимум 3 символа): /name <ник>")
+            return ""
+        end
+        if #name > 32 then name = string.sub(name, 1, 32) end
+        ply.P11_NameCD = CurTime() + 10
+
+        local oldName = (POLUS11.DisplayName and POLUS11.DisplayName(ply)) or ply:Nick()
+        local c = ply.P11_Char or {}
+        c.name = name
+        c.desc = c.desc or ""
+        c.at = os.time()
+        ply.P11_Char = c
+        POLUS11.Chars[SidOf(ply)] = c
+        CharSave()
+        CharSync(ply)
+
+        PrintMessage(HUD_PRINTTALK, "[ПОЛЮС-11] Боец «" .. oldName .. "» теперь известен как «" .. name .. "»")
+        POLUS11.Log("СМЕНА ПОЗЫВНОГО: " .. ply:Nick() .. ": «" .. oldName .. "» → «" .. name .. "»")
+        return ""
+    end
+
+    if t == "/name" or t == "/ник" or t == "!name" then
+        POLUS11.Notify(ply, "Твой позывной: «" .. ((POLUS11.DisplayName and POLUS11.DisplayName(ply)) or ply:Nick()) ..
+            "». Сменить: /name <новый ник>")
         return ""
     end
 end)

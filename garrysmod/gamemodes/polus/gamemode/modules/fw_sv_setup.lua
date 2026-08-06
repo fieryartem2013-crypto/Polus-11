@@ -333,6 +333,18 @@ net.Receive("P11FW_AdminAction", function(len, ply)
             local ok, err = P11FW.ClearWarns(ply, target)
             P11FW.Notify(ply, ok and "Варны очищены." or ("ОТКАЗ: " .. tostring(err)))
         end
+
+    -- ============ v4.5.0: ЗОНА ПРИБЫТИЯ + ГРУЗОВИК ============
+    elseif act == 33 then -- поставить зону прибытия для фракции
+        local fid = net.ReadString()
+        if POLUS11 and POLUS11.ArrivalSet then POLUS11.ArrivalSet(ply, fid) end
+    elseif act == 34 then -- убрать зону прибытия фракции
+        local fid = net.ReadString()
+        if POLUS11 and POLUS11.ArrivalClear then POLUS11.ArrivalClear(ply, fid) end
+    elseif act == 35 then -- поставить LVS-грузовик колонны перед собой
+        if POLUS11 and POLUS11.ArrivalTruckPut then POLUS11.ArrivalTruckPut(ply) end
+    elseif act == 36 then -- убрать грузовик колонны
+        if POLUS11 and POLUS11.ArrivalTruckRemove then POLUS11.ArrivalTruckRemove(ply) end
     end
 
     -- свежие данные в меню

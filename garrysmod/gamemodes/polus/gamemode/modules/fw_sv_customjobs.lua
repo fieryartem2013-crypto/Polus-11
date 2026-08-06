@@ -94,6 +94,9 @@ local function SanitizeRecord(rec)
     -- v4.4.0: ВАЙТЛИСТ-галочка. nil = оставить как было при правке.
     if rec.whitelist ~= nil then out.whitelist = rec.whitelist == true end
 
+    -- v4.5.0: ВРЕМЯ для входа (минуты игры, 0 = без требования).
+    if rec.time ~= nil then out.time = math.Clamp(tonumber(rec.time) or 0, 0, 50000) end
+
     return out
 end
 
@@ -176,6 +179,7 @@ net.Receive("P11FW_JobEdit", function(len, ply)
         if clean.armor == nil then clean.armor = old.armor end
         if clean.event == nil then clean.event = old.event end
         if clean.whitelist == nil then clean.whitelist = old.whitelist end -- v4.4.0
+        if clean.time == nil then clean.time = old.time end -- v4.5.0
         for i, r in ipairs(P11FW.CustomJobs) do
             if r.id == old.id then P11FW.CustomJobs[i] = clean end
         end

@@ -32,6 +32,8 @@ local send = {
     "modules/p11_cl_help.lua",
     "modules/p11_cl_alerts.lua",
     "modules/p11_cl_view.lua",
+    "modules/p11_cl_chat.lua",      -- v4.5.0: свой чат-UI (/ooc /looc /me /it /report)
+    "modules/p11_cl_arrival.lua",   -- v4.5.0: заставка прибытия колонны
     "modules/p11_cl_cmenu.lua",
     "modules/p11_cl_models.lua",    -- v4.4.0: браузер внешности (с нуля)
     "modules/p11_cl_economy.lua",
@@ -101,6 +103,9 @@ local sv = {
     "modules/p11_sv_mutations.lua",  -- мутации Нечто за жертв (v4.2)
     "modules/p11_sv_chars.lua",      -- дело бойца: персонажи + сохранение (v4.3.0)
     "modules/p11_sv_models.lua",     -- выдача моделей: надеть/выдать (v4.4.0, с нуля)
+    "modules/p11_sv_chat.lua",       -- чат: /ooc /looc /me /it /report + локальная речь (v4.5.0)
+    "modules/p11_sv_arrival.lua",    -- зона прибытия по фракциям + LVS-грузовик (v4.5.0)
+    "modules/p11_sv_playtime.lua",   -- время игры → доступ к профам (v4.5.0)
 }
 
 local function Safe(f)

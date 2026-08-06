@@ -99,11 +99,19 @@ function P11FW.SetJob(ply, jobId, modelIdx, force)
     -- Администрация проходит свободно, остальным нужен допуск (вкладка ВАЙТЛИСТ
     -- в /menu у администрации и рангов Faction Officer/Leader).
     if job.whitelist and not force then
+        -- v4.5.0: «Главе Проекта доступны ВСЕ вайтлисты» (по заявке владельца)
         local allowed = P11FW.Config.Admin(ply)
             or (P11FW.HasWhitelist and P11FW.HasWhitelist(ply, jobId))
+            or (P11FW.GetRankLevel(ply) >= 16)
         if not allowed then
             return false, "должность в ВАЙТЛИСТЕ 🔒 — допуск выдают офицеры НКВД / администрация (вкладка ВАЙТЛИСТ в /menu)"
         end
+    end
+
+    -- v4.5.0: ВРЕМЯ ДЛЯ ПРОФЫ (job.time мин. игры; Super Admin+ обходит)
+    if not force and (job.time or 0) > 0 and POLUS11 and POLUS11.TimeGate then
+        local toks, terr = POLUS11.TimeGate(ply, job)
+        if not toks then return false, terr end
     end
 
     if not force and P11FW.JobFull(jobId, ply) then

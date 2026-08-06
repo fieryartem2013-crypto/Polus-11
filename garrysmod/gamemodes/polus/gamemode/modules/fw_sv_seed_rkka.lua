@@ -34,7 +34,7 @@ local SEED_FACTIONS = {
     {
         id = "nkvd", name = "НКВД", order = 6,
         desc = "Народный комиссариат внутренних дел. Особый отдел станции: госбезопасность, допросы, контрразведка — охота на того, кто притворяется человеком.",
-        color = Color(120, 140, 175),
+        color = Color(120, 20, 24), -- v4.5.0: КРАСНО-ЧЁРНОЕ НКВД (по заявке владельца)
     },
     {
         id = "nechto", name = "НЕЧТО", order = 99,
@@ -154,7 +154,7 @@ local SEED_JOBS = {
         name = "Конвоир НКВД",
         desc = "Конвой и караул задержанных, охрана допросной и склада вещдоков. Двустволка MR-43 — уговаривать долго не приходится. 100 ХП / 100 брони.",
         weapons = { "arc9_eft_mr43" }, hp = 100, armor = 100, max = 2,
-        color = Color(110, 130, 165),
+        color = Color(105, 22, 26), -- v4.5.0 КРАСНО-ЧЁРНЫЙ,
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m35_1941_s1_02.mdl",
             "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m35_1941_s1_03.mdl",
@@ -166,7 +166,7 @@ local SEED_JOBS = {
         name = "Оперуполномоченный НКВД",
         desc = "Оперативная работа: наружное наблюдение, агентурная сеть, тихие допросы «для протокола». АКС-74У под полой шинели. 100 ХП / 100 брони.",
         weapons = { "arc9_eft_aks74u" }, hp = 100, armor = 100, max = 3,
-        color = Color(120, 140, 175),
+        color = Color(122, 25, 30), -- v4.5.0 КРАСНО-ЧЁРНЫЙ,
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/commissar/co/m35_1941_s1_02.mdl",
             "models/hts/comradebear/pm0v3/player/rkka/commissar/co/m35_1941_s1_03.mdl",
@@ -179,7 +179,7 @@ local SEED_JOBS = {
         name = "Следователь НКВД",
         desc = "Протоколы, вещдоки, досье на каждого жителя станции. Имеет право требовать принудительный тест крови ПОД СВОИМ НАДЗОРОМ — шприц в сейфе следопера. 100 ХП / 50 брони.",
         weapons = { "weapon_polus11_syringe", "arc9_doi_k98" }, hp = 100, armor = 50, max = 2, terminal = true,
-        color = Color(130, 150, 185),
+        color = Color(138, 28, 32), -- v4.5.0 КРАСНО-ЧЁРНЫЙ,
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/commissar/co/m35_1941_s1_03.mdl",
             "models/hts/comradebear/pm0v3/player/rkka/commissar/co/m35_1941_s1_05.mdl",
@@ -190,7 +190,7 @@ local SEED_JOBS = {
         name = "Особист НКВД",
         desc = "Контрразведка станции. Может объявлять РОЗЫСК (!розыск) и отдавать ПРИКАЗЫ (!приказ) без санкции генерала, если подозревает Нечто. Одно место. 115 ХП / 100 брони.",
         weapons = { "arc9_doi_k98" }, hp = 115, armor = 100, max = 1, terminal = true, command = true,
-        color = Color(145, 155, 195),
+        color = Color(154, 30, 30), -- v4.5.0 КРАСНО-ЧЁРНЫЙ,
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/commissar/co/m35_1941_s1_02.mdl",
         },
@@ -200,7 +200,7 @@ local SEED_JOBS = {
         name = "Начальник Особого Отдела НКВД",
         desc = "Высшее слово станции по вопросам внутренней безопасности. Его подпись в ордере на расстрел равна приговору Военного трибунала. Одно место. 125 ХП / 125 брони.",
         weapons = { "arc9_doi_k98" }, hp = 125, armor = 125, max = 1, terminal = true, command = true,
-        color = Color(160, 165, 205),
+        color = Color(170, 34, 34), -- v4.5.0 КРАСНО-ЧЁРНЫЙ,
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/general_staff/gen/m40_1941_s1_05.mdl",
         },
@@ -354,6 +354,50 @@ local function SeedAll()
             P11FW.RegisterCustomJobs(P11FW.CustomJobs)
             P11FW.SyncCustomJobs()
             P11FW.Log("Сид v4.4.0: ВАЙТЛИСТ 🔒 включён всем должностям НКВД (миграция)")
+        end
+    end
+
+    -- ---------- 0.6) v4.5.0 МИГРАЦИЯ: красно-чёрное НКВД ----------
+    -- На старых сейвах НКВД сидит с СИНИМИ цветами — перекрашиваем
+    -- ровно preset-профы (кастомные правки админа не трогаем без флага).
+    do
+        local NKVD_V45 = {
+            seed_nkvd_convoy     = { 105, 22, 26 },
+            seed_nkvd_oper       = { 122, 25, 30 },
+            seed_nkvd_sledovatel = { 138, 28, 32 },
+            seed_nkvd_osobist    = { 154, 30, 30 },
+            seed_nkvd_nachalnik  = { 170, 34, 34 },
+        }
+        local changed = false
+        for _, rec in ipairs(P11FW.CustomJobs) do
+            local ncol = rec and NKVD_V45[rec.id]
+            if ncol and not rec.nkvdRedV45 then
+                rec.color = { r = ncol[1], g = ncol[2], b = ncol[3] }
+                rec.nkvdRedV45 = true
+                changed = true
+            end
+        end
+        if changed then
+            P11FW.SaveCustomJobs()
+            P11FW.RegisterCustomJobs(P11FW.CustomJobs)
+            P11FW.SyncCustomJobs()
+            P11FW.Log("Сид v4.5.0: НКВД перекрашено в КРАСНО-ЧЁРНОЕ (миграция)")
+        end
+
+        -- и саму фракцию: старый синий (b > r) → тёмно-красный
+        local facs = FactionRecordsNow()
+        local fchanged = false
+        for _, fr in ipairs(facs) do
+            if fr.id == "nkvd" and istable(fr.color) and (fr.color.b or 0) > (fr.color.r or 0) then
+                fr.color = { r = 120, g = 20, b = 24 }
+                fchanged = true
+            end
+        end
+        if fchanged then
+            P11FW.RegisterCustomFactions(facs)
+            SaveFactionRecords(facs)
+            P11FW.SyncFactions()
+            P11FW.Log("Сид v4.5.0: фракция НКВД перекрашена в красно-чёрный")
         end
     end
 
