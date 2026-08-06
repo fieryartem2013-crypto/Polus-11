@@ -1,11 +1,12 @@
 -- ============================================================
---  ПОЛЮС FRAMEWORK — АДМИН-МЕНЮ (клиент)
---  Вкладки: ИГРОКИ (арест/рабство/бан/освободить/уволить/
---  выдать должность) • ДОЛЖНОСТИ (создание своих профессий:
---  имя, модели, оружие, лимит — сохраняются навсегда) •
---  УТИЛИТЫ (спавн-поинт, камера ареста, кадровик, бан-лист).
---  Открыть: p11fw_admin в консоль, чат !фвадмин / !fw,
---  кнопка «АДМИНКА» в F4.
+--  ПОЛЮС FRAMEWORK — АДМИН-МЕНЮ (клиент) v4.4.0
+--  Вкладки: ИГРОКИ • МОДЕРАЦИЯ • ДЕЙСТВИЯ • ДОЛЖНОСТИ
+--  (редактор проф + галочка ВАЙТЛИСТ) • ФРАКЦИИ • УТИЛИТЫ •
+--  АДМИНКИ (все 19 рангов проекта плиткой, выдача в 1 клик) •
+--  ВАЙТЛИСТ (допуски на whitelist-должности — доступен также
+--  рангам Faction Officer/Leader БЕЗ админки).
+--  Открыть: p11fw_admin в консоль, чат !фвадмин / !fw / /menu,
+--  кнопка в C-меню или F4.
 -- ============================================================
 
 surface.CreateFont("P11FW.Adm.Tab", { font = "Roboto", size = 18, weight = 700, extended = true })
@@ -133,9 +134,15 @@ end
 
 function P11FW.OpenAdminMenu(forceTab)
     if not IsValid(LocalPlayer()) then return end
+    -- v4.4.0: ранги ВАЙТЛИСТА (Faction Officer/Leader) тоже пускаем —
+    -- им доступна ОДНА вкладка «ВАЙТЛИСТ», остальное под замком.
     if not P11FW.Config.Admin(LocalPlayer()) then
-        chat.AddText(AC.bad, "[P11FW] Только для администрации.")
-        return
+        if P11FW.CanWhitelist and P11FW.CanWhitelist(LocalPlayer()) then
+            forceTab = "whitelist"
+        else
+            chat.AddText(AC.bad, "[P11FW] Только для администрации.")
+            return
+        end
     end
 
     if IsValid(P11FW.AdminFrame) then P11FW.AdminFrame:Remove() end
@@ -186,13 +193,17 @@ function P11FW.OpenAdminMenu(forceTab)
     --   4 Admin+       → ДЕЙСТВИЯ (телепорты/лечки/заморозки)
     --  10 DepStaff+    → ИГРОКИ (выдача рангов, Config.RankManageLevel)
     --  14 StaffLeader+ → ДОЛЖНОСТИ / ФРАКЦИИ / УТИЛИТЫ (всё остальное)
+    local canWlTab = P11FW.CanWhitelist and P11FW.CanWhitelist(LocalPlayer())
+    -- v4.4.0: +АДМИНКИ (ранги плиткой, 10+) и +ВАЙТЛИСТ (wl-ранги/админы)
     local tabs = {
-        { id = "players",  name = "ИГРОКИ",    minLevel = (P11FW.Config and P11FW.Config.RankManageLevel) or 10 },
-        { id = "mod",      name = "МОДЕРАЦИЯ", perm = "warn", badge = "!" },
-        { id = "acts",     name = "ДЕЙСТВИЯ",  minLevel = 4 },
-        { id = "jobs",     name = "ДОЛЖНОСТИ", minLevel = 14 },
-        { id = "factions", name = "ФРАКЦИИ",   minLevel = 14 },
-        { id = "utils",    name = "УТИЛИТЫ",   minLevel = 14 },
+        { id = "players",   name = "ИГРОКИ",    minLevel = (P11FW.Config and P11FW.Config.RankManageLevel) or 10 },
+        { id = "mod",       name = "МОДЕРАЦИЯ", perm = "warn", badge = "!" },
+        { id = "acts",      name = "ДЕЙСТВИЯ",  minLevel = 4 },
+        { id = "jobs",      name = "ДОЛЖНОСТИ", minLevel = 14 },
+        { id = "factions",  name = "ФРАКЦИИ",   minLevel = 14 },
+        { id = "utils",     name = "УТИЛИТЫ",   minLevel = 14 },
+        { id = "admranks",  name = "АДМИНКИ",   minLevel = (P11FW.Config and P11FW.Config.RankManageLevel) or 10 },
+        { id = "whitelist", name = "ВАЙТЛИСТ",  wl = true },
     }
 
     -- имя ранга по уровню (для красивых отказов)
@@ -208,8 +219,8 @@ function P11FW.OpenAdminMenu(forceTab)
     surface.SetFont("P11FW.Adm.Tab")
     for i, t in ipairs(tabs) do
         local tb = vgui.Create("DButton", f)
-        tb:SetPos(12 + (i - 1) * 143, 58)
-        tb:SetSize(137, 32)
+        tb:SetPos(12 + (i - 1) * 107, 58) -- v4.4.0: 8 вкладок — короче
+        tb:SetSize(102, 32)
         tb:SetText("")
         tb.TabId = t.id
         tb.Paint = function(s, w, h)
@@ -222,7 +233,8 @@ function P11FW.OpenAdminMenu(forceTab)
             -- вкладки под права/ранг — без них текст серый
             local col = on and AC.accent or AC.dim
             if (t.perm and not P11FW.CanMod(LocalPlayer(), t.perm))
-               or (t.minLevel and myLevel < t.minLevel) then
+               or (t.minLevel and myLevel < t.minLevel)
+               or (t.wl and not canWlTab) then
                 col = Color(90, 95, 105)
             end
             draw.SimpleText(t.name, "P11FW.Adm.Tab", w / 2 - (t.badge and 8 or 0), h / 2, col, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
@@ -242,9 +254,16 @@ function P11FW.OpenAdminMenu(forceTab)
                 chat.AddText(AC.gold, "[P11FW] Вкладка «" .. t.name .. "» — с ранга " .. RankNameByLevel(t.minLevel) .. ".")
                 return
             end
+            if t.wl and not canWlTab then
+                surface.PlaySound("buttons/button10.wav")
+                chat.AddText(AC.gold, "[P11FW] Вкладка «" .. t.name .. "» — администрации и рангам Faction Officer/Leader.")
+                return
+            end
             f.ActiveTab = t.id
             for id, p in pairs(f.TabPanels) do p:SetVisible(id == t.id) end
             if t.id == "players" or t.id == "utils" or t.id == "acts" or t.id == "mod" then RequestAdminData() end
+            if t.id == "admranks" and f.RefreshAdmRanks then f:RefreshAdmRanks() end
+            if t.id == "whitelist" and f.RefreshWhitelistTab then f:RefreshWhitelistTab() end
             surface.PlaySound("buttons/button15.wav")
         end
         f.TabButtons[t.id] = tb
@@ -634,8 +653,8 @@ function P11FW.OpenAdminMenu(forceTab)
                 for _, c in ipairs(P11FW.CategoryList) do
                     if c.id == job.category then catName = c.name end
                 end
-                local line = lv:AddLine(job.name, catName, (job.max or 0) > 0 and job.max or "∞",
-                    job.custom and "КАСТОМ" or job.overridden and "ПРАВКА" or "встроенная")
+                local line = lv:AddLine((job.whitelist and "🔒 " or "") .. job.name, catName, (job.max or 0) > 0 and job.max or "∞",
+                    (job.whitelist and "🔒 " or "") .. (job.custom and "КАСТОМ" or job.overridden and "ПРАВКА" or "встроенная"))
                 line.JobId = jobId
             end
         end
@@ -801,6 +820,14 @@ function P11FW.OpenAdminMenu(forceTab)
         termC:SetText("Допуск к СМЕННОМУ ТЕРМИНАЛУ (выдача доп-задач экипажу)")
         termC:SetChecked(false)
 
+        -- v4.4.0: ВАЙТЛИСТ-галочка — вход на должность только с допуском
+        local wlC = vgui.Create("DCheckBoxLabel", form)
+        wlC:SetPos(300, 76) wlC:SetSize(156, 26)
+        wlC:SetFont("P11FW.Small") wlC:SetTextColor(Color(255, 180, 110))
+        wlC:SetText("🔒 ВАЙТЛИСТ")
+        wlC:SetTooltip("вход на должность ТОЛЬКО с допуском\n(его выдают во вкладке ВАЙТЛИСТ)")
+        wlC:SetChecked(false)
+
         -- выбранная строка списка → заполнить форму
         local editingId = nil
         local editingKind = nil -- "custom" | "override" | "builtin" (v3.8.1)
@@ -817,6 +844,7 @@ function P11FW.OpenAdminMenu(forceTab)
                 desc     = descE:GetValue(),
                 max      = maxW:GetValue(),
                 terminal = termC:GetChecked(),
+                whitelist = wlC:GetChecked(), -- v4.4.0
                 color    = { r = jobCol.r, g = jobCol.g, b = jobCol.b },
                 models   = ParseListEntry(modelsE:GetValue()),
                 weapons  = ParseListEntry(wepsE:GetValue()),
@@ -839,6 +867,7 @@ function P11FW.OpenAdminMenu(forceTab)
                 jobCol = Color(job.color.r, job.color.g, job.color.b)
             end
             termC:SetChecked(job.terminal == true)
+            wlC:SetChecked(job.whitelist == true) -- v4.4.0
             editingId = jobId -- v3.8.1: встроенные ТОЖЕ редактируются (переопределением)
             editingKind = job.custom and "custom" or job.overridden and "override" or "builtin"
             status:SetText(job.custom and ("Правим КАСТОМНУЮ: " .. job.name)
@@ -1302,6 +1331,257 @@ function P11FW.OpenAdminMenu(forceTab)
         end
     end
 
+
+    -- ==================================================
+    --  ВКЛАДКА: АДМИНКИ (v4.4.0) — все ранги проекта плиткой.
+    --  Доступ: Deputy Staff Leader+ (Config.RankManageLevel).
+    -- ==================================================
+    do
+        local p = NewTab("admranks")
+
+        local h1 = vgui.Create("DLabel", p)
+        h1:SetPos(10, 8) h1:SetSize(300, 18)
+        h1:SetFont("P11FW.Big") h1:SetTextColor(AC.text)
+        h1:SetText("ИГРОКИ ОНЛАЙН")
+
+        local lv = vgui.Create("DListView", p)
+        lv:SetPos(10, 34) lv:SetSize(300, 366)
+        lv:SetMultiSelect(false)
+        lv:AddColumn("Ник"):SetFixedWidth(140)
+        lv:AddColumn("Ранг")
+
+        function f:RefreshAdmRanks()
+            lv:Clear()
+            local list = {}
+            for _, pl in ipairs(player.GetAll()) do list[#list + 1] = pl end
+            table.sort(list, function(a, b)
+                local la, lb = P11FW.GetRankLevel(a), P11FW.GetRankLevel(b)
+                if la ~= lb then return la > lb end
+                return string.lower(a:Nick()) < string.lower(b:Nick())
+            end)
+            for _, pl in ipairs(list) do
+                local r = P11FW.GetRank(pl)
+                local line = lv:AddLine(pl:Nick(), (r and r.name or "?") .. "  [" .. (r and r.level or 0) .. "]")
+                line.PSid = pl:SteamID() -- по SteamID: ник с пробелами ломает аргументы консоли
+                if r and r.color then line.Columns[2]:SetTextColor(r.color) end
+            end
+        end
+
+        lv.OnRowSelected = function(s2, id, line)
+            if f.AdmRankTarget then
+                f.AdmRankTarget:SetText("Цель: " .. (line:GetValue(1) or "?") .. "  •  " .. tostring(line.PSid))
+            end
+        end
+
+        local refr = MakeBtn(p, "🔄 ОБНОВИТЬ СПИСОК", AC.dim, function() f:RefreshAdmRanks() end)
+        refr:SetPos(10, 406) refr:SetSize(300, 40)
+
+        local h2 = vgui.Create("DLabel", p)
+        h2:SetPos(326, 8) h2:SetSize(520, 18)
+        h2:SetFont("P11FW.Big") h2:SetTextColor(AC.gold)
+        h2:SetText("ВСЕ РАНГИ ПРОЕКТА — клик выдаёт выбранному слева")
+
+        local scp = vgui.Create("DScrollPanel", p)
+        scp:SetPos(326, 34) scp:SetSize(520, 384)
+        local sb2 = scp:GetVBar() sb2:SetWide(5)
+
+        local lay = vgui.Create("DIconLayout", scp)
+        lay:Dock(FILL) lay:SetSpaceX(6) lay:SetSpaceY(6)
+
+        for _, r in ipairs(P11FW.Ranks or {}) do
+            local r2 = r
+            local b = vgui.Create("DButton", lay)
+            b:SetSize(254, 46)
+            b:SetText("")
+            b.Paint = function(s2, w, h)
+                draw.RoundedBox(6, 0, 0, w, h, s2:IsHovered() and Color(255, 255, 255, 26) or Color(255, 255, 255, 10))
+                draw.RoundedBoxEx(6, 0, 0, 5, h, r2.color or AC.text, true, false, true, false)
+                local nm = r2.name
+                if (r2.level or 0) == 0 then nm = "СНЯТЬ АДМИНКУ — " .. nm end
+                draw.SimpleText(nm, "P11FW.Text", 14, h / 2 - 9, r2.color or AC.text, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+                draw.SimpleText("id: " .. r2.id .. "  •  ур. " .. (r2.level or 0) .. (r2.wl and "  🔒вайтлист" or ""),
+                    "P11FW.Small", 14, h / 2 + 11, AC.dim, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+            end
+            b.DoClick = function()
+                local id = lv:GetSelectedLine()
+                if not id then
+                    surface.PlaySound("buttons/button10.wav")
+                    chat.AddText(AC.bad, "[P11FW] Сначала ВЫБЕРИ ИГРОКА в списке слева!")
+                    return
+                end
+                local line = lv:GetLine(id)
+                if not (line and line.PSid) then return end
+                surface.PlaySound("buttons/button9.wav")
+                RunConsoleCommand("p11_rank", line.PSid, r2.id)
+                chat.AddText(AC.gold, "[P11FW] Отправлено: " .. line.PSid .. " → " .. r2.name)
+                timer.Simple(1.4, function()
+                    if IsValid(f) and f.RefreshAdmRanks then f:RefreshAdmRanks() end
+                end)
+            end
+        end
+
+        f.AdmRankTarget = vgui.Create("DLabel", p)
+        f.AdmRankTarget:SetPos(326, 424) f.AdmRankTarget:SetSize(520, 18)
+        f.AdmRankTarget:SetFont("P11FW.Small") f.AdmRankTarget:SetTextColor(AC.gold)
+        f.AdmRankTarget:SetText("Цель: —  (выбери игрока слева)")
+
+        local note = vgui.Create("DLabel", p)
+        note:SetPos(326, 446) note:SetSize(520, 18)
+        note:SetFont("P11FW.Small") note:SetTextColor(AC.dim)
+        note:SetText("Выдать можно ранг НИЖЕ своего. Консоль: p11_rank <SteamID> <id> • секрет основателя: p11_access <ключ>")
+
+        f:RefreshAdmRanks()
+    end
+
+    -- ==================================================
+    --  ВКЛАДКА: ВАЙТЛИСТ (v4.4.0) — допуски на whitelist-
+    --  должности. Доступ: администрация ИЛИ Faction Officer/Leader.
+    -- ==================================================
+    do
+        local p = NewTab("whitelist")
+
+        local h1 = vgui.Create("DLabel", p)
+        h1:SetPos(10, 8) h1:SetSize(264, 18)
+        h1:SetFont("P11FW.Big") h1:SetTextColor(AC.text)
+        h1:SetText("🔒 ДОЛЖНОСТИ С ВАЙТЛИСТОМ")
+
+        local jobLv = vgui.Create("DListView", p)
+        jobLv:SetPos(10, 34) jobLv:SetSize(264, 398)
+        jobLv:SetMultiSelect(false)
+        jobLv:AddColumn("Должность"):SetFixedWidth(185)
+        jobLv:AddColumn("Допусков")
+
+        local h2 = vgui.Create("DLabel", p)
+        h2:SetPos(286, 8) h2:SetSize(280, 18)
+        h2:SetFont("P11FW.Big") h2:SetTextColor(AC.text)
+        h2:SetText("ИГРОКИ ОНЛАЙН")
+
+        local plLv = vgui.Create("DListView", p)
+        plLv:SetPos(286, 34) plLv:SetSize(280, 398)
+        plLv:SetMultiSelect(false)
+        plLv:AddColumn("Ник"):SetFixedWidth(180)
+        plLv:AddColumn("Допуск")
+
+        local h3 = vgui.Create("DLabel", p)
+        h3:SetPos(578, 8) h3:SetSize(268, 18)
+        h3:SetFont("P11FW.Big") h3:SetTextColor(AC.text)
+        h3:SetText("У КОГО ЕСТЬ ДОПУСК")
+
+        local memLv = vgui.Create("DListView", p)
+        memLv:SetPos(578, 34) memLv:SetSize(268, 240)
+        memLv:SetMultiSelect(false)
+        memLv:AddColumn("Игрок • SteamID")
+
+        local sidE = vgui.Create("DTextEntry", p)
+        sidE:SetPos(578, 282) sidE:SetSize(268, 26)
+        sidE:SetPlaceholderText("или SteamID вручную: STEAM_0:1:... / 7656...")
+
+        local function SelectedJobId()
+            local id = jobLv:GetSelectedLine()
+            if not id then return nil end
+            local line = jobLv:GetLine(id)
+            return line and line.JobId or nil
+        end
+
+        -- цель: выбранный игрок → выбранный член допуска → поле ввода
+        local function SelectedSid()
+            local pid = plLv:GetSelectedLine()
+            if pid then
+                local line = plLv:GetLine(pid)
+                if line and line.PSid then return line.PSid end
+            end
+            local mid = memLv:GetSelectedLine()
+            if mid then
+                local line = memLv:GetLine(mid)
+                if line and line.PSid then return line.PSid end
+            end
+            return P11FW.NormalizeSteamID and P11FW.NormalizeSteamID(sidE:GetValue()) or nil
+        end
+
+        local function SendWlSet(allow)
+            local jobId = SelectedJobId()
+            if not jobId then
+                surface.PlaySound("buttons/button10.wav")
+                chat.AddText(AC.bad, "[P11FW] Сначала выбери ДОЛЖНОСТЬ слева!")
+                return
+            end
+            local sid = SelectedSid()
+            if not sid then
+                surface.PlaySound("buttons/button10.wav")
+                chat.AddText(AC.bad, "[P11FW] Выбери ИГРОКА (или впиши SteamID: STEAM_0:x:y / 7656...).")
+                return
+            end
+            net.Start("P11FW_WL_SET")
+                net.WriteString(jobId)
+                net.WriteString(sid)
+                net.WriteBool(allow)
+            net.SendToServer()
+            surface.PlaySound("buttons/button9.wav")
+            sidE:SetValue("")
+        end
+
+        local grantB = MakeBtn(p, "✔ ВЫДАТЬ ДОПУСК", AC.ok, function() SendWlSet(true) end)
+        grantB:SetPos(578, 316) grantB:SetSize(130, 40)
+        local denyB = MakeBtn(p, "✖ СНЯТЬ ДОПУСК", AC.bad, function() SendWlSet(false) end)
+        denyB:SetPos(716, 316) denyB:SetSize(130, 40)
+
+        local refrB = MakeBtn(p, "🔄 ОБНОВИТЬ", AC.dim, function()
+            net.Start("P11FW_WL_REQ") net.SendToServer()
+            f:RefreshWhitelistTab()
+        end)
+        refrB:SetPos(578, 362) refrB:SetSize(268, 30)
+
+        local note = vgui.Create("DLabel", p)
+        note:SetPos(578, 398) note:SetSize(268, 64)
+        note:SetFont("P11FW.Small") note:SetTextColor(AC.dim)
+        note:SetWrap(true) note:SetAutoStretchVertical(true)
+        note:SetText("Снятие допуска у игрока НА этой должности увольняет его в новобранцы.\nГалочка «🔒 ВАЙТЛИСТ» ставится у профы во вкладке ДОЛЖНОСТИ.")
+
+        function f:RefreshWhitelistTab()
+            local me = LocalPlayer()
+            jobLv:Clear()
+            for _, jobId in ipairs(P11FW.JobIds or {}) do
+                local job = P11FW.Jobs[jobId]
+                if job and job.whitelist then
+                    local line = jobLv:AddLine(job.name,
+                        P11FW.WhitelistCount and P11FW.WhitelistCount(jobId) or 0)
+                    line.JobId = jobId
+                end
+            end
+
+            local selJob = SelectedJobId()
+
+            plLv:Clear()
+            for _, pl in ipairs(player.GetAll()) do
+                local has = selJob and P11FW.HasWhitelist and P11FW.HasWhitelist(pl, selJob)
+                local line = plLv:AddLine(pl:Nick() .. (pl == me and " (ты)" or ""), has and "есть ✔" or "—")
+                line.PSid = pl:SteamID()
+                if has then line.Columns[2]:SetTextColor(AC.ok) end
+            end
+
+            memLv:Clear()
+            if selJob and P11FW.Whitelist then
+                local t = P11FW.Whitelist[selJob]
+                if t then
+                    for sid in pairs(t) do
+                        local nick = nil
+                        for _, pl in ipairs(player.GetAll()) do
+                            if pl:SteamID() == sid or pl:SteamID64() == sid then nick = pl:Nick() break end
+                        end
+                        local line = memLv:AddLine((nick and (nick .. " • ") or "") .. sid)
+                        line.PSid = sid
+                    end
+                end
+            end
+        end
+
+        jobLv.OnRowSelected = function() f:RefreshWhitelistTab() end
+
+        -- на входе данных могло не быть — запросим свежий синк
+        net.Start("P11FW_WL_REQ") net.SendToServer()
+        f:RefreshWhitelistTab()
+    end
+
     -- первая загрузка данных
     RequestAdminData()
 end
@@ -1312,6 +1592,7 @@ end)
 
 
 -- v4.0: сетевая команда «открыть меню выдачи рангов» (/ранги, ранг 10+)
+-- v4.4.0: ведёт сразу на вкладку АДМИНКИ (все ранги плиткой)
 net.Receive("P11FW_OpenAdminRanks", function()
-    P11FW.OpenAdminMenu("players")
+    P11FW.OpenAdminMenu("admranks")
 end)

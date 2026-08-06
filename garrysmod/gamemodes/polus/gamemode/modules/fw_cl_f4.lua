@@ -198,6 +198,7 @@ function P11FW.OpenJobMenu()
                         local flags = ""
                         if job.terminal then flags = flags .. " ⌨" end
                         if job.command then flags = flags .. " ★" end
+                        if job.whitelist then flags = flags .. " 🔒" end -- v4.4.0: ВАЙТЛИСТ
                         if flags ~= "" then
                             draw.SimpleText(flags, "P11FW.Text", w - 10, h / 2,
                                 job.command and C.gold or C.cyan, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
@@ -314,6 +315,7 @@ function P11FW.OpenJobMenu()
         end
         Chip("⌨ ТЕРМИНАЛ", C.cyan, job.terminal)
         Chip("★ КОМАНДИР", C.gold, job.command)
+        Chip("🔒 ВАЙТЛИСТ", Color(255, 180, 110), job.whitelist) -- v4.4.0
 
         -- текстовый блок справа
         local info = vgui.Create("DPanel", right)
@@ -395,6 +397,10 @@ function P11FW.OpenJobMenu()
         local me = LocalPlayer()
         local isCurrent = P11FW.GetJobId(me) == jobId
         local full = P11FW.JobFull(jobId, me)
+        -- v4.4.0: ВАЙТЛИСТ-замок — нужен допуск (админов пропускаем)
+        local wlBlocked = job.whitelist and not isCurrent
+            and not (P11FW.HasWhitelist and P11FW.HasWhitelist(me, jobId))
+            and not (P11FW.Config and P11FW.Config.Admin(me))
 
         local take = vgui.Create("DButton", bottom)
         take:Dock(FILL)
@@ -403,6 +409,8 @@ function P11FW.OpenJobMenu()
         local state, stateCol
         if isCurrent then
             state, stateCol = "ВЫ НА ЭТОЙ ДОЛЖНОСТИ ✓", C.dim
+        elseif wlBlocked then
+            state, stateCol = "🔒 НУЖЕН ДОПУСК — проси офицера НКВД", Color(255, 180, 110)
         elseif full then
             state, stateCol = "МЕСТ НЕТ — " .. P11FW.TeamCount(jobId, me) .. "/" .. (job.max or 0), C.bad
         else
@@ -410,7 +418,7 @@ function P11FW.OpenJobMenu()
         end
 
         take.Paint = function(s, w, h)
-            local locked = isCurrent or full
+            local locked = isCurrent or full or wlBlocked
             local col = locked and Color(66, 72, 80) or Color(38, 88, 56)
             if s:IsHovered() and not locked then col = Color(50, 118, 74) end
             draw.RoundedBox(8, 0, 0, w, h, col)
@@ -427,6 +435,11 @@ function P11FW.OpenJobMenu()
         take.DoClick = function()
             if isCurrent or full then
                 surface.PlaySound("buttons/button10.wav")
+                return
+            end
+            if wlBlocked then
+                surface.PlaySound("buttons/button10.wav")
+                chat.AddText(Color(255, 180, 110), "[ПОЛЮС-11] Должность 🔒 в ВАЙТЛИСТЕ — допуск выдают: администрация или ранги Faction Officer/Leader (вкладка ВАЙТЛИСТ в /menu).")
                 return
             end
             net.Start("P11FW_TakeJob")
@@ -464,22 +477,40 @@ function P11FW.OpenJobMenu()
 
     f:RefreshRight()
 
-    -- кнопка АДМИН-ПАНЕЛЬ (внизу слева; то же самое, что чат /menu)
-    if P11FW.Config.Admin(LocalPlayer()) then
-        local adm = vgui.Create("DButton", f)
-        adm:SetPos(12, 586)
-        adm:SetSize(312, 40)
-        adm:SetText("")
-        adm.Paint = function(s, w, h)
-            draw.RoundedBox(8, 0, 0, w, h, s:IsHovered() and Color(95, 52, 48) or Color(66, 38, 36))
-            surface.SetDrawColor(235, 130, 120, 90)
-            surface.DrawRect(0, h - 1, w, 1)
-            draw.SimpleText("🛡 АДМИН-ПАНЕЛЬ  (/menu)", "P11FW.Text", w / 2, h / 2,
-                Color(240, 140, 130), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+    -- кнопки внизу слева: АДМИН-ПАНЕЛЬ (админам) и 🔒 ВАЙТЛИСТ
+    -- (админам + рангам Faction Officer/Leader — v4.4.0)
+    local me = LocalPlayer()
+    local isAdmin = P11FW.Config.Admin(me)
+    local canWl = P11FW.CanWhitelist and P11FW.CanWhitelist(me)
+
+    local function F4Btn(x, y, w, h, name, colBase, colHover, colText, onClick)
+        local b = vgui.Create("DButton", f)
+        b:SetPos(x, y) b:SetSize(w, h)
+        b:SetText("")
+        b.Paint = function(s, w2, h2)
+            draw.RoundedBox(8, 0, 0, w2, h2, s:IsHovered() and colHover or colBase)
+            surface.SetDrawColor(colText.r, colText.g, colText.b, 90)
+            surface.DrawRect(0, h2 - 1, w2, 1)
+            draw.SimpleText(name, "P11FW.Text", w2 / 2, h2 / 2, colText, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
         end
-        adm.DoClick = function()
+        b.DoClick = function()
             surface.PlaySound("buttons/button15.wav")
-            P11FW.OpenAdminMenu()
+            onClick()
+        end
+        return b
+    end
+
+    if isAdmin then
+        F4Btn(12, 586, 152, 40, "🛡 АДМИН-ПАНЕЛЬ", Color(66, 38, 36), Color(95, 52, 48),
+            Color(240, 140, 130), function() P11FW.OpenAdminMenu() end)
+    end
+    if canWl then
+        if isAdmin then
+            F4Btn(172, 586, 152, 40, "🔒 ВАЙТЛИСТ", Color(62, 46, 26), Color(92, 66, 32),
+                Color(255, 185, 110), function() P11FW.OpenAdminMenu("whitelist") end)
+        else
+            F4Btn(12, 586, 312, 40, "🔒 ВАЙТЛИСТ — выдача допусков", Color(62, 46, 26), Color(92, 66, 32),
+                Color(255, 185, 110), function() P11FW.OpenAdminMenu("whitelist") end)
         end
     end
 end

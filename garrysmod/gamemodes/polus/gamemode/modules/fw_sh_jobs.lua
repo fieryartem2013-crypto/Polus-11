@@ -265,6 +265,7 @@ function P11FW.RegisterCustomJobs(records)
                 job.weapons    = istable(rec.weapons) and rec.weapons or {}
                 job.max        = tonumber(rec.max) or 0
                 job.terminal   = rec.terminal == true
+                job.whitelist  = rec.whitelist == true -- v4.4.0
                 job.color      = Color(tonumber(c.r) or 210, tonumber(c.g) or 170, tonumber(c.b) or 120)
                 job.overridden = true
                 team.SetUp(rec.team, job.name, job.color, true)
@@ -272,6 +273,7 @@ function P11FW.RegisterCustomJobs(records)
             P11FW.Jobs[rec.id] = {
                 custom   = true,
                 terminal = rec.terminal == true,
+                whitelist = rec.whitelist == true, -- v4.4.0: ВАЙТЛИСТ-галочка
                 order    = tonumber(rec.order) or 100,
                 category = isstring(rec.category) and rec.category or "misc",
                 name     = rec.name,

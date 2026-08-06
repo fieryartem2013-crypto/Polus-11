@@ -13,6 +13,7 @@ local send = {
     "modules/p11_sh_core.lua",
     "modules/fw_sh_factions.lua",
     "modules/fw_sh_ranks.lua",
+    "modules/fw_sh_whitelist.lua",  -- v4.4.0: вайтлист должностей (shared)
     "modules/fw_cl_f4.lua",
     "modules/fw_cl_punish.lua",
     "modules/fw_cl_admin.lua",
@@ -32,6 +33,7 @@ local send = {
     "modules/p11_cl_alerts.lua",
     "modules/p11_cl_view.lua",
     "modules/p11_cl_cmenu.lua",
+    "modules/p11_cl_models.lua",    -- v4.4.0: браузер внешности (с нуля)
     "modules/p11_cl_economy.lua",
     "modules/p11_cl_minigame.lua", -- v4.1
     "modules/p11_cl_duties2.lua",   -- v4.2
@@ -74,6 +76,7 @@ local sv = {
     "modules/fw_sv_punish.lua",      -- арест / рабство / бан
     "modules/fw_sv_mod.lua",         -- варны / мут / кик + ворота прав рангов + журнал
     "modules/fw_sv_ranks.lua",       -- ранги + секретный ключ основателя
+    "modules/fw_sv_whitelist.lua",   -- v4.4.0: вайтлист должностей (допуски)
     "modules/fw_sv_emotes.lua",      -- жесты C-меню + меню моделей админов
     "modules/p11_sv_infection.lua",  -- заражение Нечто
     "modules/p11_sv_power.lua",      -- генератор / топливо / блэкаут
@@ -97,6 +100,7 @@ local sv = {
     "modules/p11_sv_duties2.lua",    -- повар/грузчик/снабжение/досье/скидка/итоги (v4.2)
     "modules/p11_sv_mutations.lua",  -- мутации Нечто за жертв (v4.2)
     "modules/p11_sv_chars.lua",      -- дело бойца: персонажи + сохранение (v4.3.0)
+    "modules/p11_sv_models.lua",     -- выдача моделей: надеть/выдать (v4.4.0, с нуля)
 }
 
 local function Safe(f)

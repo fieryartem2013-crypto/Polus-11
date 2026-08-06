@@ -91,6 +91,9 @@ local function SanitizeRecord(rec)
     if rec.armor ~= nil then out.armor = math.Clamp(tonumber(rec.armor) or 0, 0, 500) end
     if rec.event ~= nil then out.event = rec.event == true end
 
+    -- v4.4.0: ВАЙТЛИСТ-галочка. nil = оставить как было при правке.
+    if rec.whitelist ~= nil then out.whitelist = rec.whitelist == true end
+
     return out
 end
 
@@ -172,6 +175,7 @@ net.Receive("P11FW_JobEdit", function(len, ply)
         if clean.hp == nil    then clean.hp    = old.hp    end
         if clean.armor == nil then clean.armor = old.armor end
         if clean.event == nil then clean.event = old.event end
+        if clean.whitelist == nil then clean.whitelist = old.whitelist end -- v4.4.0
         for i, r in ipairs(P11FW.CustomJobs) do
             if r.id == old.id then P11FW.CustomJobs[i] = clean end
         end

@@ -31,6 +31,9 @@ end
 function P11FW.LoadNPCs()
     if not P11FW.Config.NPCPersist then return end
 
+    -- v4.4.0: во время собственной загрузки НЕ реагируем на EntityRemoved
+    P11FW.NpcSaveMute = true
+
     -- убрать возможные дубли
     for _, e in ipairs(ents.FindByClass(NPC_CLASS)) do e:Remove() end
 
@@ -51,6 +54,9 @@ function P11FW.LoadNPCs()
         end
     end
     P11FW.Log("Загружено кадровиков: " .. #tbl)
+
+    -- загрузка кончилась — опять следим за удалениями
+    timer.Simple(1, function() P11FW.NpcSaveMute = false end)
 end
 
 hook.Add("InitPostEntity", "P11FW.NpcLoad", function()
@@ -66,6 +72,36 @@ hook.Add("OnEntityCreated", "P11FW.NpcAutosave", function(ent)
     timer.Simple(2, function()
         if IsValid(ent) then P11FW.SaveNPCs() end
     end)
+end)
+
+-- ============ v4.4.0: УДАЛИЛ — УДАЛЕНО НАВСЕГДА ============
+-- Раньше кадровик воскресал после рестарта, если его снесли НЕ
+-- официальной кнопкой (кнопка Z, контекстное меню, remover-тула):
+-- файл сейва его помнил. Теперь ЛЮБОЕ удаление сущности через
+-- EntityRemoved вычёркивает её из сейва карты. Ложных срабатываний
+-- нет: на чистке карты/рестарте проставляется NpcSaveMute.
+
+P11FW.NpcSaveMute = P11FW.NpcSaveMute or false
+
+hook.Add("EntityRemoved", "P11FW.NpcGoneForever", function(ent)
+    if ent:GetClass() ~= NPC_CLASS then return end
+    if P11FW.NpcSaveMute then return end
+    if not (P11FW.Config and P11FW.Config.NPCPersist) then return end
+    timer.Simple(0.4, function()
+        if P11FW.NpcSaveMute then return end
+        P11FW.SaveNPCs()
+        P11FW.Log("Кадровик удалён с карты — вычеркнут из сейва (после рестарта НЕ воскреснет).")
+    end)
+end)
+
+-- на чистке карты все энтити сносятся — это НЕ удаление админом
+hook.Add("PreCleanupMap", "P11FW.NpcCleanupMute", function()
+    P11FW.NpcSaveMute = true
+end)
+
+-- при выключении сервера тоже не пересохраняем (там всё равно таймер не доедет)
+hook.Add("ShutDown", "P11FW.NpcShutdownMute", function()
+    P11FW.NpcSaveMute = true
 end)
 
 -- ============ СОЗДАНИЕ / УДАЛЕНИЕ ============

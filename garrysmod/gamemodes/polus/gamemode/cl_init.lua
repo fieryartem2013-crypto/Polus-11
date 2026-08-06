@@ -23,7 +23,8 @@ local cl = {
     "modules/p11_cl_help.lua",     -- F1-справка новичка
     "modules/p11_cl_alerts.lua",   -- приказ-баннер / метель / розыск / распорядок
     "modules/p11_cl_view.lua",     -- F2 третье лицо / F3 курсор / голос-панели (v3.8)
-    "modules/p11_cl_cmenu.lua",    -- C-меню: жесты / действия / меню моделей
+    "modules/p11_cl_cmenu.lua",    -- C-меню: жесты / действия (v4.4.0 — реворк с нуля)
+    "modules/p11_cl_models.lua",   -- браузер внешности (v4.4.0 — с нуля)
     "modules/p11_cl_economy.lua",  -- рубли на HUD / инвентарь / ларёк / сейф / расстановка (v4.0)
     "modules/p11_cl_minigame.lua", -- миниигры дел + патрульные маркеры + RP (v4.1)
     "modules/p11_cl_duties2.lua",   -- заявки грузчика / досье НКВД (v4.2)

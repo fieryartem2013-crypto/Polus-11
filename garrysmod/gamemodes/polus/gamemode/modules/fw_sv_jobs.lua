@@ -95,6 +95,17 @@ function P11FW.SetJob(ply, jobId, modelIdx, force)
         end
     end
 
+    -- v4.4.0: ВАЙТЛИСТ-ДОПУСК (должности с галочкой «ВАЙТЛИСТ», напр. всё НКВД).
+    -- Администрация проходит свободно, остальным нужен допуск (вкладка ВАЙТЛИСТ
+    -- в /menu у администрации и рангов Faction Officer/Leader).
+    if job.whitelist and not force then
+        local allowed = P11FW.Config.Admin(ply)
+            or (P11FW.HasWhitelist and P11FW.HasWhitelist(ply, jobId))
+        if not allowed then
+            return false, "должность в ВАЙТЛИСТЕ 🔒 — допуск выдают офицеры НКВД / администрация (вкладка ВАЙТЛИСТ в /menu)"
+        end
+    end
+
     if not force and P11FW.JobFull(jobId, ply) then
         return false, "нет свободных мест (" .. P11FW.TeamCount(jobId, ply) .. "/" .. (job.max or 0) .. ")"
     end

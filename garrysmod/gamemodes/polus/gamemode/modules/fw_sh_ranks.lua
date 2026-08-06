@@ -1,5 +1,5 @@
 -- ============================================================
---  ПОЛЮС FRAMEWORK — РАНГИ АДМИНИСТРАЦИИ (shared) v1.9
+--  ПОЛЮС FRAMEWORK — РАНГИ АДМИНИСТРАЦИИ (shared) v2.0
 --  v3.8.2: НОВАЯ ИЕРАРХИЯ проекта — 16 рангов от User до
 --  «Глава Проекта» (список от владельца сервера). Ранг живёт
 --  отдельно от GMod-групп: хранится у нас (ranks.json),
@@ -15,6 +15,11 @@ P11FW = P11FW or {}
 P11FW.Ranks = {
     { id = "user",              name = "User",                  level = 0,  color = Color(170, 170, 170) },
     { id = "vip",               name = "VIP",                   level = 1,  color = Color(235, 205, 100) },
+    -- v4.4.0: ДОЛЖНОСТНЫЕ ранги вайтлиста — это НЕ админка (прав модерации
+    -- нет, уровень 1), но есть доступ к меню ВАЙТЛИСТА (выдача допусков
+    -- на whitelist-должности, напр. всё НКВД). Флаг wl = true.
+    { id = "faction_officer",   name = "Faction Officer",       level = 1,  color = Color(150, 200, 255), wl = true },
+    { id = "faction_leader",    name = "Faction Leader",        level = 1,  color = Color(255, 180, 110), wl = true },
     { id = "helper",            name = "Helper",                level = 2,  color = Color(140, 220, 150) },
     { id = "moderator",         name = "Moderator",             level = 3,  color = Color(140, 190, 250) },
     { id = "admin",             name = "Administrator",         level = 4,  color = Color(235, 150, 90) },
@@ -106,6 +111,17 @@ function P11FW.RankFxColor(ply, t)
         v = 0.82 + math.sin(t * 2.8) * 0.18
         return HSVToColor(h, s, v)
     end
+end
+
+--- v4.4.0: может ли игрок УПРАВЛЯТЬ ВАЙТЛИСТОМ должностей
+--- (выдавать/снимать допуски на whitelist-профы — вкладка ВАЙТЛИСТ):
+--- администрация ИЛИ ранг с флагом wl (Faction Officer / Faction Leader).
+function P11FW.CanWhitelist(ply)
+    if not IsValid(ply) then return false end
+    if ply:IsListenServerHost() then return true end
+    if P11FW.Config and P11FW.Config.Admin and P11FW.Config.Admin(ply) then return true end
+    local r = P11FW.GetRank and P11FW.GetRank(ply)
+    return r ~= nil and r.wl == true
 end
 
 --- Может ли ply выдавать ранги (и не выше себя)?

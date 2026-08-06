@@ -1,5 +1,5 @@
 -- ============================================================
---  ПОЛЮС FRAMEWORK — АВТО-СИД ПРЕСЕТНЫХ ФРАКЦИЙ/ДОЛЖНОСТЕЙ (server) v3.8.3
+--  ПОЛЮС FRAMEWORK — АВТО-СИД ПРЕСЕТНЫХ ФРАКЦИЙ/ДОЛЖНОСТЕЙ (server) v3.8.4
 --  Завозит готовый штат «чтобы было хоть что-то на альфа-тесте»:
 --   • фракция РККА — 8 должностей по списку владельца сервера
 --     (оружие ARC9/DOI, модели hts/comradebear: pm0v3);
@@ -150,7 +150,7 @@ local SEED_JOBS = {
     -- Модели: пока стоят комиссарские/штабные из пака pm0v3 — если найдёшь
     -- пак с «синими фуражками», смени пути тут или прямо в админке.
     {
-        id = "seed_nkvd_convoy", category = "nkvd", order = 50,
+        id = "seed_nkvd_convoy", category = "nkvd", order = 50, whitelist = true, -- v4.4.0: ВАЙТЛИСТ
         name = "Конвоир НКВД",
         desc = "Конвой и караул задержанных, охрана допросной и склада вещдоков. Двустволка MR-43 — уговаривать долго не приходится. 100 ХП / 100 брони.",
         weapons = { "arc9_eft_mr43" }, hp = 100, armor = 100, max = 2,
@@ -162,7 +162,7 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_nkvd_oper", category = "nkvd", order = 51,
+        id = "seed_nkvd_oper", category = "nkvd", order = 51, whitelist = true, -- v4.4.0: ВАЙТЛИСТ
         name = "Оперуполномоченный НКВД",
         desc = "Оперативная работа: наружное наблюдение, агентурная сеть, тихие допросы «для протокола». АКС-74У под полой шинели. 100 ХП / 100 брони.",
         weapons = { "arc9_eft_aks74u" }, hp = 100, armor = 100, max = 3,
@@ -175,7 +175,7 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_nkvd_sledovatel", category = "nkvd", order = 52,
+        id = "seed_nkvd_sledovatel", category = "nkvd", order = 52, whitelist = true, -- v4.4.0: ВАЙТЛИСТ
         name = "Следователь НКВД",
         desc = "Протоколы, вещдоки, досье на каждого жителя станции. Имеет право требовать принудительный тест крови ПОД СВОИМ НАДЗОРОМ — шприц в сейфе следопера. 100 ХП / 50 брони.",
         weapons = { "weapon_polus11_syringe", "arc9_doi_k98" }, hp = 100, armor = 50, max = 2, terminal = true,
@@ -186,7 +186,7 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_nkvd_osobist", category = "nkvd", order = 53,
+        id = "seed_nkvd_osobist", category = "nkvd", order = 53, whitelist = true, -- v4.4.0: ВАЙТЛИСТ
         name = "Особист НКВД",
         desc = "Контрразведка станции. Может объявлять РОЗЫСК (!розыск) и отдавать ПРИКАЗЫ (!приказ) без санкции генерала, если подозревает Нечто. Одно место. 115 ХП / 100 брони.",
         weapons = { "arc9_doi_k98" }, hp = 115, armor = 100, max = 1, terminal = true, command = true,
@@ -196,7 +196,7 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_nkvd_nachalnik", category = "nkvd", order = 54,
+        id = "seed_nkvd_nachalnik", category = "nkvd", order = 54, whitelist = true, -- v4.4.0: ВАЙТЛИСТ
         name = "Начальник Особого Отдела НКВД",
         desc = "Высшее слово станции по вопросам внутренней безопасности. Его подпись в ордере на расстрел равна приговору Военного трибунала. Одно место. 125 ХП / 125 брони.",
         weapons = { "arc9_doi_k98" }, hp = 125, armor = 125, max = 1, terminal = true, command = true,
@@ -338,6 +338,25 @@ local function SeedAll()
         end
     end
 
+    -- ---------- 0.5) v4.4.0 МИГРАЦИЯ: ВАЙТЛИСТ всему НКВД ----------
+    -- На серверах, где НКВД завезено раньше, в сейве нет поля whitelist —
+    -- включаем принудительно и пересохраняем (один раз, потом поле уже есть).
+    do
+        local changed = false
+        for _, rec in ipairs(P11FW.CustomJobs) do
+            if rec and rec.category == "nkvd" and rec.whitelist == nil then
+                rec.whitelist = true
+                changed = true
+            end
+        end
+        if changed then
+            P11FW.SaveCustomJobs()
+            P11FW.RegisterCustomJobs(P11FW.CustomJobs)
+            P11FW.SyncCustomJobs()
+            P11FW.Log("Сид v4.4.0: ВАЙТЛИСТ 🔒 включён всем должностям НКВД (миграция)")
+        end
+    end
+
     -- ---------- 1) ФРАКЦИИ ----------
     local records = FactionRecordsNow()
     local facAdded = 0
@@ -388,6 +407,7 @@ local function SeedAll()
                 armor    = tonumber(j.armor) or 0,
                 event    = j.event == true,
                 command  = j.command == true, -- !приказ/!розыск для генералов
+                whitelist = j.whitelist == true, -- v4.4.0: ВАЙТЛИСТ (напр. всё НКВД)
                 order    = j.order or 100,
             }
             jobAdded = jobAdded + 1
