@@ -22,10 +22,11 @@ surface.CreateFont("P11.CM.Text",  { font = "Roboto", size = 16, weight = 600, e
 surface.CreateFont("P11.CM.Small", { font = "Roboto", size = 13, weight = 400, extended = true })
 surface.CreateFont("P11.CM.Mdl",   { font = "Roboto", size = 19, weight = 800, extended = true })
 
+-- v4.2.3: палитра приведена к фирменному P11UI (единый стиль сервера)
 local CC = {
-    bg    = Color(12, 17, 24, 240),
-    panel = Color(20, 28, 38, 255),
-    cyan  = Color(120, 200, 240),
+    bg    = Color(10, 14, 20, 245),
+    panel = Color(20, 26, 36, 255),
+    cyan  = Color(120, 185, 255),
     gold  = Color(255, 205, 110),
     text  = Color(228, 236, 245),
     dim   = Color(150, 165, 180),

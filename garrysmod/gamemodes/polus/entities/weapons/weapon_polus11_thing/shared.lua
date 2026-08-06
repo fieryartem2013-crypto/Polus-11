@@ -176,15 +176,36 @@ function SWEP:SecondaryAttack()
 
     if CLIENT then return end
 
-    local tr = util.TraceLine({
-        start = ply:GetShootPos(),
-        endpos = ply:GetShootPos() + ply:GetAimVector() * 110,
+    -- v4.2.3: гуманный захват цели — толстый след + конус поиска,
+    -- чтобы «рядом нет цели» встречалось только когда её правда нет
+    local target = nil
+    local tr = util.TraceHull({
+        start  = ply:GetShootPos(),
+        endpos = ply:GetShootPos() + ply:GetAimVector() * 150,
+        mins   = Vector(-14, -14, -14),
+        maxs   = Vector(14, 14, 14),
         filter = ply,
     })
-
-    local target = tr.Entity
-    if not IsValid(target) or not target:IsPlayer() or not target:Alive() then
-        POLUS11.Notify(ply, "Рядом нет цели для укола.")
+    local e0 = tr.Entity
+    if IsValid(e0) and e0:IsPlayer() and e0:Alive() then target = e0 end
+    if not IsValid(target) then
+        local eye, fwd = ply:EyePos(), ply:GetAimVector()
+        local bestDist = 165
+        for _, t in ipairs(player.GetAll()) do
+            if t ~= ply and IsValid(t) and t:Alive() then
+                local toT = (t:EyePos() - eye)
+                local d = toT:Length()
+                if d < bestDist then
+                    toT:Normalize()
+                    if toT:Dot(fwd) > 0.55 then
+                        target, bestDist = t, d
+                    end
+                end
+            end
+        end
+    end
+    if not IsValid(target) then
+        POLUS11.Notify(ply, "Рядом нет цели для укола (нужен человек в упор — до полутора метров).")
         return
     end
 
@@ -323,6 +344,8 @@ function SWEP:EatCorpse(ply, corpse)
     end
     local docLine = (isstring(id.doc) and id.doc ~= "") and (" · док. " .. id.doc) or ""
     POLUS11.Notify(ply, "Личность поглощена: «" .. id.nick .. "»" .. jobLine .. docLine .. ". R — вернуть себя.")
+    ply:ChatPrint("[ПОЛЮС-11] Перевоплощение: вы — «" .. id.nick .. "»" .. jobLine .. docLine
+        .. ". Документы показывают карточку жертвы; TAB и чат — тоже. R — сбросить.")
     POLUS11.Log("ПОГЛОЩЕНИЕ ЛИЧНОСТИ: " .. ply:Nick() .. " съел труп «" .. id.nick .. "»" .. docLine .. jobLine)
 end
 
@@ -330,16 +353,24 @@ end
 local function TraceCorpse(ply)
     local tr = util.TraceHull({
         start  = ply:GetShootPos(),
-        endpos = ply:GetShootPos() + ply:GetAimVector() * 140,
-        mins   = Vector(-20, -20, -20),
-        maxs   = Vector(20, 20, 20),
+        endpos = ply:GetShootPos() + ply:GetAimVector() * 220,
+        mins   = Vector(-28, -28, -10),
+        maxs   = Vector(28, 28, 28),
         filter = ply,
     })
     local e = tr.Entity
     if IsValid(e) and e:GetClass() == "prop_ragdoll" and istable(e.P11_Identity) then
         return e
     end
-    return nil
+    -- запас: ближайший труп с личностью в полутора метрах
+    local best, bd = nil, 170 * 170
+    for _, c in ipairs(ents.FindInSphere(ply:GetPos(), 170)) do
+        if IsValid(c) and c:GetClass() == "prop_ragdoll" and istable(c.P11_Identity) then
+            local d = c:GetPos():DistToSqr(ply:GetPos())
+            if d < bd then best, bd = c, d end
+        end
+    end
+    return best
 end
 
 -- ==================== R ====================
@@ -394,9 +425,9 @@ if CLIENT then
         -- рядом съедобный труп?
         local tr = util.TraceHull({
             start  = ply:GetShootPos(),
-            endpos = ply:GetShootPos() + ply:GetAimVector() * 140,
-            mins   = Vector(-20, -20, -20),
-            maxs   = Vector(20, 20, 20),
+            endpos = ply:GetShootPos() + ply:GetAimVector() * 220,
+            mins   = Vector(-28, -28, -10),
+            maxs   = Vector(28, 28, 28),
             filter = {ply, self},
         })
         local e = tr.Entity

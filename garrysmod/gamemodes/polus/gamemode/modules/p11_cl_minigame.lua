@@ -93,8 +93,8 @@ local function DrawMini(M, w, h)
     local cx, cy = w / 2, h * 0.62
 
     -- панель
-    draw.RoundedBox(10, cx - 200, cy - 96, 400, 190, Color(8, 12, 18, 215))
-    surface.SetDrawColor(80, 160, 255, 160)
+    draw.RoundedBox(10, cx - 200, cy - 96, 400, 190, Color(10, 14, 20, 225)) -- v4.2.3: палитра P11UI
+    surface.SetDrawColor(120, 185, 255, 170)
     surface.DrawOutlinedRect(cx - 200, cy - 96, 400, 190, 2)
 
     draw.SimpleText(M.title, "P11.Mini.Mid", cx, cy - 74, Color(150, 200, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)

@@ -11,8 +11,8 @@ SWEP.Author       = "POLUS-11"
 SWEP.Category     = "ПОЛЮС-11"
 SWEP.Instructions = "ЛКМ — когти | ПКМ — споровое облако (18 сек КД) | R — разрыв спорами (стоит 60 хп)"
 
-SWEP.Spawnable      = true
-SWEP.AdminSpawnable = true
+SWEP.Spawnable      = false -- v4.2.3: внутренняя форма (!форма), в спавн-меню не нужна
+SWEP.AdminSpawnable = false
 SWEP.AdminOnly      = true
 
 SWEP.HoldType   = "melee"
