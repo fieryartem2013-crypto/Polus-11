@@ -9,8 +9,9 @@ surface.CreateFont("P11.Term.Text",  { font = "Roboto", size = 15, weight = 500,
 surface.CreateFont("P11.Term.Small", { font = "Roboto", size = 13, weight = 400, extended = true })
 
 local TC = {
-    bg    = Color(10, 16, 20, 245),
-    panel = Color(18, 26, 32, 255),
+    -- v4.2: единый фирменный фундамент P11UI
+    bg    = Color(10, 14, 20, 245),
+    panel = Color(20, 26, 36, 255),
     cyan  = Color(110, 205, 235),
     dim   = Color(150, 165, 178),
     ok    = Color(120, 220, 140),

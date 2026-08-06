@@ -173,10 +173,19 @@ net.Receive("P11_ShopOpen", function()
             pnl:Dock(TOP) pnl:DockMargin(0, 0, 0, 6) pnl:SetTall(56)
             pnl.Paint = function(s, w, h)
                 draw.RoundedBox(6, 0, 0, w, h, PANE)
+                if it.sale then -- v4.2: 🔥 СКИДКА ДНЯ
+                    surface.SetDrawColor(255, 170, 60, 60 + 60 * math.abs(math.sin(CurTime() * 3)))
+                    surface.DrawOutlinedRect(0, 0, w, h, 2)
+                end
                 draw.SimpleText(it.name, "P11.Eco.Med", 12, 16, TEXT)
                 draw.SimpleText(it.desc or "", "P11.Eco.Small", 12, 38, DIM)
+                if it.sale then
+                    draw.SimpleText("🔥 −40% ДНЯ", "P11.Eco.Small", w - 230, 28,
+                        Color(255, 170, 70), TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
+                end
                 draw.SimpleText((it.price or 0) .. "₽", "P11.Eco.Med", w - 148, 28,
-                    can and Color(255, 210, 110) or BAD, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
+                    it.sale and Color(255, 170, 70) or (can and Color(255, 210, 110) or BAD),
+                    TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
             end
             RowButton(pnl, 584, 14, 50, 28, "КУПИТЬ", can and OK or DIM, function()
                 EcoAct(2, id)
@@ -254,13 +263,14 @@ end)
 
 function P11.OpenPlaceMenu()
     if not P11FW.Config.Admin(LocalPlayer()) then return end
-    local f = EcoFrame("📍 РАССТАВИТЬ ОБЪЕКТЫ — куда смотришь, туда и встанет", 420, 364)
+    local f = EcoFrame("📍 РАССТАВИТЬ ОБЪЕКТЫ — куда смотришь, туда и встанет", 420, 424)
     local roles = {
         { id = "generator", name = "⚡ Генератор",          desc = "старт с полной заправкой" },
         { id = "terminal",  name = "🖥 Сменный терминал",   desc = "допуск: профы с флагом терминала" },
         { id = "shopnpc",   name = "🏪 Ларёк снабжения",    desc = "витрина за рубли (экономика)" },
         { id = "storage",   name = "🗄 Личный сейф",        desc = "общая точка доступа к сейфам" },
         { id = "patrol",    name = "🚩 Пост патруля",       desc = "точка обхода РККА (v4.1)" },
+        { id = "kitchen",   name = "🍲 Полевая кухня",      desc = "плита повара: горячие пайки (v4.2)" },
     }
     for i, r in ipairs(roles) do
         local y = 64 + (i - 1) * 56

@@ -139,6 +139,11 @@ function SWEP:SecondaryAttack()
         return
     end
 
+    -- v4.2: ПРОЦЕДУРА с ампулой (миниигра, +25 ХП) — если ампулы есть
+    if POLUS11.StartInjection and POLUS11.StartInjection(ply, target) then
+        return
+    end
+
     target.P11_LastHealed = CurTime()
     local heal = 12
     target:SetHealth(math.min(maxhp, target:Health() + heal))

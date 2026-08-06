@@ -192,6 +192,16 @@ function P11.OpenCMenu()
     end
 
     -- v4.0: багаж (для всех) + постановка объектов (админам)
+    -- v4.2: заявка грузчику (для всех): пишешь что надо — он видит маяк и линию пути
+    CButton(f, 278, 398, 84, 40, "📦 Грузчик", "заявка снабжения", CC.gold, function()
+        P11.CloseCMenu()
+        Derma_StringRequest("ЗАЯВКА СНАБЖЕНИЯ", "Что притащить и для чего? (видят все грузчики)",
+            "", function(txt)
+                net.Start("P11_PorterReq")
+                    net.WriteString(txt or "")
+                net.SendToServer()
+            end)
+    end)
     CButton(f, 370, 398, 84, 40, "🎒 Багаж", "инвентарь", CC.gold, function()
         P11.CloseCMenu()
         if P11.OpenInventory then P11.OpenInventory() end

@@ -26,6 +26,9 @@ local cl = {
     "modules/p11_cl_cmenu.lua",    -- C-меню: жесты / действия / меню моделей
     "modules/p11_cl_economy.lua",  -- рубли на HUD / инвентарь / ларёк / сейф / расстановка (v4.0)
     "modules/p11_cl_minigame.lua", -- миниигры дел + патрульные маркеры + RP (v4.1)
+    "modules/p11_cl_duties2.lua",   -- заявки грузчика / досье НКВД (v4.2)
+    "modules/p11_cl_mutations.lua", -- HUD мутаций Нечто (v4.2)
+    "modules/p11_cl_tutorial.lua",  -- туториал новичка: маяки и подсказки (v4.2)
 }
 
 local loaded = 0

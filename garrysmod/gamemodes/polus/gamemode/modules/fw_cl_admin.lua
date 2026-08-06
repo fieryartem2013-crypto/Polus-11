@@ -11,9 +11,10 @@
 surface.CreateFont("P11FW.Adm.Tab", { font = "Roboto", size = 18, weight = 700, extended = true })
 
 local AC = {
-    bg     = Color(16, 18, 24, 240),
-    panel  = Color(26, 30, 40, 255),
-    panel2 = Color(32, 38, 50, 255),
+    -- v4.2: единый фирменный фундамент P11UI (акцент админки — красный, как положено)
+    bg     = Color(10, 14, 20, 245),
+    panel  = Color(20, 26, 36, 255),
+    panel2 = Color(27, 34, 47, 255),
     accent = Color(235, 120, 110),
     text   = Color(230, 232, 240),
     dim    = Color(155, 160, 175),

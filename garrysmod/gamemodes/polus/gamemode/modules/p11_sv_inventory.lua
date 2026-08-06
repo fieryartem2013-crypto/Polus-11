@@ -35,6 +35,7 @@ POLUS11.Items = {
     syringe  = { name = "Полевой шприц",    price = 800,  class = "weapon_polus11_syringe", desc = "Забор крови / экстренная обработка." },
     chemlight= { name = "Химсвет (пачка)",  price = 150,  class = "weapon_polus11_chemlight",desc = "Кидай и размечай путь в облаке спор." },
     scalpel  = { name = "Скальпель",        price = 600,  class = "weapon_polus11_scalpel", desc = "Хирургический. И не только хирургический." },
+    ampoule  = { name = "Ампула «Анальгин-С»", price = 300, class = "p11_ampoule",          desc = "Расходка медика для процедурной инъекции (+25 ХП). В руки не даётся." },
     flamer   = { name = "Кустарный огнемёт",price = 7500, class = "weapon_polus11_flamethrower", desc = "Единственный надёжный аргумент против Нечто." },
 }
 
@@ -83,6 +84,11 @@ function POLUS11.InvSync(ply)
     local cat = {}
     for id, it in pairs(POLUS11.Items) do
         cat[id] = { name = it.name, price = it.price, desc = it.desc, class = it.class }
+        -- v4.2: скидка дня (актуальная цена + маркер)
+        if POLUS11.SaleOfDay and POLUS11.SaleOfDay.id == id then
+            cat[id].price = POLUS11.SalePrice and POLUS11.SalePrice(id) or it.price
+            cat[id].sale  = true
+        end
     end
     net.Start("P11_InvSync")
         net.WriteString(util.TableToJSON({
@@ -102,6 +108,8 @@ end)
 
 -- ============ ГРУДНЫЕ ДЕЙСТВИЯ ============
 
+POLUS11.InvOf = InvOf -- v4.2: экспорт для добычи/ампул/проверок
+
 function POLUS11.InvCanUse(class)
     return isstring(class) and weapons.Get(class) ~= nil
 end
@@ -110,14 +118,15 @@ end
 function POLUS11.ShopBuy(ply, id)
     local it = POLUS11.Items[id]
     if not it then return end
-    if not POLUS11.InvCanUse(it.class) then
+    if id ~= "ampoule" and not POLUS11.InvCanUse(it.class) then
         POLUS11.Notify(ply, "«" .. it.name .. "» сейчас нет на складе (нет пака оружия на сервере).")
         ply:EmitSound("buttons/button10.wav", 60, 90)
         return
     end
-    if not POLUS11.TakeMoney(ply, it.price, "покупка: " .. it.name) then
-        POLUS11.Notify(ply, "Не хватает " .. (it.price - POLUS11.GetMoney(ply)) ..
-            "₽. Цена: " .. it.price .. "₽, у тебя: " .. POLUS11.GetMoney(ply) .. "₽.")
+    local price = (POLUS11.SalePrice and POLUS11.SalePrice(id)) or it.price -- v4.2: скидка дня
+    if not POLUS11.TakeMoney(ply, price, "покупка: " .. it.name .. ((POLUS11.SaleOfDay and POLUS11.SaleOfDay.id == id) and " [СКИДКА ДНЯ]" or "")) then
+        POLUS11.Notify(ply, "Не хватает " .. (price - POLUS11.GetMoney(ply)) ..
+            "₽. Цена: " .. price .. "₽, у тебя: " .. POLUS11.GetMoney(ply) .. "₽.")
         ply:EmitSound("buttons/button10.wav", 60, 90)
         return
     end
@@ -138,6 +147,10 @@ function POLUS11.InvUse(ply, id)
     if not it then return end
     if not ply:Alive() then
         POLUS11.Notify(ply, "Мёртвым не положено.")
+        return
+    end
+    if id == "ampoule" then
+        POLUS11.Notify(ply, "Ампула — расходка: шприц потратит её сам при процедурной инъекции.")
         return
     end
     if not POLUS11.InvCanUse(it.class) then
@@ -243,6 +256,7 @@ local PLACEABLE = {
     shopnpc   = "polus_p11_shopnpc",
     storage   = "polus_p11_storage",
     patrol    = "polus_p11_patrol", -- v4.1: посты патруля
+    kitchen   = "polus_p11_kitchen", -- v4.2: полевая кухня повара
 }
 
 local function PlaceFile(role)
@@ -286,6 +300,7 @@ hook.Add("InitPostEntity", "P11.PlaceLoad", function()
         LoadPlaced("storage")
         LoadPlaced("terminal")
         LoadPlaced("patrol")
+        LoadPlaced("kitchen")
         if POLUS11.PatrolSyncAll then timer.Simple(2.5, function() POLUS11.PatrolSyncAll(nil) end) end
     end)
 end)
@@ -295,6 +310,7 @@ hook.Add("PostCleanupMap", "P11.PlaceLoad2", function()
         LoadPlaced("storage")
         LoadPlaced("terminal")
         LoadPlaced("patrol")
+        LoadPlaced("kitchen")
         if POLUS11.PatrolSyncAll then timer.Simple(1.5, function() POLUS11.PatrolSyncAll(nil) end) end
     end)
 end)

@@ -257,36 +257,15 @@ local SEED_JOBS = {
     },
 
     -- ================= НЕЧТО (ИВЕНТ, только для админов) =================
+    -- v4.2: ОДНА профессия. Форма меняется командой !форма (имитатор/
+    -- поглотитель/разделённый/споровик), за жертв копятся МУТАЦИИ:
+    -- 3 — Регенерация, 5 — Мясогигант, 10 — Арахна (паучья форма).
     {
         id = "seed_thing_filial", category = "nechto", order = 90,
         name = "[ИВЕНТ] Нечто",
-        desc = "Базовая форма. Личинка-хамелеон, крадущая тела и лица. Только для админ-ивентов. 400 ХП.",
-        weapons = { "weapon_polus11_thing" }, hp = 400, armor = 0, max = 1, event = true,
+        desc = "Личинка-хамелеон, крадущая тела и лица. !форма — смена формы; мутации за жертв (3/5/10). Только для админ-ивентов. 400 ХП.",
+        weapons = { "weapon_polus11_thing" }, hp = 400, armor = 0, max = 2, event = true,
         color = Color(150, 55, 60),
-        models = { "models/player/corpse1.mdl" },
-    },
-    {
-        id = "seed_thing_split", category = "nechto", order = 91,
-        name = "[ИВЕНТ] Нечто-Распад",
-        desc = "Форма распада: тело делится на множество мелких тварей. Только для админ-ивентов. 250 ХП.",
-        weapons = { "weapon_polus11_thing_split" }, hp = 250, armor = 0, max = 1, event = true,
-        color = Color(160, 60, 70),
-        models = { "models/player/corpse1.mdl" },
-    },
-    {
-        id = "seed_thing_brute", category = "nechto", order = 92,
-        name = "[ИВЕНТ] Нечто-Громила",
-        desc = "Тяжёлая боевой форма: стены ей — что картон. Только для админ-ивентов. 900 ХП / 200 брони.",
-        weapons = { "weapon_polus11_thing_brute" }, hp = 900, armor = 200, max = 1, event = true,
-        color = Color(170, 65, 60),
-        models = { "models/player/corpse1.mdl" },
-    },
-    {
-        id = "seed_thing_spore", category = "nechto", order = 93,
-        name = "[ИВЕНТ] Нечто-Споровик",
-        desc = "Форма-распылитель спорного облака: заражает без укуса. Только для админ-ивентов. 350 ХП.",
-        weapons = { "weapon_polus11_thing_spore" }, hp = 350, armor = 0, max = 1, event = true,
-        color = Color(145, 70, 85),
         models = { "models/player/corpse1.mdl" },
     },
 }
@@ -335,8 +314,29 @@ local function SaveFactionRecords(records)
     file.Write("polus_framework/factions.json", util.TableToJSON(records, true))
 end
 
+-- v4.2: устаревшие сид-айдишники (старые формы Нечто) — зачистка,
+-- чтобы в штате осталась ОДНА профессия Нечто.
+local LEGACY_IDS = { seed_thing_split = true, seed_thing_brute = true, seed_thing_spore = true }
+
 local function SeedAll()
     if P11FW.Config.SeedRkkaPresets == false then return end
+
+    -- ---------- 0) ЗАЧИСТКА УСТАРЕВШИХ ----------
+    do
+        local removed = 0
+        for i = #P11FW.CustomJobs, 1, -1 do
+            local rec = P11FW.CustomJobs[i]
+            if rec and LEGACY_IDS[rec.id] then
+                table.remove(P11FW.CustomJobs, i)
+                removed = removed + 1
+            end
+        end
+        if removed > 0 then
+            P11FW.SaveCustomJobs()
+            P11FW.Log("Сид: зачищено устаревших форм Нечто: " .. removed ..
+                " (теперь одна профессия — формы через !форма + мутации)")
+        end
+    end
 
     -- ---------- 1) ФРАКЦИИ ----------
     local records = FactionRecordsNow()

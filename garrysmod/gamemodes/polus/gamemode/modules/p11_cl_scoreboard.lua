@@ -201,8 +201,10 @@ local function MakeRow(frame, ply, amAdmin)
         end
     end
 
-    -- должность
+    -- должность (+ звание смены v4.2: ★ ЛУЧШИЙ …)
     local jobStr = JobNameOf(ply)
+    local ttl = Safe(function() return ply:GetNWString("P11_Title", "") end, "")
+    if ttl ~= "" then jobStr = "★" .. ttl .. " · " .. jobStr end
     if jobStr ~= "" then
         local jobLab = vgui.Create("DLabel", row)
         jobLab:SetFont("P11.SB.Small")

@@ -61,6 +61,10 @@ function POLUS11_RevealThing(ply, wep)
     local forms = POLUS11.ThingForms or {}
     local form = forms[ply.P11_ThingForm or ""]
     if form and isstring(form.model) then mdl = form.model end
+    -- v4.2: мутация Т3 «АРАХНА» — паучья туша
+    if (ply:GetNWInt("P11_MutTier", 0) or 0) >= 3 then
+        mdl = "models/zombie/fast.mdl"
+    end
     ply:SetModel(mdl)
 
     -- форма «Поглотитель»: тяжёлое тело возвращается вместе с явлением
@@ -130,7 +134,7 @@ function SWEP:PrimaryAttack()
     local ent = tr.Entity
     if IsValid(ent) then
         local dmg = DamageInfo()
-        dmg:SetDamage(ply.P11_Revealed and 55 or 40) -- в раскрытой форме больнее
+        dmg:SetDamage((ply.P11_Revealed and 55 or 40) + ply:GetNWInt("P11_MutDmg", 0)) -- раскрытие + бафф мутацией
         dmg:SetAttacker(ply)
         dmg:SetInflictor(self)
         dmg:SetDamageType(DMG_SLASH)

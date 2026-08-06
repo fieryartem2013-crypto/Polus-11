@@ -34,6 +34,9 @@ local send = {
     "modules/p11_cl_cmenu.lua",
     "modules/p11_cl_economy.lua",
     "modules/p11_cl_minigame.lua", -- v4.1
+    "modules/p11_cl_duties2.lua",   -- v4.2
+    "modules/p11_cl_mutations.lua", -- v4.2
+    "modules/p11_cl_tutorial.lua",  -- v4.2
 }
 for _, f in ipairs(send) do
     AddCSLuaFile(f)
@@ -60,6 +63,7 @@ end)
 -- ============ СЕРВЕРНЫЕ МОДУЛИ ============
 
 local sv = {
+    "modules/p11_sv_anticheat.lua",  -- антиспам/античит: ПЕРВЫМ, оборачивает net.Receive (v4.2)
     "modules/fw_sv_jobs.lua",        -- логика профессий
     "modules/fw_sv_factions.lua",    -- фракции из админки (data/*.json)
     "modules/fw_sv_customjobs.lua",  -- профессии из админки (data/*.json)
@@ -89,6 +93,8 @@ local sv = {
     "modules/p11_sv_inventory.lua",  -- инвентарь/ларёк/сейф/расстановка (v4.0)
     "modules/p11_sv_admincmds.lua",  -- /tp /goto /bring /return /cloak /heal /god /ранги (v4.0)
     "modules/p11_sv_activities.lua", -- сменные дела: миниигры/наука/ТО/грязь/патруль (v4.1)
+    "modules/p11_sv_duties2.lua",    -- повар/грузчик/снабжение/досье/скидка/итоги (v4.2)
+    "modules/p11_sv_mutations.lua",  -- мутации Нечто за жертв (v4.2)
 }
 
 local function Safe(f)

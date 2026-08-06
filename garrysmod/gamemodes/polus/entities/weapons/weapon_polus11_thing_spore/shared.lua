@@ -65,7 +65,7 @@ function SWEP:PrimaryAttack()
     local ent = tr.Entity
     if IsValid(ent) then
         local dmg = DamageInfo()
-        dmg:SetDamage(25)
+        dmg:SetDamage(25 + ply:GetNWInt("P11_MutDmg", 0)) -- + бафф мутацией
         dmg:SetAttacker(ply)
         dmg:SetInflictor(self)
         dmg:SetDamageType(DMG_SLASH)
