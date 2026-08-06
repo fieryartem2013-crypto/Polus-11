@@ -22,6 +22,11 @@ local function CharLoad()
     if ok and istable(t) then POLUS11.Chars = t end
 end
 
+-- v4.6.4: ДЕЛО НЕ СОХРАНЯЛОСЬ ПОТОМУ, ЧТО ЗАГРУЗКУ НИКТО НЕ ВЫЗЫВАЛ —
+-- chars.json лежал мёртвым, и после рестарта/перезахода анкета
+-- спрашивалась заново. Теперь грузим сразу при старте модуля.
+CharLoad()
+
 local saveT = 0
 local function CharSave()
     saveT = CurTime() + 2
@@ -65,7 +70,9 @@ local function AskChar(ply)
 end
 
 hook.Add("PlayerInitialSpawn", "P11.CharsJoin", function(ply)
-    timer.Simple(6, function()
+    -- v4.6.4: анкета СТРОГО ПОСЛЕ интро (интро ~10-13с) и только если
+    -- дела нет. 14с — чтобы не «мешало» заставке, как просил владелец.
+    timer.Simple(14, function()
         if not IsValid(ply) then return end
         local saved = POLUS11.Chars[SidOf(ply)]
         if saved then

@@ -122,8 +122,14 @@ function P11.OpenCharUI()
 end
 
 -- сервер попросил анкету (первый заход / правка)
+-- v4.6.4: во время интро НИЧЕГО не открываем — ждём его конца,
+-- чтобы меню не мешало заставке (по заявке владельца).
 net.Receive("P11_CharAsk", function()
-    timer.Simple(0.3, function() P11.OpenCharUI() end)
+    timer.Create("P11.CharAskWaitIntro", 0.5, 0, function()
+        if P11.IntroOpen then return end -- интро ещё идёт — ждём
+        timer.Remove("P11.CharAskWaitIntro")
+        P11.OpenCharUI()
+    end)
 end)
 
 print("[POLUS-11] анкета бойца загружена")

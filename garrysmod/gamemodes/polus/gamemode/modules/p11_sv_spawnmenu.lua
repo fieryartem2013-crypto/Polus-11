@@ -53,8 +53,13 @@ hook.Add("P11FW.JobChanged", "P11.SpawnMenuJob", function(ply)
     if ply.P11_InSpawnMenu then CloseMenu(ply) end
 end)
 
--- автопоказ после первого входа: анкета идёт на ~6с, заставка на ~7с
+-- v4.6.4: АВТОПОКАЗ УБРАН по прямой заявке владельца — менюшка выбора
+-- профы при заходе больше НЕ всплывает сама. Открыть вручную в любой
+-- момент: чат !смена / !выбор / !вербовка, консоль p11_spawnmenu,
+-- либо F4 / кадровик.
+local AUTOJOIN = false
 hook.Add("PlayerInitialSpawn", "P11.SpawnMenuJoin", function(ply)
+    if not AUTOJOIN then return end
     timer.Simple(AUTOJOIN_DELAY, function()
         if IsValid(ply) and ply:Alive() then OpenMenu(ply) end
     end)
