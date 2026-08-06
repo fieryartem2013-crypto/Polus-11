@@ -9,7 +9,7 @@
 --  кнопка в C-меню или F4.
 -- ============================================================
 
-surface.CreateFont("P11FW.Adm.Tab", { font = "Roboto", size = 18, weight = 700, extended = true })
+surface.CreateFont("P11FW.Adm.Tab", { font = "Roboto", size = 15, weight = 700, extended = true }) -- v4.6.1: 9 вкладок — чуть компактнее
 
 local AC = {
     -- v4.2: единый фирменный фундамент P11UI (акцент админки — красный, как положено)

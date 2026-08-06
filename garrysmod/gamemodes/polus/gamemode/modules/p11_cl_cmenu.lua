@@ -17,10 +17,10 @@
 
 P11 = P11 or {}
 
-surface.CreateFont("P11.CM.Title", { font = "Roboto", size = 22, weight = 800, extended = true })
-surface.CreateFont("P11.CM.Text",  { font = "Roboto", size = 16, weight = 600, extended = true })
-surface.CreateFont("P11.CM.Small", { font = "Roboto", size = 13, weight = 400, extended = true })
-surface.CreateFont("P11.CM.Mdl",   { font = "Roboto", size = 19, weight = 800, extended = true })
+surface.CreateFont("P11.CM.Title", { font = "Roboto", size = 27, weight = 800, extended = true })
+surface.CreateFont("P11.CM.Text",  { font = "Roboto", size = 19, weight = 600, extended = true })
+surface.CreateFont("P11.CM.Small", { font = "Roboto", size = 15, weight = 400, extended = true })
+surface.CreateFont("P11.CM.Mdl",   { font = "Roboto", size = 22, weight = 800, extended = true })
 
 -- палитра — фирменный P11UI
 local CC = {
@@ -113,7 +113,7 @@ function P11.OpenCMenu()
     local f = vgui.Create("DPanel")
     P11.CMenu = f
     f.T0 = SysTime()
-    f:SetSize(560, 470)
+    f:SetSize(math.min(780, ScrW() - 40), math.min(600, ScrH() - 40)) -- v4.6.2: C-меню КРУПНЕЕ
     f:Center()
     f:MakePopup()
     f:SetKeyboardInputEnabled(true)
@@ -130,20 +130,20 @@ function P11.OpenCMenu()
         surface.SetDrawColor(CC.cyan)
         surface.DrawRect(0, 52, w, 2)
         draw.SimpleText("ДЕЙСТВИЯ НА СТАНЦИИ", "P11.CM.Title", 16, 26, CC.text, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-        draw.SimpleText("удерживай C • ESC — закрыть • v4.4.0", "P11.CM.Small", w - 14, 26, CC.dim, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
+        draw.SimpleText("удерживай C • ESC — закрыть • v4.6.2", "P11.CM.Small", w - 14, 26, CC.dim, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
         surface.SetAlphaMultiplier(1)
     end
 
     -- ---- левая колонка: ЖЕСТЫ ----
     local gl = vgui.Create("DLabel", f)
-    gl:SetPos(14, 62) gl:SetSize(340, 16)
+    gl:SetPos(14, 62) gl:SetSize(500, 18)
     gl:SetFont("P11.CM.Small") gl:SetTextColor(CC.cyan)
     gl:SetText("ЖЕСТЫ (видят все вокруг):")
 
     for i, em in ipairs(EMOTES) do
         local col = (i - 1) % 2
         local row = math.floor((i - 1) / 2)
-        CButton(f, 14 + col * 172, 84 + row * 48, 166, 42,
+        CButton(f, 14 + col * 252, 84 + row * 56, 246, 48,
             em.glyph .. "  " .. em.name, em.desc, CC.text, function()
                 net.Start("P11_Emote")
                     net.WriteUInt(em.id, 4)
@@ -152,36 +152,36 @@ function P11.OpenCMenu()
     end
 
     -- анкета бойца (позывной + описание)
-    CButton(f, 14, 286, 338, 42, "🪪 Мой персонаж", "позывной и описание внешности", CC.cyan, function()
+    CButton(f, 14, 312, 498, 48, "🪪 Мой персонаж", "позывной и описание внешности", CC.cyan, function()
         P11.CloseCMenu()
         if P11.OpenCharUI then P11.OpenCharUI() end
     end)
 
     -- ---- правая колонка: БЫСТРОЕ ----
     local rl = vgui.Create("DLabel", f)
-    rl:SetPos(370, 62) rl:SetSize(176, 16)
+    rl:SetPos(532, 62) rl:SetSize(234, 18)
     rl:SetFont("P11.CM.Small") rl:SetTextColor(CC.cyan)
     rl:SetText("БЫСТРОЕ:")
 
-    CButton(f, 370, 84, 176, 42, "📋 Должности", "меню F4", CC.ok, function()
+    CButton(f, 532, 84, 234, 48, "📋 Должности", "меню F4", CC.ok, function()
         P11.CloseCMenu()
         P11FW.OpenJobMenu()
     end)
 
-    CButton(f, 370, 132, 176, 42, "❓ Справка", "памятка новичка F1", CC.text, function()
+    CButton(f, 532, 140, 234, 48, "❓ Справка", "памятка новичка F1", CC.text, function()
         P11.CloseCMenu()
         RunConsoleCommand("p11_help")
     end)
 
-    CButton(f, 370, 180, 176, 42, "🎲 Кубик 1-100", "кто идёт в тёмный коридор", CC.gold, function()
+    CButton(f, 532, 196, 234, 48, "🎲 Кубик 1-100", "кто идёт в тёмный коридор", CC.gold, function()
         LocalPlayer():ConCommand("say !ролл")
     end)
 
-    CButton(f, 370, 228, 176, 42, "💈 Пустые руки", "знак мира", CC.text, function()
+    CButton(f, 532, 252, 234, 48, "💈 Пустые руки", "знак мира", CC.text, function()
         RunConsoleCommand("use", "weapon_polus11_hands")
     end)
 
-    CButton(f, 370, 276, 176, 42, "🧍 Меню моделей", "браузер внешности", CC.gold, function()
+    CButton(f, 532, 308, 234, 48, "🧍 Меню моделей", "браузер внешности", CC.gold, function()
         P11.CloseCMenu()
         if P11.OpenModelMenu then P11.OpenModelMenu() end
     end)
@@ -189,28 +189,28 @@ function P11.OpenCMenu()
     -- служебная секция: админам — админка; рангам вайтлиста — вайтлист
     if isAdmin then
         local al = vgui.Create("DLabel", f)
-        al:SetPos(370, 330) al:SetSize(176, 16)
+        al:SetPos(532, 372) al:SetSize(234, 18)
         al:SetFont("P11.CM.Small") al:SetTextColor(CC.bad)
         al:SetText("АДМИНИСТРАЦИИ:")
 
-        CButton(f, 370, 348, 176, 42, "🛡 Админ-панель", "то же, что /menu", CC.bad, function()
+        CButton(f, 532, 390, 234, 48, "🛡 Админ-панель", "то же, что /menu", CC.bad, function()
             P11.CloseCMenu()
             P11FW.OpenAdminMenu()
         end)
     elseif canWl then
         local wl = vgui.Create("DLabel", f)
-        wl:SetPos(370, 330) wl:SetSize(176, 16)
+        wl:SetPos(532, 372) wl:SetSize(234, 18)
         wl:SetFont("P11.CM.Small") wl:SetTextColor(CC.gold)
         wl:SetText("ОФИЦЕРУ ФРАКЦИИ:")
 
-        CButton(f, 370, 348, 176, 42, "🔒 Вайтлист", "допуски должностей", CC.gold, function()
+        CButton(f, 532, 390, 234, 48, "🔒 Вайтлист", "допуски должностей", CC.gold, function()
             P11.CloseCMenu()
             P11FW.OpenAdminMenu("whitelist")
         end)
     end
 
     -- заявка грузчику + багаж + админская постановка объектов
-    CButton(f, 278, 398, 84, 40, "📦 Грузчик", "заявка снабжения", CC.gold, function()
+    CButton(f, 390, 452, 130, 46, "📦 Грузчик", "заявка снабжения", CC.gold, function()
         P11.CloseCMenu()
         Derma_StringRequest("ЗАЯВКА СНАБЖЕНИЯ", "Что притащить и для чего? (видят все грузчики)",
             "", function(txt)
@@ -219,12 +219,12 @@ function P11.OpenCMenu()
                 net.SendToServer()
             end)
     end)
-    CButton(f, 370, 398, 84, 40, "🎒 Багаж", "инвентарь", CC.gold, function()
+    CButton(f, 532, 452, 106, 46, "🎒 Багаж", "инвентарь", CC.gold, function()
         P11.CloseCMenu()
         if P11.OpenInventory then P11.OpenInventory() end
     end)
     if isAdmin then
-        CButton(f, 462, 398, 84, 40, "📍 Поставить", "генератор/ларёк", CC.gold, function()
+        CButton(f, 650, 452, 116, 46, "📍 Поставить", "генератор/ларёк", CC.gold, function()
             P11.CloseCMenu()
             if P11.OpenPlaceMenu then P11.OpenPlaceMenu() end
         end)
@@ -232,7 +232,7 @@ function P11.OpenCMenu()
 
     -- низ: подсказка
     local foot = vgui.Create("DLabel", f)
-    foot:SetPos(14, 442) foot:SetSize(532, 18)
+    foot:SetPos(14, 556) foot:SetSize(748, 20)
     foot:SetFont("P11.CM.Small") foot:SetTextColor(CC.dim)
     local rk = P11FW.GetRankName and P11FW.GetRankName(me) or "User"
     foot:SetText("Ты — " .. rk .. " • документы и пустые руки уже в снаряжении • C закроет это меню")

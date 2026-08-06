@@ -17,10 +17,10 @@
 
 P11 = P11 or {}
 
-surface.CreateFont("P11.MD.Title", { font = "Roboto", size = 22, weight = 800, extended = true })
-surface.CreateFont("P11.MD.Text",  { font = "Roboto", size = 15, weight = 600, extended = true })
-surface.CreateFont("P11.MD.Small", { font = "Roboto", size = 13, weight = 400, extended = true })
-surface.CreateFont("P11.MD.Btn",   { font = "Roboto", size = 15, weight = 700, extended = true })
+surface.CreateFont("P11.MD.Title", { font = "Roboto", size = 26, weight = 800, extended = true })
+surface.CreateFont("P11.MD.Text",  { font = "Roboto", size = 17, weight = 600, extended = true })
+surface.CreateFont("P11.MD.Small", { font = "Roboto", size = 15, weight = 400, extended = true })
+surface.CreateFont("P11.MD.Btn",   { font = "Roboto", size = 17, weight = 700, extended = true })
 
 local MC = {
     bg    = Color(10, 14, 20, 245),
@@ -93,7 +93,7 @@ function P11.OpenModelMenu()
     local me = LocalPlayer()
     local isAdmin = P11FW.Config and P11FW.Config.Admin(me)
 
-    local W, H = 940, 600
+    local W, H = math.min(1160, ScrW() - 30), math.min(720, ScrH() - 30) -- v4.6.2: окно крупнее
     local f = vgui.Create("DFrame")
     P11.ModelFrame = f
     f.T0 = SysTime()
@@ -122,7 +122,7 @@ function P11.OpenModelMenu()
         surface.SetDrawColor(MC.gold)
         surface.DrawRect(0, 56, w, 2)
         draw.SimpleText("БРАУЗЕР ВНЕШНОСТИ", "P11.MD.Title", 16, 28, MC.gold, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-        draw.SimpleText("клик — превью • двойной клик — надеть • v4.4.0", "P11.MD.Small", w - 46, 28, MC.dim, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
+        draw.SimpleText("клик — превью • двойной клик — надеть • v4.6.2", "P11.MD.Small", w - 46, 28, MC.dim, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
         surface.SetAlphaMultiplier(1)
     end
     function f:OnKeyCodePressed(key) if key == KEY_ESCAPE then f:Remove() end end
@@ -135,10 +135,10 @@ function P11.OpenModelMenu()
 
     -- ============ ЛЕВАЯ КОЛОНКА: РАЗДЕЛЫ ============
     local side = vgui.Create("DPanel", f)
-    side:SetPos(10, 66) side:SetSize(230, 524)
+    side:SetPos(10, 66) side:SetSize(230, H - 76)
     side.Paint = function(s, w, h) draw.RoundedBox(8, 0, 0, w, h, MC.panel) end
 
-    f.Section = "myjob"
+    f.Section = "alljobs" -- v4.6.2: сразу ВЕСЬ каталог (жалоба «видно 6-7 моделей»)
     f.SideButtons = {}
 
     local function SideBtn(y, id, name, desc, col)
@@ -179,7 +179,7 @@ function P11.OpenModelMenu()
 
     -- ============ ПРАВАЯ ПАНЕЛЬ: ПРЕВЬЮ ============
     local prev = vgui.Create("DPanel", f)
-    prev:SetPos(700, 66) prev:SetSize(230, 524)
+    prev:SetPos(W - 238, 66) prev:SetSize(228, H - 76)
     prev.Paint = function(s, w, h) draw.RoundedBox(8, 0, 0, w, h, MC.panel) end
 
     local mp = vgui.Create("DModelPanel", prev)
@@ -328,16 +328,16 @@ function P11.OpenModelMenu()
 
     -- ============ ЦЕНТР: ПОИСК + СЕТКА ============
     search = vgui.Create("DTextEntry", f)
-    search:SetPos(250, 66) search:SetSize(440, 26)
+    search:SetPos(250, 66) search:SetSize(W - 510, 26)
     search:SetPlaceholderText("поиск по пути (напр. rkka, scientist, male_01...)")
 
     local stats = vgui.Create("DLabel", f)
-    stats:SetPos(250, 572) stats:SetSize(440, 16)
+    stats:SetPos(250, H - 28) stats:SetSize(W - 510, 16)
     stats:SetFont("P11.MD.Small") stats:SetTextColor(MC.dim)
     stats:SetText("")
 
     local sc = vgui.Create("DScrollPanel", f)
-    sc:SetPos(250, 98) sc:SetSize(440, 470)
+    sc:SetPos(250, 98) sc:SetSize(W - 510, H - 126) -- v4.6.2: сетка шире и выше — список листается
     local sb = sc:GetVBar()
     sb:SetWide(5)
     sb.Paint = function(s, w, h) draw.RoundedBox(2, 0, 0, w, h, Color(255, 255, 255, 18)) end
@@ -345,7 +345,7 @@ function P11.OpenModelMenu()
 
     local grid = vgui.Create("DIconLayout", sc)
     grid:Dock(FILL)
-    grid:SetSpaceX(6) grid:SetSpaceY(6)
+    grid:SetSpaceX(8) grid:SetSpaceY(8)
 
     -- ---------- наполнение ----------
     function f:FillGrid(filter)
@@ -360,7 +360,7 @@ function P11.OpenModelMenu()
             if file.Exists(mdl, "GAME") then
                 shown = shown + 1
                 local ic = vgui.Create("SpawnIcon", grid)
-                ic:SetSize(66, 66)
+                ic:SetSize(76, 76) -- v4.6.2: тайлы крупнее
                 ic:SetModel(mdl)
                 ic:SetTooltip(mdl)
                 ic.DoClick = function()
@@ -383,7 +383,7 @@ function P11.OpenModelMenu()
             else
                 missing = missing + 1
                 local bad = vgui.Create("DButton", grid)
-                bad:SetSize(66, 66)
+                bad:SetSize(76, 76)
                 bad:SetText("")
                 bad:SetTooltip(mdl .. "\n\n⚠ модели нет на этом ПК (воркшоп-пак не смонтирован).\nНа сервере наденется — у кого пак есть, увидят правильно.")
                 bad.Paint = function(bs, w, h)

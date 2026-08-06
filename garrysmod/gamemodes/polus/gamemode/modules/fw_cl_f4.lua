@@ -6,11 +6,12 @@
 --  Открывается по F4, E у кадровика, чатом !работа.
 -- ============================================================
 
-surface.CreateFont("P11FW.Title", { font = "Roboto", size = 26, weight = 800, extended = true })
-surface.CreateFont("P11FW.Huge",  { font = "Roboto", size = 30, weight = 800, extended = true })
-surface.CreateFont("P11FW.Big",   { font = "Roboto", size = 20, weight = 700, extended = true })
-surface.CreateFont("P11FW.Text",  { font = "Roboto", size = 16, weight = 500, extended = true })
-surface.CreateFont("P11FW.Small", { font = "Roboto", size = 14, weight = 400, extended = true })
+-- v4.6.2: F4 крупнее (заявка владельца)
+surface.CreateFont("P11FW.Title", { font = "Roboto", size = 28, weight = 800, extended = true })
+surface.CreateFont("P11FW.Huge",  { font = "Roboto", size = 32, weight = 800, extended = true })
+surface.CreateFont("P11FW.Big",   { font = "Roboto", size = 22, weight = 700, extended = true })
+surface.CreateFont("P11FW.Text",  { font = "Roboto", size = 17, weight = 500, extended = true })
+surface.CreateFont("P11FW.Small", { font = "Roboto", size = 15, weight = 400, extended = true })
 
 local C = {
     -- v4.2: единый фирменный фундамент P11UI

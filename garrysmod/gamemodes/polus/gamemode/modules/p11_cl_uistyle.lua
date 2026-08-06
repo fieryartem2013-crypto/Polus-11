@@ -21,10 +21,11 @@ P11UI.C = {
     patrol   = Color(140, 200, 255),
 }
 
-surface.CreateFont("P11UI.H1",  { font = "Roboto", size = 24, weight = 900, extended = true })
-surface.CreateFont("P11UI.H2",  { font = "Roboto", size = 17, weight = 800, extended = true })
-surface.CreateFont("P11UI.Sub", { font = "Roboto", size = 13, weight = 600, extended = true })
-surface.CreateFont("P11UI.Tx",  { font = "Roboto", size = 14, weight = 500, extended = true })
+-- v4.6.2: весь фирменный UI крупнее (заявка владельца: мелкий текст налезал)
+surface.CreateFont("P11UI.H1",  { font = "Roboto", size = 27, weight = 900, extended = true })
+surface.CreateFont("P11UI.H2",  { font = "Roboto", size = 19, weight = 800, extended = true })
+surface.CreateFont("P11UI.Sub", { font = "Roboto", size = 15, weight = 600, extended = true })
+surface.CreateFont("P11UI.Tx",  { font = "Roboto", size = 16, weight = 500, extended = true })
 
 -- единое окно сборки: blur-фон, хедер с акцентом, версия, крестик
 function P11UI.Frame(title, subtitle, w, h, accent)
