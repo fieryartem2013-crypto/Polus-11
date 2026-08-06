@@ -27,11 +27,13 @@ local send = {
     "modules/p11_cl_thinghud.lua",
     "modules/p11_cl_intro.lua",
     "modules/p11_cl_terminal.lua",
+    "modules/p11_cl_uistyle.lua", -- v4.1: фирменный стиль UI
     "modules/p11_cl_help.lua",
     "modules/p11_cl_alerts.lua",
     "modules/p11_cl_view.lua",
     "modules/p11_cl_cmenu.lua",
     "modules/p11_cl_economy.lua",
+    "modules/p11_cl_minigame.lua", -- v4.1
 }
 for _, f in ipairs(send) do
     AddCSLuaFile(f)
@@ -86,6 +88,7 @@ local sv = {
     "modules/p11_sv_economy.lua",    -- рубли: кошелёк, награды, выдача (v4.0)
     "modules/p11_sv_inventory.lua",  -- инвентарь/ларёк/сейф/расстановка (v4.0)
     "modules/p11_sv_admincmds.lua",  -- /tp /goto /bring /return /cloak /heal /god /ранги (v4.0)
+    "modules/p11_sv_activities.lua", -- сменные дела: миниигры/наука/ТО/грязь/патруль (v4.1)
 }
 
 local function Safe(f)

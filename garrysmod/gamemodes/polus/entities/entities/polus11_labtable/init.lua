@@ -52,6 +52,10 @@ function ENT:Use(activator)
     end
 
     if not IsValid(vial) then
+        -- v4.1: колбы нет — учёный может откалибровать анализатор (миниигра, RP)
+        if POLUS11.StartCalibration and POLUS11.StartCalibration(self, activator) then
+            return
+        end
         POLUS11.Notify(activator, "Положите колбу с кровью (возьмите её в руки кнопкой E).")
         return
     end

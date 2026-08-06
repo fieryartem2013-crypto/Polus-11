@@ -67,6 +67,7 @@ POLUS11.TaskDefs = {
 -- кастомы админки) — выдаём дела по её фракции.
 POLUS11.CategoryTaskDefs = {
     rkka = {
+        { key = "patrol_point", name = "Обойди посты патруля (×3)", max = 3 },
         { key = "damage_thing", name = "Нанеси урона Нечто", max = 150 },
         { key = "radio",        name = "Доложи в рацию (×3)", max = 3 },
         { key = "alive",        name = "Пост РККА: 10 мин без смерти", max = 600, time = true },
@@ -77,11 +78,13 @@ POLUS11.CategoryTaskDefs = {
         { key = "alive",  name = "Наружка: 10 мин в тени событий", max = 600, time = true },
     },
     science = {
+        { key = "calibrate",  name = "Откалибруй анализатор (E по столу)", max = 2 },
         { key = "blood_draw", name = "Возьми образцы крови у экипажа", max = 2 },
         { key = "blood_test", name = "Проведи тест крови на столе", max = 1 },
         { key = "alive",      name = "Дежурство в лаборатории: 5 мин", max = 300, time = true },
     },
     personnel = {
+        { key = "clean",      name = "Убери грязь на станции (×2)", max = 2 },
         { key = "refuel_gen", name = "Подсоби с топливом для генератора", max = 1 },
         { key = "alive",      name = "Хозработы: 5 мин без происшествий", max = 300, time = true },
     },

@@ -4,6 +4,17 @@ include("shared.lua")
 
 util.AddNetworkString("P11FW_OpenMenu")
 
+-- ============================================================
+--  v4.1 КАДРОВИК: починка «T-pose / крутится всем телом / нет E»
+--  • анимация ищется через ACTIVITY (SelectWeightedSequence),
+--    а не по имени — на Workshop-плейермоделях "idle_subtle"
+--    просто нет, отсюда T-pose.
+--  • тело ЗАМОРОЖЕНО на спавн-угле; за игроком следит ГОЛОВА
+--    (клиентские pose-параметры head_yaw/head_pitch).
+--  • Use продублирован KeyPress-хуком: движковый E на
+--    VPHYSICS-энтити местами теряется, теперь не потеряется.
+-- ============================================================
+
 function ENT:Initialize()
     local cfg = (P11FW and P11FW.Config) or {}
     local model = cfg.NPCModel or "models/player/barney.mdl"
@@ -14,9 +25,6 @@ function ENT:Initialize()
 
     self:SetHullType(HULL_HUMAN)
     self:SetHullSizeNormal()
-    -- v4.0 ФИКС: был MOVETYPE_NONE + SOLID_BBOX — «фантомная» коробка,
-    -- из-за неё Use/клики местами проходили насквозь. Хул обязателен для
-    -- поворота головы, но тело делаем честным VPHYSICS (как генератор).
     self:SetMoveType(MOVETYPE_VPHYSICS)
     self:PhysicsInit(SOLID_VPHYSICS)
     self:SetSolid(SOLID_VPHYSICS)
@@ -26,63 +34,66 @@ function ENT:Initialize()
     if IsValid(phys) then
         phys:Wake()
         phys:EnableMotion(false)
-        -- глазеть и поворачиваться может, а вот упасть/уехать — нет
         phys:SetMass(90)
     end
 
     util.DropToFloor(self)
 
-    -- спокойная стойка, если анимация есть
-    local seq = self:LookupSequence("idle_subtle")
-    if seq < 0 then seq = self:LookupSequence("idle") end
-    if seq >= 0 then
-        self:ResetSequence(seq)
-        self:SetCycle(math.Rand(0, 1))
+    -- тело держим ровно как поставили (крутится только голова — клиент)
+    self.P11_BaseYaw = self:GetAngles().y
+
+    -- стойка: через ACTIVITY — вернёт реально существующую секвенцию модели
+    local seq = self:SelectWeightedSequence(ACT_IDLE)
+    if (not seq or seq <= 0) and self.SelectWeightedSequence then
+        seq = self:SelectWeightedSequence(ACT_IDLE_ANGRY)
     end
+    if (not seq or seq <= 0) and self.LookupSequence then
+        seq = self:LookupSequence("idle_all_01")
+        if (not seq or seq < 0) then seq = self:LookupSequence("idle") end
+        if (not seq or seq < 0) then seq = 0 end
+    end
+    self:ResetSequence(seq or 0)
+    self:SetCycle(math.Rand(0, 1))
+    self.AutomaticFrameAdvance = true -- анимация играет сама (без T-pose)
 
     self.NextGaze = 0
 end
 
--- поворачиваемся к ближайшему игроку (без NPC-капабилити, чистая геометрия)
+-- предиктивная анимация + звуки шагов не нужны: он стоит
 function ENT:Think()
-    -- v1.5 fix: при воскрешении/дубле энтитя может оказаться без Initialize
-    -- (поле NextGaze = nil -> краш "compare nil with number" в строке ниже).
-    -- Лечим самовосстановлением.
     self.NextGaze = tonumber(self.NextGaze) or 0
-
     if CurTime() >= self.NextGaze then
-        self.NextGaze = CurTime() + 0.25
-
-        local best, dist
-        local cfg = (P11FW and P11FW.Config) or {}
-        local maxD = (cfg.NPCGazeDistance or 260) ^ 2
-        for _, ply in ipairs(player.GetAll()) do
-            if ply:Alive() then
-                local d = ply:GetPos():DistToSqr(self:GetPos())
-                if d < maxD and (not dist or d < dist) then
-                    best, dist = ply, d
-                end
-            end
-        end
-
-        if IsValid(best) then
-            local want = ((best:GetPos() - self:GetPos()):Angle()).y
-            local cur = self:GetAngles().y
-            local newY = math.ApproachAngle(cur, want, 4)
-            self:SetAngles(Angle(0, newY, 0))
+        self.NextGaze = CurTime() + 0.5
+        -- держим корпус на базовом угле (клиент крутит только голову)
+        local a = self:GetAngles()
+        if math.abs(math.AngleDifference(a.y, self.P11_BaseYaw or a.y)) > 0.5 then
+            self:SetAngles(Angle(0, self.P11_BaseYaw or a.y, 0))
         end
     end
-
-    self:NextThink(CurTime() + 0.25)
+    self:NextThink(CurTime() + 0.5)
     return true
 end
 
-function ENT:Use(activator)
-    if not IsValid(activator) or not activator:IsPlayer() then return end
-    if activator:GetPos():DistToSqr(self:GetPos()) > 130 * 130 then return end
+local function OpenJobMenu(self, ply)
+    if not IsValid(ply) or not ply:IsPlayer() then return end
+    if ply:GetPos():DistToSqr(self:GetPos()) > 150 * 150 then return end
+    if (ply.P11_NpcUse or 0) > CurTime() then return end
+    ply.P11_NpcUse = CurTime() + 1
 
     net.Start("P11FW_OpenMenu")
-    net.Send(activator)
-
+    net.Send(ply)
     self:EmitSound("buttons/button9.wav", 55, 100)
 end
+
+function ENT:Use(activator)
+    OpenJobMenu(self, activator)
+end
+
+-- ЗАПАСНОЙ ПУТЬ: E при прицеле на кадровика (если движковый Use молчит)
+hook.Add("KeyPress", "P11FW.JobNpcE", function(ply, key)
+    if key ~= IN_USE then return end
+    local tr = ply:GetEyeTrace()
+    local ent = tr.Entity
+    if not IsValid(ent) or ent:GetClass() ~= "polus_fw_jobnpc" then return end
+    OpenJobMenu(ent, ply)
+end)

@@ -242,6 +242,7 @@ local PLACEABLE = {
     terminal  = "polus11_terminal",
     shopnpc   = "polus_p11_shopnpc",
     storage   = "polus_p11_storage",
+    patrol    = "polus_p11_patrol", -- v4.1: посты патруля
 }
 
 local function PlaceFile(role)
@@ -284,6 +285,8 @@ hook.Add("InitPostEntity", "P11.PlaceLoad", function()
         LoadPlaced("shopnpc")
         LoadPlaced("storage")
         LoadPlaced("terminal")
+        LoadPlaced("patrol")
+        if POLUS11.PatrolSyncAll then timer.Simple(2.5, function() POLUS11.PatrolSyncAll(nil) end) end
     end)
 end)
 hook.Add("PostCleanupMap", "P11.PlaceLoad2", function()
@@ -291,6 +294,8 @@ hook.Add("PostCleanupMap", "P11.PlaceLoad2", function()
         LoadPlaced("shopnpc")
         LoadPlaced("storage")
         LoadPlaced("terminal")
+        LoadPlaced("patrol")
+        if POLUS11.PatrolSyncAll then timer.Simple(1.5, function() POLUS11.PatrolSyncAll(nil) end) end
     end)
 end)
 
@@ -325,6 +330,9 @@ net.Receive("P11_PlaceEnt", function(len, ply)
     -- ларёк/сейф — свои place-файлы
     if role ~= "generator" and role ~= "terminal" then
         SavePlaced(role)
+        if role == "patrol" and POLUS11.PatrolSyncAll then
+            timer.Simple(0.5, function() POLUS11.PatrolSyncAll(nil) end)
+        end
     else
         if POLUS11.SaveStation then timer.Simple(1, POLUS11.SaveStation) end
         SavePlaced("terminal") -- и в свой файл, на случай отключённого StationPersist

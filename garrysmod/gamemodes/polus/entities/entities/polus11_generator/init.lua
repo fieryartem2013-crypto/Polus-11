@@ -225,9 +225,13 @@ function ENT:Use(activator)
         return
     end
 
-    -- ПОЛОМКА: технический осмотр (держим E)
+    -- ПОЛОМКА: технический осмотр.
+    -- v4.1: для ТЕХНИКА — быстрая миниигра ТО, для остальных — старое «держи E»
     local fault = self:GetFault()
     if fault ~= "" then
+        if POLUS11.TryServiceMinigame and POLUS11.TryServiceMinigame(self, activator) then
+            return
+        end
         local f = POLUS11_GEN_FAULTS[fault]
         local t = IsTech(activator) and 3.5 or 7
         self:StartAction(activator, "service", t)
@@ -253,8 +257,12 @@ function ENT:Use(activator)
         return
     end
 
-    -- ИЗНОС > 40: можно сделать короткий техосмотр (держим E) — снимает нагар
+    -- ИЗНОС > 40: можно сделать короткий техосмотр — снимает нагар
+    -- v4.1: для ТЕХНИКА — миниигра ТО, для остальных — старое «держи E»
     if self:GetWear() >= 40 then
+        if POLUS11.TryServiceMinigame and POLUS11.TryServiceMinigame(self, activator) then
+            return
+        end
         local t = IsTech(activator) and 4 or 6
         self:StartAction(activator, "service", t)
         POLUS11.Notify(activator, "Техосмотр: чистим нагар и тянем контакты. Не отпускайте E!")

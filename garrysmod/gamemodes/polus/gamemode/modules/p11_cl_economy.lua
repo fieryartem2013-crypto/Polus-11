@@ -78,6 +78,13 @@ local function EcoFrame(title, w, h)
         draw.RoundedBoxEx(10, 0, 0, ww, 52, PANE, true, true, false, false)
         surface.SetDrawColor(ACC)
         surface.DrawRect(0, 52, ww, 2)
+        -- v4.1: фирменный штрих — градиент под хедером + тэг версии
+        for i = 0, 5 do
+            surface.SetDrawColor(ACC.r, ACC.g, ACC.b, 24 - i * 4)
+            surface.DrawRect(0, 54 + i, ww, 1)
+        end
+        draw.SimpleText("ПОЛЮС-11 · v" .. (POLUS_BUILD or "4.1"), "P11.Eco.Small", ww - 38, 26,
+            DIM, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
         draw.SimpleText(title, "P11.Eco.Big", 14, 26, ACC, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
         draw.SimpleText("₽ " .. math.floor(P11.Eco.money or 0), "P11.Eco.Big", ww - 14, 26,
             Color(255, 210, 110), TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
@@ -247,12 +254,13 @@ end)
 
 function P11.OpenPlaceMenu()
     if not P11FW.Config.Admin(LocalPlayer()) then return end
-    local f = EcoFrame("📍 РАССТАВИТЬ ОБЪЕКТЫ — куда смотришь, туда и встанет", 420, 300)
+    local f = EcoFrame("📍 РАССТАВИТЬ ОБЪЕКТЫ — куда смотришь, туда и встанет", 420, 364)
     local roles = {
         { id = "generator", name = "⚡ Генератор",          desc = "старт с полной заправкой" },
         { id = "terminal",  name = "🖥 Сменный терминал",   desc = "допуск: профы с флагом терминала" },
         { id = "shopnpc",   name = "🏪 Ларёк снабжения",    desc = "витрина за рубли (экономика)" },
         { id = "storage",   name = "🗄 Личный сейф",        desc = "общая точка доступа к сейфам" },
+        { id = "patrol",    name = "🚩 Пост патруля",       desc = "точка обхода РККА (v4.1)" },
     }
     for i, r in ipairs(roles) do
         local y = 64 + (i - 1) * 56
