@@ -49,10 +49,19 @@ hook.Add("HUDPaint", "P11_Nametags", function()
                         -- должность + ФРАКЦИЯ (v3.8) из ПОЛЮС FRAMEWORK
                         local bottomY = 6 -- где кончается табличка (для динамика ниже)
                         if P11FW and P11FW.GetJobName then
-                            local jn = P11FW.GetJobName(ply)
+                            -- v4.2.1: нечто в чужой шкуре носит ДОЛЖНОСТЬ ЖЕРТВЫ
+                            local job = nil
+                            do
+                                local fj = ply:GetNWInt("P11_FakeJob", 0)
+                                if fj > 0 and P11FW.TeamJobs then
+                                    local jid = P11FW.TeamJobs[fj]
+                                    if jid then job = P11FW.Jobs[jid] end
+                                end
+                                if not job then job = P11FW.GetJob(ply) end
+                            end
+                            local jn = (job and job.name) or ""
                             if jn ~= "" then
                                 bottomY = 30
-                                local job = P11FW.GetJob(ply)
                                 local jc = (job and job.color) or Color(150, 190, 235)
                                 -- «чья эта профа»: фракция бледным префиксом к строке
                                 local facName = nil

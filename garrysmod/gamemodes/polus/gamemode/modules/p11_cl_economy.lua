@@ -40,7 +40,7 @@ hook.Add("HUDPaint", "P11.EcoMoney", function()
     if P11.IntroOpen then return end
     local me = LocalPlayer()
     if not IsValid(me) or not me:Alive() then return end
-    if IsValid(POLUS11 and POLUS11.Scoreboard) then return end
+    if P11B and P11B.open then return end -- v4.2.1: TAB v2
 
     local target = math.max(P11.Eco.money or 0, me:GetNWInt("P11_Money", 0))
     moneyShow = moneyShow + (target - moneyShow) * math.min(FrameTime() * 5, 1)

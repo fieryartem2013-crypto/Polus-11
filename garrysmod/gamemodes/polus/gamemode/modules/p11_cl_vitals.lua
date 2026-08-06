@@ -76,7 +76,7 @@ hook.Add("HUDPaint", "P11.Vitals", function()
     local me = LocalPlayer()
     if not IsValid(me) then return end
     if P11.IntroOpen then return end                       -- во время интро — чистый экран
-    if IsValid(POLUS11 and POLUS11.Scoreboard) then return end -- под TAB не лезем
+    if P11B and P11B.open then return end -- под TAB не лезем (v4.2.1: TAB v2)
 
     local t = CurTime()
     local sw, sh = ScrW(), ScrH()

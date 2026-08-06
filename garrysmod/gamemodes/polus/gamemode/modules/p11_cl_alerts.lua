@@ -163,7 +163,7 @@ hook.Add("HUDPaint", "P11.FrostVignette", function()
     if P11.IntroOpen then return end
     local me = LocalPlayer()
     if not IsValid(me) or not me:Alive() then return end
-    if IsValid(POLUS11 and POLUS11.Scoreboard) then return end
+    if P11B and P11B.open then return end -- v4.2.1: TAB v2
 
     local w, h = ScrW(), ScrH()
     -- v3.8: вечную изморозь по краям УБРАЛИ (закрывала края интерфейса).

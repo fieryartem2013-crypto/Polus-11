@@ -19,7 +19,7 @@ local send = {
     "modules/p11_cl_hud.lua",
     "modules/p11_cl_vitals.lua",
     "modules/p11_cl_admin.lua",
-    "modules/p11_cl_scoreboard.lua",
+    "modules/p11_cl_board.lua",      -- v4.2.1: TAB v2 вместо старого scoreboard
     "modules/p11_cl_nametags.lua",
     "modules/p11_cl_tasks.lua",
     "modules/p11_cl_panic.lua",

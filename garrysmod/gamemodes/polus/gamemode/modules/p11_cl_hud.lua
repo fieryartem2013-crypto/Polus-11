@@ -80,19 +80,10 @@ hook.Add("HUDPaint", "P11_Hive", function()
     end
 end)
 
--- ============ ПОДМЕНА НИКА В ЧАТЕ (только если НЕ DarkRP) ============
-
-hook.Add("OnPlayerChat", "P11_FakeNickChat", function(ply, text)
-    if DarkRP then return end -- в DarkRP имя подменяется через rpname
-
-    if not IsValid(ply) then return end
-    local fake = ply:GetNWString("P11_FakeNick", "")
-    if fake == "" then return end
-
-    local col = team.GetColor(ply:Team())
-    chat.AddText(col, fake, Color(255, 255, 255), ": " .. text)
-    return true
-end)
+-- ============ ПОДМЕНА НИКА В ЧАТЕ ============
+-- v4.2.1: хук переехал в p11_cl_board.lua («P11.BoardChat») —
+-- там цвет от УКРАДЕННОЙ должности и защита от nil-цвета команды
+-- (старая версия могла сыпать ошибкой на каждое сообщение нечто).
 
 -- ============ FX АКТИВАЦИИ НЕЧТО (лично мне) ============
 

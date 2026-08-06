@@ -17,7 +17,7 @@ hook.Add("HUDPaint", "P11.MutationHUD", function()
     local me = LocalPlayer()
     if not IsValid(me) or not me:Alive() then return end
     if not me:GetNWBool("P11_Infected", false) then return end
-    if IsValid(POLUS11 and POLUS11.Scoreboard) then return end
+    if P11B and P11B.open then return end -- v4.2.1: TAB v2 вместо vgui-панели
 
     local kills = me:GetNWInt("P11_MutKills", 0)
     local tier  = me:GetNWInt("P11_MutTier", 0)
@@ -70,6 +70,14 @@ hook.Add("HUDPaint", "P11.MutationHUD", function()
     if tier > 0 then
         draw.SimpleText("тир: " .. tier .. "/3", "P11.Mut.Tiny", x + 12, y + h - 20,
             Color(255, 180, 150), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+    end
+
+    -- v4.2.1: чья личина надета (имя + документ жертвы)
+    local fake = me:GetNWString("P11_FakeNick", "")
+    if fake ~= "" then
+        local docc = me:GetNWString("P11_DocCode", "")
+        draw.SimpleText("личина: " .. fake .. (docc ~= "" and (" · " .. docc) or ""), "P11.Mut.Tiny",
+            x + w - 12, y + h - 20, Color(205, 175, 175), TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP)
     end
 end)
 

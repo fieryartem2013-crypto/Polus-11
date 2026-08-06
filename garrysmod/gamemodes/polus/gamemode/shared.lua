@@ -23,7 +23,7 @@ P11FW.Version = "1.9.0"
 POLUS11 = POLUS11 or {}
 POLUS11.Version = "3.2"
 
-POLUS_BUILD = "4.2.0" -- версия сборки (v4.2: повар/грузчик-пути/сброс снабжения/досье НКВД/скидка дня/итоги смены/мутации Нечто/античит/туториал)
+POLUS_BUILD = "4.2.1" -- версия сборки (v4.2.1 HOTFIX: TAB v2 с нуля — ноль vgui, вечный; кадровик без спама; Нечто крадёт должность и код документа жертвы)
 
 -- ============ ОБЩИЕ МОДУЛИ (shared) ============
 
@@ -131,7 +131,7 @@ function GM:SpawnMenuOpen(ply)   return true end
 function GM:ContextMenuOpen(ply) return true end
 
 --- v3.7: стандартный ТАБ песочницы ПОЛНОСТЬЮ отключён —
---- своё табло живёт в modules/p11_cl_scoreboard.lua и само
+--- своё табло живёт в modules/p11_cl_board.lua (v2, с нуля) и само
 --- реагирует на +showscores. Если только цепляться хуком,
 --- sandbox-скорборд рисуется ПОВЕРХ нашего (баг «ваниль поверх»).
 function GM:ScoreboardShow() return true end

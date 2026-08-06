@@ -11,7 +11,7 @@ local cl = {
     "modules/p11_cl_hud.lua",      -- HUD станции (фазы, улей, тест крови)
     "modules/p11_cl_vitals.lua",   -- HUD жизни: HP / броня / патроны / тосты
     "modules/p11_cl_admin.lua",    -- пульт Нечто (клиент)
-    "modules/p11_cl_scoreboard.lua", -- TAB-табло
+    "modules/p11_cl_board.lua",      -- TAB v2 «состав станции»: ноль vgui, не падает (v4.2.1)
     "modules/p11_cl_nametags.lua", -- ники/должности над головами
     "modules/p11_cl_tasks.lua",    -- виджет задач
     "modules/p11_cl_panic.lua",    -- эффекты паники

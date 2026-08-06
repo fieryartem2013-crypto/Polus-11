@@ -3,7 +3,8 @@
 --  ЛКМ — когти (атака выдаёт тварь: облик монстра на 20 сек)
 --  ПКМ — тихий укол заражения (цель не узнаёт сразу)
 --  R по трупу — СЪЕСТЬ ТРУП: полное поглощение личности
---    (модель, скин, бодигруппы, цвет, ник, DarkRP-имя)
+--    (модель, скин, бодигруппы, цвет, ник, DarkRP-имя,
+--     v4.2.1 — плюс ДОЛЖНОСТЬ и КОД ДОКУМЕНТА жертвы)
 --  R без трупа — вернуть свой облик / раскрыть форму Нечто
 -- ============================================================
 
@@ -249,6 +250,9 @@ local function RestoreTrueIdentity(ply)
     ply.P11_Revealed = false
     ply.P11_RevealedAt = 0
     ply:SetNWString("P11_FakeNick", "")
+    -- v4.2.1: отдаём чужую карточку — возвращаем СВОЮ должность и СВОЙ код
+    ply:SetNWInt("P11_FakeJob", 0)
+    if ply.P11_DocCode then ply:SetNWString("P11_DocCode", ply.P11_DocCode) end
 end
 POLUS11_RestoreTrueIdentity = RestoreTrueIdentity
 
@@ -279,6 +283,14 @@ function SWEP:EatCorpse(ply, corpse)
     ply.P11_IdentityTakenAt = CurTime()
     ply:SetNWString("P11_FakeNick", id.nick)
 
+    -- v4.2.1: крадём и КАРТОЧКУ жертвы целиком — должность (таб/неймтаг/чат/
+    -- документ) и КОД УДОСТОВЕРЕНИЯ. Свой код лежит в ply.P11_DocCode и
+    -- вернётся при сбросе личины; в NW пишем украденный.
+    ply:SetNWInt("P11_FakeJob", tonumber(id.job) or 0)
+    if isstring(id.doc) and id.doc ~= "" then
+        ply:SetNWString("P11_DocCode", id.doc)
+    end
+
     -- DarkRP: полное имя в чате/табе/над головой
     if DarkRP and ply.setDarkRPVar then
         pcall(function() ply:setDarkRPVar("rpname", id.rpname or id.nick) end)
@@ -302,8 +314,16 @@ function SWEP:EatCorpse(ply, corpse)
     if maxhp <= 0 then maxhp = 100 end
     ply:SetHealth(math.min(maxhp, ply:Health() + 25))
 
-    POLUS11.Notify(ply, "Личность поглощена. Теперь вы — «" .. id.nick .. "». R — вернуть себя.")
-    POLUS11.Log("ПОГЛОЩЕНИЕ ЛИЧНОСТИ: " .. ply:Nick() .. " съел труп «" .. id.nick .. "»")
+    -- v4.2.1: понятная сводка — кем стали (должность + документ)
+    local jobLine = ""
+    if P11FW and P11FW.TeamJobs and tonumber(id.job) then
+        local jid = P11FW.TeamJobs[tonumber(id.job)]
+        local jt = jid and P11FW.Jobs and P11FW.Jobs[jid]
+        if jt and jt.name then jobLine = " · " .. jt.name end
+    end
+    local docLine = (isstring(id.doc) and id.doc ~= "") and (" · док. " .. id.doc) or ""
+    POLUS11.Notify(ply, "Личность поглощена: «" .. id.nick .. "»" .. jobLine .. docLine .. ". R — вернуть себя.")
+    POLUS11.Log("ПОГЛОЩЕНИЕ ЛИЧНОСТИ: " .. ply:Nick() .. " съел труп «" .. id.nick .. "»" .. docLine .. jobLine)
 end
 
 -- поиск съедобного трупа под прицелом
@@ -383,14 +403,23 @@ if CLIENT then
         if IsValid(e) and e:GetNWString("P11_CorpseName", "") ~= "" then
             local w, h = ScrW(), ScrH()
             draw.SimpleText("[R] — СЪЕСТЬ ТРУП: " .. e:GetNWString("P11_CorpseName", ""), "P11.HUD.Mid", w / 2, h * 0.58, Color(255, 90, 90), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-            draw.SimpleText("поглощение личности: модель, имя, цвет", "P11.HUD.Text", w / 2, h * 0.58 + 30, Color(230, 200, 200), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+            draw.SimpleText("поглощение личности: облик, имя, должность, код документа", "P11.HUD.Text", w / 2, h * 0.58 + 30, Color(230, 200, 200), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
         end
 
-        -- мой текущий статус
+        -- мой текущий статус: чья я личина (должность + документ видны мне)
         local me = LocalPlayer()
         local fake = me:GetNWString("P11_FakeNick", "")
         if fake ~= "" then
-            draw.SimpleText("ЛИЧНОСТЬ: " .. fake .. "  |  R — вернуть себя", "P11.HUD.Text", 18, ScrH() - 120, Color(255, 150, 150), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+            local jobN = ""
+            local fj = me:GetNWInt("P11_FakeJob", 0)
+            if fj > 0 and P11FW and P11FW.TeamJobs then
+                local jid = P11FW.TeamJobs[fj]
+                local jt = jid and P11FW.Jobs and P11FW.Jobs[jid]
+                if jt and jt.name then jobN = " · " .. jt.name end
+            end
+            local docc = me:GetNWString("P11_DocCode", "")
+            local docLine = (docc ~= "") and (" · док. " .. docc) or ""
+            draw.SimpleText("ЛИЧНОСТЬ: " .. fake .. jobN .. docLine .. "  |  R — вернуть себя", "P11.HUD.Text", 18, ScrH() - 120, Color(255, 150, 150), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
         end
     end
 end

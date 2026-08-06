@@ -49,22 +49,35 @@ if SERVER then
     function SWEP:SendDoc(ply, target)
         local name = ply:GetNWString("P11_FakeNick", "")
         if name == "" then name = ply:Nick() end
-        local jobName = P11FW.GetJobName and P11FW.GetJobName(ply) or "без назначения"
+
+        -- v4.2.1: нечто предъявляет КАРТОЧКУ ЖЕРТВЫ целиком —
+        -- украденные должность, фракцию и код удостоверения
+        local jobTab = nil
+        local fj = ply:GetNWInt("P11_FakeJob", 0)
+        if fj > 0 and P11FW.TeamJobs then
+            local jid = P11FW.TeamJobs[fj]
+            if jid then jobTab = P11FW.Jobs[jid] end
+        end
+        if not jobTab and P11FW.GetJob then jobTab = P11FW.GetJob(ply) end
+        local jobName = (jobTab and jobTab.name) or "без назначения"
 
         -- ФРАКЦИЯ крупно (v3.7)
         local facName = "ПЕРСОНАЛ СТАНЦИИ"
-        if P11FW.GetJob and P11FW.CategoryList then
-            local job = P11FW.GetJob(ply)
-            local cid = job and (job.faction or job.category) or nil
+        if P11FW.CategoryList then
+            local cid = jobTab and (jobTab.faction or jobTab.category) or nil
             for _, c in ipairs(P11FW.CategoryList) do
                 if c.id == cid then facName = c.name break end
             end
         end
 
+        -- код: NW подменён сервером на украденный, пока длится личина
+        local code = ply:GetNWString("P11_DocCode", "")
+        if code == "" then code = DocCodeOf(ply) end
+
         net.Start("P11_DocShow")
             net.WriteString(name)
             net.WriteString(jobName)
-            net.WriteString(DocCodeOf(ply))
+            net.WriteString(code)
             net.WriteString(os.date("%d.%m.%Y %H:%M"))
             net.WriteString(facName)
         net.Send(target)
