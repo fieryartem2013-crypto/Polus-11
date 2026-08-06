@@ -34,6 +34,20 @@ function P11FW.HasWhitelist(ply, jobId)
     return false
 end
 
+--- v4.6.7: надо ли ПРЯТАТЬ вайтлист-профу от игрока в списках (F4).
+--- Прячем, если включён Config.HideWhitelistJobs и у игрока нет ни
+--- допуска, ни прав (админ / Глава 16 — те видят и могут брать).
+function P11FW.WLHiddenFor(ply, jobId)
+    if not (P11FW.Config and P11FW.Config.HideWhitelistJobs) then return false end
+    if not P11FW.JobNeedsWhitelist(jobId) then return false end
+    if IsValid(ply) then
+        if P11FW.Config.Admin and P11FW.Config.Admin(ply) then return false end
+        if P11FW.GetRankLevel and P11FW.GetRankLevel(ply) >= 16 then return false end
+        if P11FW.HasWhitelist(ply, jobId) then return false end
+    end
+    return true
+end
+
 --- Сколько допусков выдано на должность
 function P11FW.WhitelistCount(jobId)
     local t = P11FW.Whitelist and P11FW.Whitelist[jobId]

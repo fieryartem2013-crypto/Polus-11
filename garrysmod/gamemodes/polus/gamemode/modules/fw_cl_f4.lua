@@ -142,11 +142,16 @@ function P11FW.OpenJobMenu()
 
     f.JobButtons = {}
 
+    local me0 = LocalPlayer()
+    local function JobShown(jobId)
+        return not (P11FW.WLHiddenFor and P11FW.WLHiddenFor(me0, jobId))
+    end
+
     for _, cat in ipairs(P11FW.CategoryList) do
-        -- сколько должностей в секции
+        -- сколько должностей в секции (скрытые 🔒 не считаем — v4.6.7)
         local cnt = 0
         for _, jobId in ipairs(P11FW.JobIds) do
-            if P11FW.Jobs[jobId] and P11FW.Jobs[jobId].category == cat.id then cnt = cnt + 1 end
+            if P11FW.Jobs[jobId] and P11FW.Jobs[jobId].category == cat.id and JobShown(jobId) then cnt = cnt + 1 end
         end
         if cnt > 0 then
             local head = left:Add("DPanel")
@@ -165,7 +170,7 @@ function P11FW.OpenJobMenu()
 
             for _, jobId in ipairs(P11FW.JobIds) do
                 local job = P11FW.Jobs[jobId]
-                if job and job.category == cat.id then
+                if job and job.category == cat.id and JobShown(jobId) then
                     local btn = left:Add("DButton")
                     btn:SetTall(50)
                     btn:Dock(TOP)
