@@ -47,7 +47,7 @@ local SEED_FACTIONS = {
 local SEED_JOBS = {
     -- ================= ФРАКЦИЯ РККА =================
     {
-        id = "seed_rkka_novobranets", category = "rkka", order = 30,
+        id = "seed_rkka_novobranets", time = 0, -- v4.6.6: минуты для доступа category = "rkka", order = 30,
         name = "Новобранец РККА",
         desc = "Свежеприбывшее пополнение. Оружия не положено — держись постовых, слушай комиссара и не выходи в метель без приказа.",
         weapons = {}, hp = 100, armor = 0, max = 0,
@@ -57,7 +57,7 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_rkka_postovoy", category = "rkka", order = 31,
+        id = "seed_rkka_postovoy", time = 30, -- v4.6.6: минуты для доступа category = "rkka", order = 31,
         name = "Постовой РККА",
         desc = "Стоит на посту: ворота, караулка, склад. АКС-74У — короткий и злой, для коридоров станции самое то. 100 ХП / 100 брони.",
         weapons = { "arc9_eft_aks74u" }, hp = 100, armor = 100, max = 4,
@@ -71,7 +71,7 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_rkka_soldat", category = "rkka", order = 32,
+        id = "seed_rkka_soldat", time = 45, -- v4.6.6: минуты для доступа category = "rkka", order = 32,
         name = "Солдат РККА",
         desc = "Основной боец гарнизона. Полноразмерный АК-74, патрули и сопровождение учёных. 105 ХП / 105 брони.",
         weapons = { "arc9_eft_aks74" }, hp = 105, armor = 105, max = 6,
@@ -85,7 +85,7 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_rkka_shturmovik", category = "rkka", order = 33,
+        id = "seed_rkka_shturmovik", time = 90, -- v4.6.6: минуты для доступа category = "rkka", order = 33,
         name = "Штурмовик РККА",
         desc = "Первым вламывается в заражённые отсеки. ППШ-41 косит всё в упор, тяжёлый бронежилет. 125 ХП / 145 брони.",
         weapons = { "arc9_eft_ppsh41" }, hp = 125, armor = 145, max = 3,
@@ -99,7 +99,7 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_rkka_razvedchik", category = "rkka", order = 34,
+        id = "seed_rkka_razvedchik", time = 60, -- v4.6.6: минуты для доступа category = "rkka", order = 34,
         name = "Разведчик РККА",
         desc = "Уходит в белую пустыню первым. Трёхлинейка бьёт точно и далеко — Нечто не любит одиночных выстрелов с вышки. 125 ХП / 115 брони. Штрафная рота — туда лучше не попадать.",
         weapons = { "arc9_eft_mosin_infantry" }, hp = 125, armor = 115, max = 3,
@@ -113,10 +113,10 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_rkka_komissar", category = "rkka", order = 35,
+        id = "seed_rkka_komissar", time = 240, -- v4.6.6: минуты для доступа category = "rkka", order = 35,
         name = "Комиссар РККА",
         desc = "Политрук гарнизона. Дисциплина, допросы, трибунал. Kar98 — за спиной, ордер на расстрел дезертиров — в кармане. Одно место. 100 ХП / 100 брони.",
-        weapons = { "arc9_doi_k98" }, hp = 100, armor = 100, max = 1, terminal = true,
+        weapons = { "arc9_doi_k98" }, hp = 100, armor = 100, max = 2, terminal = true, -- v4.6.6: лимит 2
         color = Color(160, 90, 85),
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/commissar/co/m35_1941_s1_02.mdl",
@@ -126,20 +126,20 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_rkka_general", category = "rkka", order = 36,
+        id = "seed_rkka_general", time = 300, -- v4.6.6: минуты для доступа category = "rkka", order = 36,
         name = "Генерал РККА",
         desc = "Командующий всем военным контингентом станции из генеральского штаба. Kar98 и полная власть. Одно место. 125 ХП / 125 брони.",
-        weapons = { "arc9_doi_k98" }, hp = 125, armor = 125, max = 1, terminal = true, command = true,
+        weapons = { "arc9_doi_k98" }, hp = 125, armor = 125, max = 2, terminal = true, command = true, -- v4.6.6: лимит 2,
         color = Color(210, 185, 90),
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/general_staff/gen/m40_1941_s1_05.mdl",
         },
     },
     {
-        id = "seed_rkka_generalpeh", category = "rkka", order = 37,
+        id = "seed_rkka_generalpeh", time = 300, -- v4.6.6: минуты для доступа category = "rkka", order = 37,
         name = "Генерал РККА (Пехота)",
         desc = "Комбат пехотного звена: ближе к окопам, чем к штабу. Двустволка MR-43 для личной самообороны. Одно место. 100 ХП / 100 брони.",
-        weapons = { "arc9_eft_mr43" }, hp = 100, armor = 100, max = 1, terminal = true,
+        weapons = { "arc9_eft_mr43" }, hp = 100, armor = 100, max = 2, terminal = true, -- v4.6.6: лимит 2
         color = Color(195, 175, 85),
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/infantry/gen/m40_1941_s1_02.mdl",
@@ -150,7 +150,7 @@ local SEED_JOBS = {
     -- Модели: пока стоят комиссарские/штабные из пака pm0v3 — если найдёшь
     -- пак с «синими фуражками», смени пути тут или прямо в админке.
     {
-        id = "seed_nkvd_convoy", category = "nkvd", order = 50, whitelist = true, -- v4.4.0: ВАЙТЛИСТ
+        id = "seed_nkvd_convoy", time = 45, -- v4.6.6: минуты для доступа category = "nkvd", order = 50, whitelist = true, -- v4.4.0: ВАЙТЛИСТ
         name = "Конвоир НКВД",
         desc = "Конвой и караул задержанных, охрана допросной и склада вещдоков. Двустволка MR-43 — уговаривать долго не приходится. 100 ХП / 100 брони.",
         weapons = { "arc9_eft_mr43" }, hp = 100, armor = 100, max = 2,
@@ -162,7 +162,7 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_nkvd_oper", category = "nkvd", order = 51, whitelist = true, -- v4.4.0: ВАЙТЛИСТ
+        id = "seed_nkvd_oper", time = 90, -- v4.6.6: минуты для доступа category = "nkvd", order = 51, whitelist = true, -- v4.4.0: ВАЙТЛИСТ
         name = "Оперуполномоченный НКВД",
         desc = "Оперативная работа: наружное наблюдение, агентурная сеть, тихие допросы «для протокола». АКС-74У под полой шинели. 100 ХП / 100 брони.",
         weapons = { "arc9_eft_aks74u" }, hp = 100, armor = 100, max = 3,
@@ -175,7 +175,7 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_nkvd_sledovatel", category = "nkvd", order = 52, whitelist = true, -- v4.4.0: ВАЙТЛИСТ
+        id = "seed_nkvd_sledovatel", time = 120, -- v4.6.6: минуты для доступа category = "nkvd", order = 52, whitelist = true, -- v4.4.0: ВАЙТЛИСТ
         name = "Следователь НКВД",
         desc = "Протоколы, вещдоки, досье на каждого жителя станции. Имеет право требовать принудительный тест крови ПОД СВОИМ НАДЗОРОМ — шприц в сейфе следопера. 100 ХП / 50 брони.",
         weapons = { "weapon_polus11_syringe", "arc9_doi_k98" }, hp = 100, armor = 50, max = 2, terminal = true,
@@ -186,20 +186,20 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_nkvd_osobist", category = "nkvd", order = 53, whitelist = true, -- v4.4.0: ВАЙТЛИСТ
+        id = "seed_nkvd_osobist", time = 180, -- v4.6.6: минуты для доступа category = "nkvd", order = 53, whitelist = true, -- v4.4.0: ВАЙТЛИСТ
         name = "Особист НКВД",
         desc = "Контрразведка станции. Может объявлять РОЗЫСК (!розыск) и отдавать ПРИКАЗЫ (!приказ) без санкции генерала, если подозревает Нечто. Одно место. 115 ХП / 100 брони.",
-        weapons = { "arc9_doi_k98" }, hp = 115, armor = 100, max = 1, terminal = true, command = true,
+        weapons = { "arc9_doi_k98" }, hp = 115, armor = 100, max = 2, terminal = true, command = true, -- v4.6.6: лимит 2,
         color = Color(154, 30, 30), -- v4.5.0 КРАСНО-ЧЁРНЫЙ,
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/commissar/co/m35_1941_s1_02.mdl",
         },
     },
     {
-        id = "seed_nkvd_nachalnik", category = "nkvd", order = 54, whitelist = true, -- v4.4.0: ВАЙТЛИСТ
+        id = "seed_nkvd_nachalnik", time = 240, -- v4.6.6: минуты для доступа category = "nkvd", order = 54, whitelist = true, -- v4.4.0: ВАЙТЛИСТ
         name = "Начальник Особого Отдела НКВД",
         desc = "Высшее слово станции по вопросам внутренней безопасности. Его подпись в ордере на расстрел равна приговору Военного трибунала. Одно место. 125 ХП / 125 брони.",
-        weapons = { "arc9_doi_k98" }, hp = 125, armor = 125, max = 1, terminal = true, command = true,
+        weapons = { "arc9_doi_k98" }, hp = 125, armor = 125, max = 2, terminal = true, command = true, -- v4.6.6: лимит 2,
         color = Color(170, 34, 34), -- v4.5.0 КРАСНО-ЧЁРНЫЙ,
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/general_staff/gen/m40_1941_s1_05.mdl",
@@ -208,7 +208,7 @@ local SEED_JOBS = {
 
     -- ================= НАУЧНЫЙ БЛОК =================
     {
-        id = "seed_sci_laborant", category = "science", order = 40,
+        id = "seed_sci_laborant", time = 0, -- v4.6.6: минуты для доступа category = "science", order = 40,
         name = "Лаборант (ЦНИИ)",
         desc = "Младший научный состав исследовательского блока. Мытьё пробирок, подносы, журналы опытов. 100 ХП / 100 брони.",
         weapons = {}, hp = 100, armor = 100, max = 4,
@@ -216,7 +216,7 @@ local SEED_JOBS = {
         models = { "Models/UIF/scientists/UIF_scientist_7.mdl" },
     },
     {
-        id = "seed_sci_ucheniy", category = "science", order = 41,
+        id = "seed_sci_ucheniy", time = 30, -- v4.6.6: минуты для доступа category = "science", order = 41,
         name = "Учёный",
         desc = "Штатный исследователь комплекса. Доступ к образцам и лабораторным стендам. 100 ХП / 100 брони.",
         weapons = {}, hp = 100, armor = 100, max = 3,
@@ -224,7 +224,7 @@ local SEED_JOBS = {
         models = { "Models/UIF/scientists/UIF_scientist_7.mdl" },
     },
     {
-        id = "seed_sci_biohim", category = "science", order = 42,
+        id = "seed_sci_biohim", time = 60, -- v4.6.6: минуты для доступа category = "science", order = 42,
         name = "Био-химик",
         desc = "Специалист по биохимическому анализу тканей. К его холодильнику с образцами лучше не подходить без перчаток. 100 ХП / 100 брони.",
         weapons = {}, hp = 100, armor = 100, max = 2,
@@ -232,7 +232,7 @@ local SEED_JOBS = {
         models = { "Models/UIF/scientists/UIF_scientist_7.mdl" },
     },
     {
-        id = "seed_sci_vedushiy", category = "science", order = 43,
+        id = "seed_sci_vedushiy", time = 90, -- v4.6.6: минуты для доступа category = "science", order = 43,
         name = "Ведущий Учёный",
         desc = "Руководит экспериментами лично. Подписывает заключения по биологическим угрозам. 100 ХП / 100 брони.",
         weapons = {}, hp = 100, armor = 100, max = 2, terminal = true,
@@ -240,18 +240,18 @@ local SEED_JOBS = {
         models = { "Models/UIF/scientists/UIF_scientist_7.mdl" },
     },
     {
-        id = "seed_sci_menedzher", category = "science", order = 44,
+        id = "seed_sci_menedzher", time = 120, -- v4.6.6: минуты для доступа category = "science", order = 44,
         name = "Менеджер Научного Отдела",
         desc = "Отвечает за сметы, графики и допуски научного блока. Знает, кого и за что пускают в лаборатории. Одно место. 100 ХП / 100 брони.",
-        weapons = {}, hp = 100, armor = 100, max = 1, terminal = true,
+        weapons = {}, hp = 100, armor = 100, max = 2, terminal = true, -- v4.6.6: лимит 2
         color = Color(120, 190, 240),
         models = { "Models/UIF/scientists/UIF_scientist_7.mdl" },
     },
     {
-        id = "seed_sci_sozdatel", category = "science", order = 45,
+        id = "seed_sci_sozdatel", time = 180, -- v4.6.6: минуты для доступа category = "science", order = 45,
         name = "Создатель Научного Комплекса",
         desc = "Легенда «Полюс-11»: главный конструктор научного блока. Имеет допуск во ВСЕ отсеки, включая те, о которых нет в документах. Одно место. 100 ХП / 100 брони.",
-        weapons = {}, hp = 100, armor = 100, max = 1, terminal = true, command = true,
+        weapons = {}, hp = 100, armor = 100, max = 2, terminal = true, command = true, -- v4.6.6: лимит 2,
         color = Color(105, 180, 235),
         models = { "Models/UIF/scientists/UIF_scientist_8.mdl" },
     },
@@ -261,7 +261,7 @@ local SEED_JOBS = {
     -- поглотитель/разделённый/споровик), за жертв копятся МУТАЦИИ:
     -- 3 — Регенерация, 5 — Мясогигант, 10 — Арахна (паучья форма).
     {
-        id = "seed_thing_filial", category = "nechto", order = 90,
+        id = "seed_thing_filial", time = 0, -- v4.6.6: минуты для доступа category = "nechto", order = 90,
         name = "[ИВЕНТ] Нечто",
         desc = "Личинка-хамелеон, крадущая тела и лица. !форма — смена формы; мутации за жертв (3/5/10). Только для админ-ивентов. 400 ХП.",
         weapons = { "weapon_polus11_thing" }, hp = 400, armor = 0, max = 2, event = true,
@@ -401,6 +401,32 @@ local function SeedAll()
         end
     end
 
+    -- ---------- 0.7) v4.6.6 МИГРАЦИЯ: время открывает профы + лимит 2 ----------
+    do
+        local byId = {}
+        for _, j in ipairs(SEED_JOBS) do byId[j.id] = j end
+        local changed = false
+        for _, rec in ipairs(P11FW.CustomJobs) do
+            local def = rec and byId[rec.id]
+            if def then
+                if rec.time == nil then
+                    rec.time = tonumber(def.time) or 0
+                    changed = true
+                end
+                if (tonumber(rec.max) or 0) == 1 and (tonumber(def.max) or 0) >= 2 then
+                    rec.max = def.max
+                    changed = true
+                end
+            end
+        end
+        if changed then
+            P11FW.SaveCustomJobs()
+            P11FW.RegisterCustomJobs(P11FW.CustomJobs)
+            P11FW.SyncCustomJobs()
+            P11FW.Log("Сид v4.6.6: минуты доступа проставлены, лимитки 1 -> 2 (миграция)")
+        end
+    end
+
     -- ---------- 1) ФРАКЦИИ ----------
     local records = FactionRecordsNow()
     local facAdded = 0
@@ -452,6 +478,7 @@ local function SeedAll()
                 event    = j.event == true,
                 command  = j.command == true, -- !приказ/!розыск для генералов
                 whitelist = j.whitelist == true, -- v4.4.0: ВАЙТЛИСТ (напр. всё НКВД)
+                time     = tonumber(j.time) or 0,  -- v4.6.6: минуты игры для доступа
                 order    = j.order or 100,
             }
             jobAdded = jobAdded + 1

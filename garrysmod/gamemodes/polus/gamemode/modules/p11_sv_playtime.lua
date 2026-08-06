@@ -66,6 +66,15 @@ timer.Create("P11.PlaytimeTick", 60, 0, function()
             local sid = SidOf(ply)
             POLUS11.Playtime[sid] = (POLUS11.Playtime[sid] or 0) + 1
             PushNW(ply)
+            -- v4.6.6: фанфары открытия — профа ровно с этой минуты
+            local now = POLUS11.GetPlayMin(ply)
+            for jid, job in pairs(P11FW.Jobs or {}) do
+                local need = tonumber(job.time) or 0
+                if need == now and need > 0 then
+                    P11FW.Notify(ply, "⏳ " .. need .. " мин службы — тебе ОТКРЫЛАСЬ должность: «" .. job.name .. "»!")
+                    ply:EmitSound("buttons/button15.wav", 70, 105)
+                end
+            end
         end
     end
     if saveTick % 5 == 0 then SaveTime() end

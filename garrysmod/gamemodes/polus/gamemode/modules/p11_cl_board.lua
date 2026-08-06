@@ -328,6 +328,12 @@ local function DrawBoard()
     draw.SimpleText("MILITARY HORROR RP · 1982 · v" .. tostring(POLUS_BUILD or "?"), "P11B.Tiny", x + 18, y + 40, Color(120, 160, 190, 220), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
     draw.SimpleText(tostring(P11B.online or ""), "P11B.Small", x + W - 16, y + 14, Color(170, 178, 195), TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP)
     draw.SimpleText(os.date("%H:%M") .. "  ·  " .. game.GetMap(), "P11B.Tiny", x + W - 16, y + 40, COL_DIM, TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP)
+    -- v4.6.6: наигрыш службы — время открывает профы
+    local me2 = LocalPlayer()
+    if IsValid(me2) then
+        draw.SimpleText("⏱ служба: " .. me2:GetNWInt("P11_PlayMin", 0) .. " мин — время открывает профы",
+            "P11B.Tiny", x + 18, y + 56, Color(150, 200, 255), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+    end
 
     -- статус станции
     local status = "Фаза: " .. GetGlobalString("P11_Phase", "?")
