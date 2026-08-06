@@ -11,9 +11,10 @@ surface.CreateFont("P11.Tut.Small", { font = "Roboto", size = 16, weight = 500, 
 local TUT_FILE = "polus11/tutorial_done.txt"
 
 local TUT = {
-    active = false,
-    step   = 1,
-    stepAt = 0,
+    active   = false,
+    step     = 1,
+    stepAt   = 0,
+    skipHold = 0, -- v4.2.2: удержание N для пропуска
 }
 
 -- шаг → цель-энтити + условие завершения
@@ -106,6 +107,30 @@ end)
 
 concommand.Add("p11_tutorial", function() TutStart(true) end)
 
+-- v4.2.2: пропуск обучения (кнопка N удерживать / команда)
+local function TutDone(silent)
+    TUT.active = false
+    TUT.skipHold = 0
+    if not file.IsDir("polus11", "DATA") then file.CreateDir("polus11") end
+    file.Write(TUT_FILE, "done " .. os.date("%Y-%m-%d %H:%M"))
+    if not silent then
+        chat.AddText(Color(160, 210, 255), "[ПОЛЮС-11] Обучение пропущено. F1 — памятка, C (удерж.) — действия, !репорт — если что-то не так.")
+        surface.PlaySound("buttons/button9.wav")
+    end
+end
+concommand.Add("p11_tutorial_skip", function() if TUT.active then TutDone(false) end end)
+
+-- удержание [N] 2 секунды — пропуск
+hook.Add("Think", "P11.TutorialSkip", function()
+    if not TUT.active then TUT.skipHold = 0 return end
+    if input.IsKeyDown(KEY_N) then
+        TUT.skipHold = (TUT.skipHold or 0) + FrameTime()
+        if TUT.skipHold >= 2 then TutDone(false) end
+    else
+        TUT.skipHold = 0
+    end
+end)
+
 -- тик условий
 timer.Create("P11.Tutorial", 1, 0, function()
     if not TUT.active then return end
@@ -126,13 +151,27 @@ hook.Add("HUDPaint", "P11.TutorialHUD", function()
 
     local w, h = ScrW(), ScrH()
 
-    -- карточка сверху
-    draw.RoundedBox(10, w / 2 - 300, 16, 600, 74, Color(8, 14, 20, 220))
+    -- карточка сверху (v4.2.2: чуть выше, место под кнопку пропуска)
+    draw.RoundedBox(10, w / 2 - 300, 16, 600, 104, Color(8, 14, 20, 220))
     surface.SetDrawColor(120, 185, 255, 170)
-    surface.DrawOutlinedRect(w / 2 - 300, 16, 600, 74, 1)
+    surface.DrawOutlinedRect(w / 2 - 300, 16, 600, 104, 1)
     draw.SimpleText("ОБУЧЕНИЕ " .. TUT.step .. "/" .. #STEPS .. ": " .. st.hint, "P11.Tut.Big",
         w / 2, 34, Color(150, 210, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
     draw.SimpleText(st.sub, "P11.Tut.Small", w / 2, 66, Color(215, 222, 232), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
+
+    -- «кнопка» ПРОПУСТИТЬ: держи N две секунды
+    local hold = math.Clamp((TUT.skipHold or 0) / 2, 0, 1)
+    local bx, by, bw, bh = w / 2 - 190, 94, 380, 20
+    draw.RoundedBox(6, bx, by, bw, bh, Color(20, 28, 38, 235))
+    surface.SetDrawColor(150, 190, 235, hold > 0 and 220 or 90)
+    surface.DrawOutlinedRect(bx, by, bw, bh, 1)
+    if hold > 0 then
+        draw.RoundedBox(6, bx + 2, by + 2, (bw - 4) * hold, bh - 4, Color(120, 185, 255, 120))
+    end
+    local skipTxt = (hold > 0) and ("ПРОПУСК… " .. math.floor(hold * 100) .. "%") or "■ N ■ удерживать 2 сек — ПРОПУСТИТЬ ОБУЧЕНИЕ"
+    draw.SimpleText(skipTxt, "P11.Tut.Small", w / 2, by + bh / 2,
+        hold > 0 and Color(230, 242, 255) or Color(150, 190, 220),
+        TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 
     -- маяк у цели
     if st.cls then

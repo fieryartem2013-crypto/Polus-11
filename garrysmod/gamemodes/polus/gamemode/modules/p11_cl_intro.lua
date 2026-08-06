@@ -1,5 +1,5 @@
 -- ============================================================
---  ПОЛЮС-11 — ИНТРО v2 (client) v3.4
+--  ПОЛЮС-11 — ИНТРО v3 «ПОЛЯРНОЕ СИЯНИЕ» (client) v4.2.2
 --  Кинематографичная заставка при входе:
 --   • чёрные кино-полосы, снег, зерно плёнки и сканлайны;
 --   • ветер станции двумя слоями;
@@ -38,9 +38,9 @@ local ColRed  = Color(240, 90, 80)
 
 -- ============ СНЕГ ============
 
-local FLAKES = nil
+local FLAKES, FLAKES2 = nil, nil
 local function BuildFlakes()
-    FLAKES = {}
+    FLAKES, FLAKES2 = {}, {}
     for i = 1, 130 do
         FLAKES[i] = {
             x = math.random(), y = math.random(),
@@ -49,6 +49,17 @@ local function BuildFlakes()
             w = 1 + math.random() * 2,          -- размер
             a = 60 + math.random() * 160,       -- альфа
             ph = math.random() * 10,            -- фаза раскачки
+        }
+    end
+    -- v4.2.2: передний план — крупные медленные снежинки (параллакс)
+    for i = 1, 34 do
+        FLAKES2[i] = {
+            x = math.random(), y = math.random(),
+            s = 30 + math.random() * 46,
+            d = (math.random() - 0.5) * 0.05,
+            w = 3 + math.random() * 3.5,
+            a = 26 + math.random() * 60,
+            ph = math.random() * 10,
         }
     end
 end
@@ -102,6 +113,25 @@ local function OpenIntro()
         -- фон
         draw.RoundedBox(0, 0, 0, w, h, Color(4, 6, 10, 255))
 
+        -- v4.2.2: ПОЛЯРНОЕ СИЯНИЕ — три дышащих занавеса у горизонта
+        if not INTRO.noAurora then
+            for band = 1, 3 do
+                local baseY = h * (0.10 + band * 0.055)
+                local drift = math.sin(CurTime() * 0.35 + band * 1.9) * w * 0.05
+                local hue = (band % 2 == 0)
+                for i = 0, 15 do
+                    local yy = baseY + i * math.floor(h * 0.006) + math.sin(CurTime() * 0.8 + i * 0.55 + band) * 6
+                    local a = math.max(0, 22 - i * 1.35) * (0.7 + 0.3 * math.sin(CurTime() * 0.5 + band * 2.4 + i * 0.3))
+                    if hue then
+                        surface.SetDrawColor(60, 200, 160, a)
+                    else
+                        surface.SetDrawColor(80, 160, 220, a)
+                    end
+                    surface.DrawRect(0, yy - drift * 0.02, w, math.floor(h * 0.006) + 1)
+                end
+            end
+        end
+
         -- мягкий холодный градиент снизу (как отсвет льда)
         for i = 0, 11 do
             surface.SetDrawColor(14, 30, 44, 10)
@@ -117,6 +147,19 @@ local function OpenIntro()
             if fl.x > 1.02 then fl.x = -0.02 elseif fl.x < -0.02 then fl.x = 1.02 end
             surface.SetDrawColor(200, 225, 245, fl.a)
             surface.DrawRect(fl.x * w, fl.y * h, fl.w, fl.w)
+        end
+        -- передний план снега (крупнее, прозрачнее, с размытием-пятном)
+        if FLAKES2 then
+            for _, fl in ipairs(FLAKES2) do
+                fl.y = fl.y + (fl.s / 1000) * ft * 2.4
+                fl.x = fl.x + fl.d * ft + math.sin(CurTime() * 0.7 + fl.ph) * 0.0009
+                if fl.y > 1.05 then fl.y = -0.05 fl.x = math.random() end
+                if fl.x > 1.05 then fl.x = -0.05 elseif fl.x < -0.05 then fl.x = 1.05 end
+                surface.SetDrawColor(215, 232, 250, fl.a)
+                surface.DrawRect(fl.x * w, fl.y * h, fl.w, fl.w)
+                surface.SetDrawColor(215, 232, 250, fl.a * 0.35)
+                surface.DrawRect(fl.x * w - 1, fl.y * h - 1, fl.w + 2, fl.w + 2)
+            end
         end
 
         -- кино-ПОЛОСЫ с заездом
@@ -222,10 +265,29 @@ local function OpenIntro()
             end
         end
 
+        -- v4.2.2: штамп экспедиции — мигающий курсор печатающей машинки
+        if (CurTime() % 1.1) < 0.75 then
+            draw.SimpleText("ЭКСПЕДИЦИЯ-4 · 66°33′ ю.ш. 93°02′ в.д. · ЗИМА 1982", "P11.Intro.Small",
+                18, h - barH + off - 34, Color(110, 140, 155, 170),
+                TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        end
+
         -- зерно плёнки
         for i = 1, 46 do
             surface.SetDrawColor(255, 255, 255, math.random(2, 11))
             surface.DrawRect(math.random(0, w), math.random(0, h), 1, 1)
+        end
+
+        -- v4.2.2: виньетка по краям (лесенкой, без шейдеров)
+        for i = 0, 9 do
+            local va = 7 + i * 2.4
+            local th = 6 - i * 0.5
+            if th < 1 then th = 1 end
+            surface.SetDrawColor(0, 0, 0, va)
+            surface.DrawRect(0, i * 12, w, th)                       -- верх
+            surface.DrawRect(0, h - i * 12 - th, w, th)              -- низ
+            surface.DrawRect(i * 12, 0, th, h)                       -- лево
+            surface.DrawRect(w - i * 12 - th, 0, th, h)              -- право
         end
 
         -- сканлайны
@@ -253,6 +315,28 @@ local function OpenIntro()
     f.OnMousePressed = function() CloseIntro() end
     f.OnKeyCodePressed = function(s, key)
         if key ~= 0 then CloseIntro() end
+    end
+
+    -- v4.2.2: ЯВНАЯ кнопка «ПРОПУСТИТЬ» — чтобы пропуск видели сразу
+    local skipB = vgui.Create("DButton", f)
+    skipB:SetSize(190, 42)
+    skipB:SetPos(ScrW() - 190 - 24, ScrH() - math.floor(ScrH() * 0.095) - 42 - 18)
+    skipB:SetText("")
+    skipB.Paint = function(s2, bw, bh)
+        local hov = s2:IsHovered()
+        local pulse = 0.72 + math.sin(CurTime() * 3.2) * 0.28
+        draw.RoundedBox(8, 0, 0, bw, bh, hov and Color(30, 46, 60, 245) or Color(16, 26, 36, 225))
+        surface.SetDrawColor(150, 215, 250, (hov and 235 or 130) * pulse + 60)
+        surface.DrawOutlinedRect(0, 0, bw, bh, hov and 2 or 1)
+        draw.SimpleText("ПРОПУСТИТЬ  ▶▶", "P11.Intro.Mid", bw / 2, bh / 2,
+            hov and Color(230, 245, 255) or Color(160, 200, 225),
+            TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        if hov then s2:SetCursor("hand") end
+    end
+    skipB.DoClick = function()
+        surface.PlaySound("buttons/button14.wav")
+        if IsValid(INTRO.frame) then INTRO.frame:Remove() INTRO.frame = nil end
+        CloseIntro()
     end
 
     -- страховка: мировые клавиши + жёсткий таймаут

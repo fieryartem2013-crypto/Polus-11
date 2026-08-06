@@ -33,9 +33,14 @@ local function EcoAct(act, id)
     net.SendToServer()
 end
 
--- ============ HUD: РУБЛИ ============
+-- ============ HUD: РУБЛИ (v4.2.2 — «золотой кошелёк» НАД панелью жизни) ============
+--  Раньше текст висел на ScrH()-140 и залезал ПОД панель ХП (начинается
+--  с ScrH()-144). Теперь чип прибит к верху панели жизни через
+--  P11.VitalsTop, который vitals выставляет каждый кадр.
 
 local moneyShow = 0
+local moneyGlow = 0 -- вспышка «деньги пришли»
+
 hook.Add("HUDPaint", "P11.EcoMoney", function()
     if P11.IntroOpen then return end
     local me = LocalPlayer()
@@ -43,13 +48,58 @@ hook.Add("HUDPaint", "P11.EcoMoney", function()
     if P11B and P11B.open then return end -- v4.2.1: TAB v2
 
     local target = math.max(P11.Eco.money or 0, me:GetNWInt("P11_Money", 0))
+    if target > moneyShow + 0.5 then moneyGlow = 0.8 end -- приход — блеск
     moneyShow = moneyShow + (target - moneyShow) * math.min(FrameTime() * 5, 1)
     if math.abs(moneyShow - target) < 1 then moneyShow = target end
+    local shown = math.floor(moneyShow)
 
-    local px, py = 16, ScrH() - 140
-    draw.RoundedBox(6, px - 8, py - 6, 150, 30, Color(16, 18, 24, 215))
-    draw.SimpleText("₽ " .. math.floor(moneyShow), "P11.Eco.Big", px + 6, py + 9,
-        Color(255, 210, 110), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+    -- геометрия: строго НАД панелью жизни
+    local panelTop = tonumber(P11.VitalsTop) or (ScrH() - 144)
+    local chH = 30
+    local chY = panelTop - 8 - chH
+
+    -- ширина под текст
+    surface.SetFont("P11.Eco.Med")
+    local numTxt = (string.Comma and string.Comma(shown)) or tostring(shown)
+    local numW = surface.GetTextSize(numTxt) or 40
+    surface.SetFont("P11.Eco.Small")
+    local labTxt = "НАЛИЧНЫЕ"
+    local labW = surface.GetTextSize(labTxt) or 40
+    local chW = 40 + math.max(numW, labW) + 16
+    local chX = 16
+
+    -- экспорт для стека значков мута (vitals)
+    P11.EcoMoneyTop = chY
+
+    -- тело чипа
+    draw.RoundedBox(8, chX, chY, chW, chH, Color(14, 15, 20, 220))
+    draw.RoundedBoxEx(8, chX, chY, 4, chH, Color(255, 205, 100), true, false, true, false)
+    -- лёгкий верхний блик
+    surface.SetDrawColor(255, 235, 180, 16)
+    surface.DrawRect(chX + 4, chY + 1, chW - 5, 1)
+    -- контур
+    surface.SetDrawColor(255, 205, 100, 40 + 120 * math.max(0, moneyGlow))
+    surface.DrawOutlinedRect(chX, chY, chW, chH, 1)
+
+    -- монетка: два кольца + ₽
+    local cx, cy, cr = chX + 18, chY + chH / 2, 9
+    draw.NoTexture()
+    surface.SetDrawColor(60, 45, 18, 255)
+    surface.DrawCircle(cx, cy, cr + 1, 60, 45, 18, 255)
+    surface.DrawCircle(cx, cy, cr, 230, 185, 95, 255)
+    surface.DrawCircle(cx, cy, cr - 3, 200, 150, 70, 255)
+    draw.SimpleText("₽", "P11.Eco.Small", cx, cy + 1, Color(70, 50, 16),
+        TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+
+    -- цифра (крупно, золотом; при приходе — вспыхивает)
+    local aGlow = math.Clamp(moneyGlow, 0, 1)
+    local numCol = Color(255, 210 + 30 * aGlow, 110 + 60 * aGlow)
+    draw.SimpleText(numTxt, "P11.Eco.Med", chX + 34, chY + chH / 2 - 6, numCol,
+        TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+    draw.SimpleText(labTxt, "P11.Eco.Small", chX + 34, chY + chH / 2 + 9,
+        Color(165, 150, 110), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+
+    moneyGlow = moneyGlow * math.max(0, 1 - FrameTime() * 2.2)
 end)
 
 -- ============ ОБЩИЙ КОНСТРУИТЕЛЬ ОКНА ============

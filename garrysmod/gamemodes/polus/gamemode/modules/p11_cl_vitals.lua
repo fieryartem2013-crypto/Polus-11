@@ -94,6 +94,21 @@ hook.Add("HUDPaint", "P11.Vitals", function()
     -- ----- панель слева внизу -----
     local px, py, pw = 16, sh - 118, 272
     draw.RoundedBox(8, px - 8, py - 26, pw + 16, 118, COL.bg)
+    -- v4.2.2: верх панели — точка привязки для «золотого кошелька» (экономика)
+    P11.VitalsTop = py - 26
+
+    -- v4.2.2: морозный глянец — тонкая ледяная кромка сверху + шапка-градиент
+    local tGlow = 130 + math.sin(t * 1.4) * 30
+    surface.SetDrawColor(120, 190, 230, tGlow)
+    surface.DrawRect(px - 8, py - 26, pw + 16, 1)
+    for i = 0, 3 do
+        surface.SetDrawColor(40, 60, 78, 26 - i * 5)
+        surface.DrawRect(px - 8, py - 25 + i, pw + 16, 1)
+    end
+    -- уголок-платка панели (ледяной штрих)
+    surface.SetDrawColor(150, 215, 245, 90)
+    surface.DrawRect(px - 8, py - 26, 26, 2)
+    surface.DrawRect(px - 8, py - 26, 2, 26)
 
     local label = me:Alive() and "СОСТОЯНИЕ БОЙЦА" or "ВЫ ПОГИБЛИ — ЖДИТЕ РЕСПАВН"
     draw.SimpleText(label, "P11.Vitals.Small", px + 4, py - 16,
@@ -157,8 +172,10 @@ hook.Add("HUDPaint", "P11.Vitals", function()
             .. (rs ~= "" and (" — " .. rs) or "")
         surface.SetFont("P11.Vitals.Small")
         local tw = surface.GetTextSize(txt)
-        draw.RoundedBox(5, px - 6, py - 54, tw + 20, 22, Color(60, 42, 12, 230))
-        draw.SimpleText(txt, "P11.Vitals.Small", px + 4, py - 43, COL.gold, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        -- v4.2.2: выше «золотого кошелька» (тот висит над панелью жизни)
+        local muteTop = (tonumber(P11.EcoMoneyTop) or (py - 88)) - 30
+        draw.RoundedBox(5, px - 6, muteTop, tw + 20, 22, Color(60, 42, 12, 230))
+        draw.SimpleText(txt, "P11.Vitals.Small", px + 4, muteTop + 11, COL.gold, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
     end
 
     -- ----- красная виньетка при критическом HP -----
@@ -188,6 +205,19 @@ hook.Add("HUDPaint", "P11.Vitals", function()
             local name = wep.PrintName or wep:GetClass() or "оружие"
             local bx, by, bw = sw - 236, sh - 96, 220
             draw.RoundedBox(8, bx, by, bw, 88, COL.bg)
+            -- v4.2.2: ледяная кромка и уголок, как у панели жизни
+            local ag = 130 + math.sin(t * 1.4) * 30
+            surface.SetDrawColor(120, 190, 230, ag)
+            surface.DrawRect(bx, by, bw, 1)
+            surface.SetDrawColor(150, 215, 245, 90)
+            surface.DrawRect(bx + bw - 26, by, 26, 2)
+            surface.DrawRect(bx + bw - 2, by, 2, 26)
+            -- мало патронов — красный пульс по контуру
+            if clip >= 0 and clip <= math.max(4, (wep:GetMaxClip1() > 0 and wep:GetMaxClip1() or 30) * 0.2) then
+                local pp = 0.5 + math.sin(t * 8) * 0.5
+                surface.SetDrawColor(240, 90, 80, 60 + 120 * pp)
+                surface.DrawOutlinedRect(bx, by, bw, 88, 1)
+            end
             draw.SimpleText(string.upper(name), "P11.Vitals.Small", bx + bw / 2, by + 10, COL.dim,
                 TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
             if clip >= 0 then
