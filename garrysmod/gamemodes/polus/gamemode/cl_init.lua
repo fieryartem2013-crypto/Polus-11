@@ -27,6 +27,7 @@ local cl = {
     "modules/p11_cl_arrival.lua",  -- заставка прибытия колонны (v4.5.0)
     "modules/p11_cl_cmenu.lua",    -- C-меню: жесты / действия (v4.4.0 — реворк с нуля)
     "modules/p11_cl_models.lua",   -- браузер внешности (v4.4.0 — с нуля)
+    "modules/p11_cl_spawnmenu.lua", -- экран вербовки: выбор фракции и профессии при спавне (v4.6.0)
     "modules/p11_cl_economy.lua",  -- рубли на HUD / инвентарь / ларёк / сейф / расстановка (v4.0)
     "modules/p11_cl_minigame.lua", -- миниигры дел + патрульные маркеры + RP (v4.1)
     "modules/p11_cl_duties2.lua",   -- заявки грузчика / досье НКВД (v4.2)
