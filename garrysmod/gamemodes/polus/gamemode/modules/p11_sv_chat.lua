@@ -144,4 +144,18 @@ hook.Add("PlayerSay", "P11.ChatCore", function(ply, text)
     return ret
 end)
 
+-- ============ ДИАГНОСТИКА (v4.6.5) ============
+-- в консоль сервера (или админом на клиенте): p11_chatdiag
+concommand.Add("p11_chatdiag", function(ply)
+    if IsValid(ply) and not P11FW.Config.Admin(ply) then return end
+    local who = IsValid(ply) and ply or nil
+    ChatSend(POLUS11.ChatCh.IC,  "СИСТЕМА", "Тест канала РЕЧЬ (виден в радиусе)", who, Color(120, 255, 120))
+    ChatSend(POLUS11.ChatCh.OOC, "СИСТЕМА", "Тест канала OOC (виден всем)", IsValid(ply) and ply or nil, Color(120, 255, 120))
+    ChatSend(POLUS11.ChatCh.ME,  "СИСТЕМА", "тест канала ME", who, Color(120, 255, 120))
+    local msg = "[P11CHAT] тесты трёх каналов отправлены " .. (IsValid(ply) and ("игроку " .. ply:Nick()) or "всем с консоли")
+    if IsValid(ply) then P11FW.Notify(ply, msg) end
+    print(msg)
+    print("[P11CHAT] Если у игроков тихо — пусть проверят: 1) в клиентской консоли есть ли '[POLUS-11] свой чат-UI загружен' 2) p11_chatdiag_cl 3) p11_vanilla_chat 1")
+end)
+
 print("[POLUS-11] свой чат (ядро) загружен: /ooc /looc /me /it /report")

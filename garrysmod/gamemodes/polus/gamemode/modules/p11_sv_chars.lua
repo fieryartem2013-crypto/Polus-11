@@ -39,10 +39,23 @@ timer.Create("P11.CharsSave", 1, 0, function()
     end
 end)
 
+-- v4.6.5: ВТОРОЙ КОРЕНЬ потери ника. SteamID64 — это 17 цифр; GMod при
+-- util.JSONToTable превращает длинные цифровые ключи в ЧИСЛА, те теряют
+-- разряды (double) — запись переставала находиться. STEAM_0:x:y —
+-- буквенный ключ, JSON его не трогает. Берём его как основной.
 local function SidOf(ply)
-    local sid = ply:SteamID64()
-    if not sid or sid == "0" then sid = ply:SteamID() end
+    local sid = ply:SteamID()
+    if not sid or sid == "" then sid = ply:SteamID64() end
     return sid
+end
+
+-- чтение дела: новый ключ, потом старый (совместимость со старым сейвом)
+function POLUS11.CharGet(ply)
+    local c = POLUS11.Chars[SidOf(ply)]
+    if c then return c end
+    local sid64 = ply:SteamID64()
+    if sid64 and sid64 ~= "0" then return POLUS11.Chars[sid64] end
+    return nil
 end
 
 local function CharSync(ply)
@@ -72,9 +85,9 @@ end
 hook.Add("PlayerInitialSpawn", "P11.CharsJoin", function(ply)
     -- v4.6.4: анкета СТРОГО ПОСЛЕ интро (интро ~10-13с) и только если
     -- дела нет. 14с — чтобы не «мешало» заставке, как просил владелец.
-    timer.Simple(14, function()
+    timer.Simple(18, function() -- v4.6.5: точно после интро (~15с)
         if not IsValid(ply) then return end
-        local saved = POLUS11.Chars[SidOf(ply)]
+        local saved = POLUS11.CharGet(ply)
         if saved then
             ply.P11_Char = saved
             CharSync(ply)

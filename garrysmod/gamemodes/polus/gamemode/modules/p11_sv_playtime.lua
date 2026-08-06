@@ -30,9 +30,11 @@ end
 
 LoadTime()
 
+-- v4.6.5: SteamID64-ключи JSON-To-Table ломает (числа без разрядов) —
+-- поэтому минуты могли не сохраняться. Основной ключ — STEAM_0:x:y.
 local function SidOf(ply)
-    local sid = ply:SteamID64()
-    if not sid or sid == "0" then sid = ply:SteamID() end
+    local sid = ply:SteamID()
+    if not sid or sid == "" then sid = ply:SteamID64() end
     return sid
 end
 

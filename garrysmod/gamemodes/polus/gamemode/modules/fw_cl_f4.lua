@@ -556,6 +556,17 @@ net.Receive("P11FW_JobsSync", function()
     end
 end)
 
+-- v4.6.5: !смена / !выбор в чате открывает список должностей
+-- (экран вербовки вырезан по заявке владельца — работает привычное F4)
+hook.Add("OnPlayerChat", "P11FW.SmenaCmd", function(ply, text)
+    if ply ~= LocalPlayer() then return end
+    local t = string.lower(string.Trim(tostring(text or "")))
+    if t == "!смена" or t == "!выбор" then
+        P11FW.OpenJobMenu()
+        return true
+    end
+end)
+
 -- ============ F4 ============
 
 hook.Add("PlayerBindPress", "P11FW.F4", function(ply, bind, pressed)

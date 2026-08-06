@@ -36,7 +36,6 @@ local send = {
     "modules/p11_cl_arrival.lua",   -- v4.5.0: заставка прибытия колонны
     "modules/p11_cl_cmenu.lua",
     "modules/p11_cl_models.lua",    -- v4.4.0: браузер внешности (с нуля)
-    "modules/p11_cl_spawnmenu.lua", -- v4.6.0: экран вербовки (выбор фракции/профы при спавне)
     "modules/p11_cl_economy.lua",
     "modules/p11_cl_minigame.lua", -- v4.1
     "modules/p11_cl_duties2.lua",   -- v4.2
@@ -107,7 +106,6 @@ local sv = {
     "modules/p11_sv_chat.lua",       -- чат: /ooc /looc /me /it /report + локальная речь (v4.5.0)
     "modules/p11_sv_arrival.lua",    -- зона прибытия по фракциям + LVS-грузовик (v4.5.0)
     "modules/p11_sv_playtime.lua",   -- время игры → доступ к профам (v4.5.0)
-    "modules/p11_sv_spawnmenu.lua",  -- экран вербовки: выбор фракции/профы при спавне (v4.6.0)
 }
 
 local function Safe(f)

@@ -204,14 +204,19 @@ function chat.AddText(...)
 end
 
 -- ванильную коробку прячем; движковую речь подавляем (мы рисуем сами)
+local cvVanilla = CreateClientConVar("p11_vanilla_chat", "0", true, false,
+    "1 = вернуть штатный чат движка (аварийный выход, если своей ленты не видно)")
+
 hook.Add("HUDShouldDraw", "P11.ChatHide", function(name)
-    if name == "CHudChat" then return false end
+    if name == "CHudChat" and not cvVanilla:GetBool() then return false end
 end)
 
 -- v4.6.3: не глушим в пустоту, а ЛОВИМ в свою ленту — это и страховка:
 -- даже если серверная обработка чата упадёт, движковые сообщения
 -- всё равно будут видны игроку.
 hook.Add("OnPlayerChat", "P11.ChatCapture", function(ply, text)
+    -- аварийный режим: отдаём в ваниль без дублей в нашей ленте
+    if cvVanilla:GetBool() then return end
     local nm = IsValid(ply) and ply:Nick() or "???"
     local col = IsValid(ply) and team.GetColor(ply:Team()) or Color(220, 220, 220)
     CHAT.AddParts({
@@ -219,6 +224,16 @@ hook.Add("OnPlayerChat", "P11.ChatCapture", function(ply, text)
         { col = Color(235, 240, 246), txt = ": " .. tostring(text) },
     })
     return true
+end)
+
+-- ДИАГНОСТИКА (v4.6.5): p11_chatdiag_cl в клиентскую консоль
+concommand.Add("p11_chatdiag_cl", function()
+    print("[P11CHAT] линий в ленте: " .. #CHAT.lines .. ", ваниль-режим: " .. tostring(cvVanilla:GetBool()))
+    CHAT.AddParts({
+        { col = Color(120, 255, 120), txt = "[ЧАТ-ТЕСТ]" },
+        { col = Color(235, 240, 246), txt = " если видишь эту строку слева внизу — лента рисует." },
+    })
+    print("[P11CHAT] добавлена тестовая строка. Не видно на экране? Напиши: p11_vanilla_chat 1")
 end)
 
 -- ============================================================
