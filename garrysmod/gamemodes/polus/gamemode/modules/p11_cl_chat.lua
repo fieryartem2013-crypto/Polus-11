@@ -103,7 +103,8 @@ local function DrawParts(vline, x, y, alphaMul)
 end
 
 local function ChatBaseY()
-    return ScrH() - 132 - (CHAT.boxOpen and 46 or 0)
+    -- v4.6.3: панель жизни выросла (полоска тепла) — лента чата сидит ВЫШЕ неё
+    return ScrH() - 152 - (CHAT.boxOpen and 46 or 0)
 end
 
 hook.Add("HUDPaint", "P11.ChatPaint", function()
@@ -207,7 +208,16 @@ hook.Add("HUDShouldDraw", "P11.ChatHide", function(name)
     if name == "CHudChat" then return false end
 end)
 
-hook.Add("OnPlayerChat", "P11.ChatSuppress", function()
+-- v4.6.3: не глушим в пустоту, а ЛОВИМ в свою ленту — это и страховка:
+-- даже если серверная обработка чата упадёт, движковые сообщения
+-- всё равно будут видны игроку.
+hook.Add("OnPlayerChat", "P11.ChatCapture", function(ply, text)
+    local nm = IsValid(ply) and ply:Nick() or "???"
+    local col = IsValid(ply) and team.GetColor(ply:Team()) or Color(220, 220, 220)
+    CHAT.AddParts({
+        { col = col, txt = nm },
+        { col = Color(235, 240, 246), txt = ": " .. tostring(text) },
+    })
     return true
 end)
 
@@ -223,7 +233,7 @@ function CHAT.Open(withChannel)
     local f = vgui.Create("DPanel")
     CHAT.Box = f
     f:SetSize(W, H)
-    f:SetPos(20, ScrH() - 132)
+    f:SetPos(20, ScrH() - 152) -- v4.6.3: над панелью жизни
     f:MakePopup()
     f:SetKeyboardInputEnabled(true)
     f:SetMouseInputEnabled(true)

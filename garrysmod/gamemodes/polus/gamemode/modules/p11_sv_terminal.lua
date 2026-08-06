@@ -31,11 +31,21 @@ POLUS11.XTaskCatalog = {
 
 -- ============ ДОПУСК ============
 
+-- v4.6.3: «терминалом пользуются все профы» — УЖЕСТОЧЕНО.
+-- Кто пользуется терминалом:
+--  1. должности с флажком «терминал=true» (комиссар, генерал, особое
+--     руководство; ставится в редакторе должности);
+--  2. администрация — ТОЛЬКО если ниже TerminalAdminBypass = true.
+--     Поставь FALSE — даже админ без профы с флажком не откроет.
+--     (Типичный кейс альфы: тестеры с рангами — кажется, что «терминал
+--     для всех», а это обход для админов.)
+POLUS11.TerminalAdminBypass = true
+
 function POLUS11.CanUseTerminal(ply)
     if not IsValid(ply) then return false end
-    if P11FW.Config.Admin(ply) then return true end
+    if POLUS11.TerminalAdminBypass and P11FW.Config.Admin(ply) then return true end
     local job = P11FW.GetJob and P11FW.GetJob(ply)
-    return job and job.terminal == true
+    return job ~= nil and job.terminal == true
 end
 
 -- ============ СПАВН / УДАЛЕНИЕ (админ) + PERSIST ============

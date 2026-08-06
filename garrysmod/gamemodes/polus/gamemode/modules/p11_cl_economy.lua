@@ -55,6 +55,9 @@ hook.Add("HUDPaint", "P11.EcoMoney", function()
 
     -- геометрия: строго НАД панелью жизни
     local panelTop = tonumber(P11.VitalsTop) or (ScrH() - 144)
+    -- v4.6.3: предохранитель от наложения на полоску жизни — садимся
+    -- не ниже, чем на 150px над нижним краем (панель жизни: ~118px).
+    panelTop = math.min(panelTop, ScrH() - 150)
     local chH = 30
     local chY = panelTop - 8 - chH
 

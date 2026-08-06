@@ -63,7 +63,7 @@ local FOREIGN = {
     "/профа", "/рейд", "/итем", "/багаж", "/дать", "/кошелёк",
 }
 
-hook.Add("PlayerSay", "P11.ChatCore", function(ply, text)
+local function ChatCore(ply, text)
     if not IsValid(ply) then return end
     local raw = string.Trim(text or "")
     if raw == "" then return "" end
@@ -128,6 +128,20 @@ hook.Add("PlayerSay", "P11.ChatCore", function(ply, text)
     -- ============ ОБЫЧНАЯ РЕЧЬ (ИГРОК, локально) ============
     ChatSend(POLUS11.ChatCh.IC, NameOf(ply), raw, InRadius(ply:GetPos(), R_IC), team.GetColor(ply:Team()))
     return ""
+end
+
+-- v4.6.3: ПРЕДОХРАНИТЕЛЬ. Если в нашем чате где-то ошибка — сообщение
+-- НЕ проглатываем молча: пишем в консоль сервера и отпускаем в обычный
+-- движок (лента на клиенте ловит его через OnPlayerChat-перехват).
+hook.Add("PlayerSay", "P11.ChatCore", function(ply, text)
+    local ok, ret = xpcall(function() return ChatCore(ply, text) end, function(err)
+        ErrorNoHalt("[POLUS-11 CHAT ERROR] " .. tostring(err) .. "\n")
+    end)
+    if not ok then
+        print("[POLUS-11] ЧАТ: ошибка обработчика, сообщение отпущено в ваниль:", ply, text)
+        return -- nil: пусть скажет штатно
+    end
+    return ret
 end)
 
 print("[POLUS-11] свой чат (ядро) загружен: /ooc /looc /me /it /report")

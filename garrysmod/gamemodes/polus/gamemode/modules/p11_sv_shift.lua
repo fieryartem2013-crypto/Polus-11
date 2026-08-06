@@ -57,11 +57,15 @@ concommand.Add("p11_shift", function(ply, cmd, args)
 end)
 
 -- ============ АВТО-БУРЯ ============
+-- v4.6.3: МАГНИТНАЯ БУРЯ УБРАНА по прямой заявке владельца.
+-- Вернуть можно одной строкой: AUTOSTORM = true (и ручная !буря оживёт).
+local AUTOSTORM = false
 
 local NextWarnAt  = CurTime() + math.Rand(20 * 60, 30 * 60)
 local NextStormAt = nil
 
 timer.Create("P11.AutoStorm", 30, 0, function()
+    if not AUTOSTORM then return end -- v4.6.3: бури нет
     local now = CurTime()
 
     -- метеосводка
@@ -89,6 +93,10 @@ end)
 
 -- админский ручной запуск: p11_storm / !буря
 local function AdminStormToggle(ply)
+    if not AUTOSTORM then
+        if IsValid(ply) then P11FW.Notify(ply, "Магнитная буря УБРАНА в сборке v4.6.3 (включить: AUTOSTORM=true в p11_sv_shift.lua).") end
+        return
+    end
     if not POLUS11.SetStorm then
         if IsValid(ply) then P11FW.Notify(ply, "Модуль энергии не загружен.") end
         return
