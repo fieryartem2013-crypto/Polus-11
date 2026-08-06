@@ -97,7 +97,17 @@ local function OpenIntro()
     if ok2 and cs2 then INTRO.wind2 = cs2 cs2:PlayEx(0.35, 88) end
     surface.PlaySound("ambient/wind/wind_hit1.wav")
 
-    local f = vgui.Create("DPanel")
+    local okf, f = pcall(vgui.Create, "DPanel")
+    if not okf or not IsValid(f) then
+        -- v4.2.2: если окно не родилось — НЕ застреваем в «интро-режиме»
+        -- (он глушил бы HUD и С-меню до конца сессии)
+        P11.IntroOpen = false
+        INTRO.active = false
+        print("[POLUS][ERROR] интро: " .. tostring(f))
+        if INTRO.wind then INTRO.wind:FadeOut(0.5) INTRO.wind = nil end
+        if INTRO.wind2 then INTRO.wind2:FadeOut(0.5) INTRO.wind2 = nil end
+        return
+    end
     INTRO.frame = f
     f:SetSize(ScrW(), ScrH())
     f:MakePopup()

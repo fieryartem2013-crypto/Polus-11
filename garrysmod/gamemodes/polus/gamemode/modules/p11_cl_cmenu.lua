@@ -237,8 +237,27 @@ hook.Add("Think", "P11.CMenuClose", function()
 end)
 
 -- ============================================================
---  ОТКРЫТИЕ ПО C — три независимых канала (v3.8)
+--  ОТКРЫТИЕ ПО C — ЧЕТЫРЕ независимых канала (v3.8 → v4.2.2)
+--  v4.2.2: добавлен «сторож» TIMER — чистый опрос KEY_C, он не
+--  зависит от того, доехал ли +menu_context до движка/перехвата
+--  (на части клиентов нативная цепочка рвётся — меню молчало).
+--  Плюс команда p11_cmenu и чат !меню / /меню — полный резерв.
 -- ============================================================
+
+-- безопасная обёртка: сбой сборки меню — один лог, без краша кадра
+function P11.TryOpenCMenu()
+    if P11.IntroOpen then return end
+    local me = LocalPlayer()
+    if not IsValid(me) then return end
+    if IsValid(P11.CMenu) then return end
+    -- не лезем, пока идёт набор текста (чат/поля ввода/консоль)
+    if vgui.GetKeyboardFocus() ~= nil then return end
+    if me.IsTyping and me:IsTyping() then return end
+    local ok, err = pcall(P11.OpenCMenu)
+    if not ok then
+        print("[POLUS][ERROR] С-меню: " .. tostring(err))
+    end
+end
 
 -- 1) КЛИЕНТСКИЙ ПЕРЕХВАТ ГЕЙММОДА: движок вызывает это на зажатие/отпуск
 --    +menu_context у base-производных гейммодов. Перекрытие именно ТУТ
@@ -246,7 +265,7 @@ end)
 function GAMEMODE:OnContextMenuOpen()
     if P11.IntroOpen then return end
     if not IsValid(P11.CMenu) then
-        P11.OpenCMenu()
+        P11.TryOpenCMenu()
     end
 end
 
@@ -263,8 +282,38 @@ hook.Add("PlayerBindPress", "P11.CMenuBind", function(ply, bind, pressed)
     if not pressed then return end
     if not string.find(bind, "+menu_context") then return end
     if P11.IntroOpen then return true end
-    if IsValid(P11.CMenu) then P11.CloseCMenu() else P11.OpenCMenu() end
+    if IsValid(P11.CMenu) then P11.CloseCMenu() else P11.TryOpenCMenu() end
     return true -- глушим стандартное открытие песочницы
+end)
+
+-- 3) v4.2.2 СТОРОЖ: опрос KEY_C с детектом фронта — не зависит от бинда.
+--    Если нативный путь у клиента мёртв, меню откроется и без него.
+local ckLast = false
+timer.Create("P11.CMenuWatch", 0.08, 0, function()
+    local down = input.IsKeyDown(KEY_C)
+    if down and not ckLast then
+        -- фронт нажатия. Если другой канал УЖЕ открыл меню
+        -- на этом же нажатии — не трогаем (иначе было бы open→close).
+        local justOpened = IsValid(P11.CMenu)
+            and (CurTime() - (P11.CMenu.OpenedAt or 0)) < 0.4
+        if not IsValid(P11.CMenu) and not justOpened then
+            P11.TryOpenCMenu()
+        end
+    end
+    ckLast = down
+end)
+
+-- 4) резерв: консоль и чат
+concommand.Add("p11_cmenu", function()
+    if IsValid(P11.CMenu) then P11.CloseCMenu() else P11.TryOpenCMenu() end
+end)
+hook.Add("OnPlayerChat", "P11.CMenuChat", function(ply, text)
+    if ply ~= LocalPlayer() then return end
+    local t = string.lower(string.Trim(text or ""))
+    if t == "!меню" or t == "/меню" or t == "!menu" then
+        if IsValid(P11.CMenu) then P11.CloseCMenu() else P11.TryOpenCMenu() end
+        return true
+    end
 end)
 
 -- ============================================================

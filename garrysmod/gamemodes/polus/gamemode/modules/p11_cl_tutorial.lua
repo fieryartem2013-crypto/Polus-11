@@ -123,6 +123,8 @@ concommand.Add("p11_tutorial_skip", function() if TUT.active then TutDone(false)
 -- удержание [N] 2 секунды — пропуск
 hook.Add("Think", "P11.TutorialSkip", function()
     if not TUT.active then TUT.skipHold = 0 return end
+    -- не считаем удержание, пока открыт чат/поле ввода (просто печатаем «н»)
+    if vgui.GetKeyboardFocus() ~= nil then TUT.skipHold = 0 return end
     if input.IsKeyDown(KEY_N) then
         TUT.skipHold = (TUT.skipHold or 0) + FrameTime()
         if TUT.skipHold >= 2 then TutDone(false) end
