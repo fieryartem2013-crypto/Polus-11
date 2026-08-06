@@ -132,3 +132,42 @@ concommand.Add("p11_givemoney", function(ply, cmd, args)
     end
     if IsValid(ply) then POLUS11.Notify(ply, "Игрок не найден: " .. args[1]) end
 end)
+
+
+-- v4.3.0: выдача денег ИЗ ЧАТА — !дать <ник> <сумма>
+-- Гейт: ранг 5+ (Head Admin), «Глава Полюса-11» (16) входит сверху.
+hook.Add("PlayerSay", "P11.MoneyGive", function(ply, text)
+    local t = string.Trim(text or "")
+    local low = string.lower(t)
+    local pre = nil
+    for _, k in ipairs({ "!дать", "/дать", "!give" }) do
+        if string.sub(low, 1, #k) == k then pre = k break end
+    end
+    if not pre then return end
+    if P11FW.GetRankLevel(ply) < 5 then
+        POLUS11.Notify(ply, "Выдача денег — ранг «Глава Полюса-11» / Head Admin+ (5+).")
+        return ""
+    end
+    local rest = string.Trim(string.sub(t, #pre + 1))
+    local who, amt = string.match(rest, "^(%S+)%s+(%-?%d+)$")
+    if not who or not amt then
+        POLUS11.Notify(ply, "Формат: !дать <ник> <сумма>  — напр.: !дать Краснов 300 (минус — забрать)")
+        return ""
+    end
+    amt = math.floor(tonumber(amt) or 0)
+    if amt == 0 or math.abs(amt) > 100000 then
+        POLUS11.Notify(ply, "Сумма должна быть от 1 до 100000 по модулю.")
+        return ""
+    end
+    local lowWho = string.lower(who)
+    for _, p in ipairs(player.GetAll()) do
+        if string.find(string.lower(p:Nick()), lowWho, 1, true) then
+            local v = POLUS11.AddMoney(p, amt, "выдал «Глава» " .. ply:Nick())
+            POLUS11.Notify(ply, "Кошелёк " .. p:Nick() .. ": " .. v .. "₽ (" .. (amt >= 0 and "+" or "") .. amt .. "₽)")
+            POLUS11.Log(ply:Nick() .. " чатом выдал " .. amt .. "₽ игроку " .. p:Nick())
+            return ""
+        end
+    end
+    POLUS11.Notify(ply, "Игрок не найден: " .. who)
+    return ""
+end)

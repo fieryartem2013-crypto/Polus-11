@@ -184,6 +184,7 @@ hook.Add("PlayerSpawn", "P11_AfterSpawn", function(ply)
     ply:SetNWString("P11_FakeNick", "")
     -- v4.2.1: возвращаем и свою должность отображения + СВОЙ код документа
     ply:SetNWInt("P11_FakeJob", 0)
+    ply:SetNWString("P11_FakeDesc", "")
     if ply.P11_DocCode then ply:SetNWString("P11_DocCode", ply.P11_DocCode) end
 
     -- сброс тела Поглотителя (умер с классом «brute»)
@@ -245,6 +246,10 @@ hook.Add("PlayerDeath", "P11_CorpseTrack", function(victim, inf, att)
     -- v4.2.1: документ и должность — тоже часть личности
     identity.doc = victim:GetNWString("P11_DocCode", "")
     identity.job = victim:Team()
+    -- v4.3.0: позывной и описание бойца — тоже часть личности
+    identity.desc = victim:GetNWString("P11_CharDesc", "")
+    local cn = victim:GetNWString("P11_CharName", "")
+    if cn ~= "" then identity.nick = cn end
     -- жертва сама была тварью в чужой личине? передаём личину дальше по цепочке
     local worn = victim:GetNWString("P11_FakeNick", "")
     if worn ~= "" then identity.nick = worn end

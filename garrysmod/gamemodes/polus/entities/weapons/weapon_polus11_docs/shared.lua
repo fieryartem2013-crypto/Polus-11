@@ -48,6 +48,7 @@ end
 if SERVER then
     function SWEP:SendDoc(ply, target)
         local name = ply:GetNWString("P11_FakeNick", "")
+        if name == "" then name = ply:GetNWString("P11_CharName", "") end -- v4.3.0: позывной
         if name == "" then name = ply:Nick() end
 
         -- v4.2.1: нечто предъявляет КАРТОЧКУ ЖЕРТВЫ целиком —

@@ -37,6 +37,7 @@ local send = {
     "modules/p11_cl_duties2.lua",   -- v4.2
     "modules/p11_cl_mutations.lua", -- v4.2
     "modules/p11_cl_tutorial.lua",  -- v4.2
+    "modules/p11_cl_chars.lua",     -- v4.3.0: анкета бойца (позывной+описание)
 }
 for _, f in ipairs(send) do
     AddCSLuaFile(f)
@@ -95,6 +96,7 @@ local sv = {
     "modules/p11_sv_activities.lua", -- сменные дела: миниигры/наука/ТО/грязь/патруль (v4.1)
     "modules/p11_sv_duties2.lua",    -- повар/грузчик/снабжение/досье/скидка/итоги (v4.2)
     "modules/p11_sv_mutations.lua",  -- мутации Нечто за жертв (v4.2)
+    "modules/p11_sv_chars.lua",      -- дело бойца: персонажи + сохранение (v4.3.0)
 }
 
 local function Safe(f)

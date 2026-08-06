@@ -273,6 +273,7 @@ local function RestoreTrueIdentity(ply)
     ply:SetNWString("P11_FakeNick", "")
     -- v4.2.1: отдаём чужую карточку — возвращаем СВОЮ должность и СВОЙ код
     ply:SetNWInt("P11_FakeJob", 0)
+    ply:SetNWString("P11_FakeDesc", "")
     if ply.P11_DocCode then ply:SetNWString("P11_DocCode", ply.P11_DocCode) end
 end
 POLUS11_RestoreTrueIdentity = RestoreTrueIdentity
@@ -308,6 +309,7 @@ function SWEP:EatCorpse(ply, corpse)
     -- документ) и КОД УДОСТОВЕРЕНИЯ. Свой код лежит в ply.P11_DocCode и
     -- вернётся при сбросе личины; в NW пишем украденный.
     ply:SetNWInt("P11_FakeJob", tonumber(id.job) or 0)
+    ply:SetNWString("P11_FakeDesc", isstring(id.desc) and id.desc or "") -- v4.3.0: и описание жертвы
     if isstring(id.doc) and id.doc ~= "" then
         ply:SetNWString("P11_DocCode", id.doc)
     end

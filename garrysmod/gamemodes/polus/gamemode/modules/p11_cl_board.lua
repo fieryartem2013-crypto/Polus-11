@@ -62,6 +62,7 @@ local function RowOf(ply) -- вызывается под pcall: сбой = иг�
 
     local real = tostring(ply:Nick() or "?")
     local name = ply:GetNWString("P11_FakeNick", "")
+    if name == "" then name = ply:GetNWString("P11_CharName", "") end -- v4.3.0: позывной
     if name == "" then name = real end
     d.name      = tostring(name)
     d.lname     = string.lower(d.name)

@@ -149,6 +149,12 @@ function P11.OpenCMenu()
             end)
     end
 
+    -- v4.3.0: анкета бойца (позывной + описание)
+    CButton(f, 14, 286, 338, 42, "🪪 Мой персонаж", "позывной и описание внешности", CC.cyan, function()
+        P11.CloseCMenu()
+        if P11.OpenCharUI then P11.OpenCharUI() end
+    end)
+
     -- ---- правая колонка: БЫСТРОЕ ----
     local rl = vgui.Create("DLabel", f)
     rl:SetPos(370, 62) rl:SetSize(176, 16)

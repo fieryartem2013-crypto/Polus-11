@@ -29,6 +29,7 @@ local cl = {
     "modules/p11_cl_duties2.lua",   -- заявки грузчика / досье НКВД (v4.2)
     "modules/p11_cl_mutations.lua", -- HUD мутаций Нечто (v4.2)
     "modules/p11_cl_tutorial.lua",  -- туториал новичка: маяки и подсказки (v4.2)
+    "modules/p11_cl_chars.lua",     -- анкета бойца (v4.3.0)
 }
 
 local loaded = 0
