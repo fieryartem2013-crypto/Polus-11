@@ -8,8 +8,15 @@ function ENT:Initialize()
         "models/player/barney.mdl",
         "models/player/kleiner.mdl",
     }
+    local found = false
     for _, m in ipairs(models) do
-        if file.Exists(m, "GAME") then self:SetModel(m) break end
+        if file.Exists(m, "GAME") then self:SetModel(m) found = true break end
+    end
+    if not found then
+        -- v4.6.9: без HL2-персонажей в контенте торговец раньше
+        -- оставался БЕЗ модели: невидим, без физики, E не работал.
+        -- Ставим хотя бы ящик (есть у всех) — Use и физика живут.
+        self:SetModel("models/props_junk/wood_crate002a.mdl")
     end
 
     self:SetHullType(HULL_HUMAN)
@@ -36,5 +43,8 @@ function ENT:Use(activator)
     self.NextUseT = CurTime() + 0.6
     if POLUS11.OpenShopUI then
         POLUS11.OpenShopUI(activator, self)
+    else
+        -- v4.6.9: складской модуль не загрузился — сказать, а не молчать
+        activator:ChatPrint("[ПОЛЮС-11] Складской модуль не проснулся — смотри [POLUS][ERROR] в консоли сервера.")
     end
 end

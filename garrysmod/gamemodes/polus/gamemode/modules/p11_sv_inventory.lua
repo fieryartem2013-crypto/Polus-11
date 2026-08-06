@@ -1,5 +1,8 @@
 -- ============================================================
---  ПОЛЮС-11 — ИНВЕНТАРЬ + МАГАЗИН + ЛИЧНЫЙ СЕЙФ (server) v4.0
+--  ПОЛЮС-11 — ИНВЕНТАРЬ + МАГАЗИН + ЛИЧНЫЙ СЕЙФ (server) v4.0 → v4.6.9
+--  v4.6.9 «ларёк не работает»: у части клиентов движковый Use по
+--  anim-торговцу глохнет. Теперь ТРИ пути в ларёк (E / кнопка C-меню /
+--  чат /ларёк) + самодиагностика p11_shopdiag + экспорт InvSaveNow.
 --  • Каталог товаров (оружие EFT/DOI + станционный скарб);
 --  • покупка у НПС-ларька → в ИНВЕНТАРЬ (копия переживает смерть/
 --    рестарт), «Использовать» → оружие в руки, копия тратится;
@@ -14,6 +17,7 @@ util.AddNetworkString("P11_InvAct")
 util.AddNetworkString("P11_ShopOpen")
 util.AddNetworkString("P11_StorageOpen")
 util.AddNetworkString("P11_PlaceEnt")
+util.AddNetworkString("P11_ShopTry") -- v4.6.9: запасной путь к ларьку
 
 local FILE = "polus11/inventory.json"
 
@@ -109,6 +113,7 @@ end)
 -- ============ ГРУДНЫЕ ДЕЙСТВИЯ ============
 
 POLUS11.InvOf = InvOf -- v4.2: экспорт для добычи/ампул/проверок
+POLUS11.InvSaveNow = SaveInv -- v4.6.9: обменник жмёт сейв сразу после сделки
 
 function POLUS11.InvCanUse(class)
     return isstring(class) and weapons.Get(class) ~= nil
@@ -246,6 +251,84 @@ function POLUS11.OpenStorageUI(ply, ent)
     net.Send(ply)
     ply:EmitSound("buttons/button9.wav", 50, 110)
 end
+
+-- ============ v4.6.9: ЗАПАСНЫЕ ПУТИ К ЛАРЬКУ ============
+-- E по торговцу — движковый Use по anim-энтити, на части машин
+-- он не доезжает (модель, контент, поворот). Поэтому ларёк
+-- открывается ТРЕМЯ равноправными путями:
+--   1) E по торговцу (как было);
+--   2) кнопка «🏪 Ларёк рядом» в C-меню (net P11_ShopTry);
+--   3) чат: /ларёк, /ларек, !shop, /shop, /магазин.
+-- Пути 2-3: сервер сам ищет ближайшего торговца в радиусе.
+
+local SHOP_REACH = 550 -- юн до ближайшего ларька
+
+function POLUS11.ShopFor(ply, quiet)
+    if not IsValid(ply) or not ply:Alive() then return false end
+    local best, bestD = nil, SHOP_REACH * SHOP_REACH
+    for _, e in ipairs(ents.FindByClass("polus_p11_shopnpc")) do
+        if IsValid(e) then
+            local d = ply:GetPos():DistToSqr(e:GetPos())
+            if d < bestD then best, bestD = e, d end
+        end
+    end
+    if best then
+        POLUS11.OpenShopUI(ply, best)
+        return true
+    end
+    if not quiet then
+        POLUS11.Notify(ply, "🏪 Ларёк не в зоне досягаемости (подойди ближе " ..
+            SHOP_REACH .. " юн) — торговец снабжения стоит поющим «ЛАРЁК» над головой.")
+        ply:EmitSound("buttons/button10.wav", 60, 95)
+    end
+    return false
+end
+
+-- кнопка C-меню / клиентская команда p11_shop
+net.Receive("P11_ShopTry", function(len, ply)
+    if not IsValid(ply) then return end
+    ply.P11_ShopTryNext = ply.P11_ShopTryNext or 0
+    if CurTime() < ply.P11_ShopTryNext then return end
+    ply.P11_ShopTryNext = CurTime() + 0.8
+    POLUS11.ShopFor(ply)
+end)
+
+-- чат-путь к ларьку
+hook.Add("PlayerSay", "P11.ShopChat", function(ply, text)
+    local t = string.lower(string.Trim(tostring(text or "")))
+    if t == "/ларёк" or t == "/ларек" or t == "!ларёк" or t == "!ларек"
+        or t == "/shop" or t == "!shop" or t == "/магазин" or t == "!магазин" then
+        POLUS11.ShopFor(ply)
+        return ""
+    end
+end)
+
+-- диагностика владельца: p11_shopdiag (консоль сервера / админ)
+concommand.Add("p11_shopdiag", function(ply)
+    if IsValid(ply) and not ply:IsAdmin() then return end
+    local out = { "== ЛАРЁК: ДИАГНОСТИКА v4.6.9 ==" }
+    local n = 0
+    for _, e in ipairs(ents.FindByClass("polus_p11_shopnpc")) do
+        if IsValid(e) then
+            n = n + 1
+            out[#out + 1] = "  shopnpc #" .. n .. " @ " .. tostring(e:GetPos())
+                .. " | модель: " .. tostring(e:GetModel())
+        end
+    end
+    if n == 0 then
+        out[#out + 1] = "  ⚠ ТОРГОВЦЕВ НЕТ НА КАРТЕ — поставь: C-меню → 📍 Поставить → 🏪 Ларёк снабжения."
+    end
+    out[#out + 1] = "  OpenShopUI: " .. tostring(POLUS11.OpenShopUI ~= nil)
+        .. " | ShopFor: " .. tostring(POLUS11.ShopFor ~= nil)
+    out[#out + 1] = "  товаров в каталоге: " .. table.Count(POLUS11.Items or {})
+        .. " | инвентарей в памяти: " .. table.Count(POLUS11.Inv or {})
+    out[#out + 1] = "  если торговец стоит, а E молчит у игрока — это движок;"
+    out[#out + 1] = "  скажи ему /ларёк в чат или кнопку «🏪 Ларёк рядом» в C-меню."
+    local txt = table.concat(out, "\n")
+    if IsValid(ply) then ply:PrintMessage(HUD_PRINTCONSOLE, txt) else print(txt) end
+end)
+
+print("[POLUS-11] ларёк v4.6.9: три пути (E / C-меню / /ларёк) + диагностика p11_shopdiag")
 
 -- ============ РАССТАНОВКА ОБЪЕКТОВ (админ 📍) ============
 

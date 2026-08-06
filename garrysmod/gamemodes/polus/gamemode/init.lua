@@ -37,6 +37,7 @@ local send = {
     "modules/p11_cl_cmenu.lua",
     "modules/p11_cl_models.lua",    -- v4.4.0: браузер внешности (с нуля)
     "modules/p11_cl_economy.lua",
+    "modules/p11_cl_trade.lua",    -- окно обмена/запросов/выбора партнёра (v4.6.9)
     "modules/p11_cl_minigame.lua", -- v4.1
     "modules/p11_cl_duties2.lua",   -- v4.2
     "modules/p11_cl_mutations.lua", -- v4.2
@@ -96,7 +97,9 @@ local sv = {
     "modules/p11_sv_cold.lua",       -- переохлаждение: тепло как ресурс (v3.7)
     "modules/p11_sv_thingoffer.lua", -- вакансия Нечто у кадровика, появляется/исчезает (v3.9)
     "modules/p11_sv_economy.lua",    -- рубли: кошелёк, награды, выдача (v4.0)
-    "modules/p11_sv_inventory.lua",  -- инвентарь/ларёк/сейф/расстановка (v4.0)
+    "modules/p11_sv_inventory.lua",  -- инвентарь/ларёк/сейф/расстановка (v4.0; v4.6.9 — три пути к ларьку)
+    "modules/p11_sv_trade.lua",      -- обмен игрок↔игрок: предметы и рубли лицом к лицу (v4.6.9)
+    "modules/p11_sv_wage.lua",       -- оклад службы: казначейство платит по таймеру (v4.6.9)
     "modules/p11_sv_admincmds.lua",  -- /tp /goto /bring /return /cloak /heal /god /ранги (v4.0)
     "modules/p11_sv_activities.lua", -- сменные дела: миниигры/наука/ТО/грязь/патруль (v4.1)
     "modules/p11_sv_duties2.lua",    -- повар/грузчик/снабжение/досье/скидка/итоги (v4.2)

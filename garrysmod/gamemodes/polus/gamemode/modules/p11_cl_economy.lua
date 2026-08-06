@@ -1,5 +1,8 @@
 -- ============================================================
---  ПОЛЮС-11 — ЭКОНОМИКА/ИНВЕНТАРЬ (client) v4.0
+--  ПОЛЮС-11 — ЭКОНОМИКА/ИНВЕНТАРЬ (client) v4.0 → v4.6.9
+--  v4.6.9: окно ларька под pcall-бронёй (ошибка пишется в консоль,
+--  ларёк не «умирает молча»), телеметрия + p11_ecodiag, клиентская
+--  команда p11_shop, кнопка КУПИТЬ больше не обрезана.
 --  • счётчик рублей на HUD (над панелью жизни);
 --  • 🎒 ИНВЕНТАРЬ (C-меню): использовать предмет → оружие в руки;
 --  • 🏪 ЛАРЁК (E по НПС): каталог-витрина с ценами, покупка;
@@ -22,6 +25,9 @@ net.Receive("P11_InvSync", function()
     P11.Eco.storage = istable(data.storage) and data.storage or {}
     P11.Eco.money   = tonumber(data.money) or LocalPlayer():GetNWInt("P11_Money", 0)
     if istable(data.catalog) then P11.Eco.catalog = data.catalog end
+    -- v4.6.9: телеметрия для p11_ecodiag
+    P11.Eco.lastSync = CurTime()
+    P11.Eco.syncs = (P11.Eco.syncs or 0) + 1
     -- живые окна: перерисовать
     if IsValid(P11.EcoFrame) and P11.EcoFrame.Refill then P11.EcoFrame:Refill() end
 end)
@@ -206,7 +212,7 @@ end
 
 -- ============ 🏪 ЛАРЁК ============
 
-net.Receive("P11_ShopOpen", function()
+local function OpenShopWindow()
     local f = EcoFrame("🏪 ЛАРЁК СНАБЖЕНИЯ — армейская витрина", 660, 520)
     local sc = vgui.Create("DScrollPanel", f)
     sc:SetPos(12, 62) sc:SetSize(636, 446)
@@ -240,7 +246,7 @@ net.Receive("P11_ShopOpen", function()
                     it.sale and Color(255, 170, 70) or (can and Color(255, 210, 110) or BAD),
                     TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
             end
-            RowButton(pnl, 584, 14, 50, 28, "КУПИТЬ", can and OK or DIM, function()
+            RowButton(pnl, 572, 14, 60, 28, "КУПИТЬ", can and OK or DIM, function()
                 EcoAct(2, id)
             end)
         end
@@ -250,6 +256,13 @@ net.Receive("P11_ShopOpen", function()
         l:SizeToContents()
     end
     f:Refill()
+end
+
+net.Receive("P11_ShopOpen", function()
+    -- v4.6.9: броня — сбой отрисовки пишется в консоль, ларёк не «умирает» молча
+    P11.Eco.shopOpens = (P11.Eco.shopOpens or 0) + 1
+    local ok, err = pcall(OpenShopWindow)
+    if not ok then print("[POLUS][ERROR] окно ларька: " .. tostring(err)) end
 end)
 
 -- ============ 🗄 СЕЙФ ============
@@ -340,3 +353,29 @@ function P11.OpenPlaceMenu()
         d:SetWrap(true) d:SetAutoStretchVertical(true)
     end
 end
+
+-- ============ v4.6.9: ДИАГНОСТИКА + ЗАПАСНОЙ ПУТЬ ============
+
+concommand.Add("p11_ecodiag", function()
+    local lp = LocalPlayer()
+    print("== ЭКОНОМИКА: ДИАГНОСТИКА v4.6.9 (клиент) ==")
+    print("  [P11ECO] модуль жив, время сессии: " .. math.floor(CurTime()) .. "с")
+    print("  кошелёк (синк): " .. tostring(P11.Eco.money)
+        .. " | NWInt: " .. (IsValid(lp) and lp:GetNWInt("P11_Money", -1) or "?"))
+    print("  в инвентаре позиций: " .. table.Count(P11.Eco.items or {})
+        .. " | в сейфе: " .. table.Count(P11.Eco.storage or {}))
+    print("  товаров в каталоге: " .. table.Count(P11.Eco.catalog or {}))
+    print("  синков инвентаря за сессию: " .. tostring(P11.Eco.syncs or 0)
+        .. " | открытий ларька: " .. tostring(P11.Eco.shopOpens or 0))
+    print("  последний синк: "
+        .. (P11.Eco.lastSync and (math.floor(CurTime() - P11.Eco.lastSync) .. "с назад") or "НЕ БЫЛО"))
+    print("  если «синков 0» — сервер не шлёт InvSync: смотри его консоль ([POLUS][ERROR]).")
+end)
+
+-- запасная клиентская команда: открыть ларёк у ближайшего торговца
+concommand.Add("p11_shop", function()
+    net.Start("P11_ShopTry")
+    net.SendToServer()
+end)
+
+print("[P11ECO] v4.6.9 OK — инвентарь/ларёк/сейф (диагностика: p11_ecodiag, ларёк издалека: p11_shop)")

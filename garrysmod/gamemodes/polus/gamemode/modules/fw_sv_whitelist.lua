@@ -1,5 +1,5 @@
 -- ============================================================
---  ПОЛЮС FRAMEWORK — ВАЙТЛИСТ ДОЛЖНОСТЕЙ (server) v4.4.0
+--  ПОЛЮС FRAMEWORK — ВАЙТЛИСТ ДОЛЖНОСТЕЙ (server) v4.4.0 → v4.6.9
 --  Файл: data/polus_framework/whitelist.json (переживает рестарт).
 --  Выдача/снятие: вкладка ВАЙТЛИСТ в /menu (администрация и
 --  ранги Faction Officer / Faction Leader) или консоль:
@@ -36,15 +36,30 @@ local function LoadWhitelist()
     local raw = file.Read(FILE, "DATA")
     if not raw then return end
     local ok, tbl = pcall(util.JSONToTable, raw)
-    if ok and istable(tbl) then
-        for jobId, t in pairs(tbl) do
-            if istable(t) then
-                P11FW.Whitelist[jobId] = P11FW.Whitelist[jobId] or {}
-                for sid in pairs(t) do
+    if not (ok and istable(tbl)) then return end
+    local migrated = 0
+    for jobId, t in pairs(tbl) do
+        if istable(t) then
+            P11FW.Whitelist[jobId] = P11FW.Whitelist[jobId] or {}
+            for sid in pairs(t) do
+                -- v4.6.9: старые записи-ключи SteamID64 (17 цифр) движок
+                -- при чтении JSON коверкает в big-number → допуск ТЕРЯЛСЯ
+                -- после рестарта. Переводим всё в строковый STEAM-формат.
+                if string.match(sid, "^%d+$") and #sid >= 15 and util.SteamIDFrom64 then
+                    local conv = util.SteamIDFrom64(sid)
+                    if conv then
+                        P11FW.Whitelist[jobId][conv] = true
+                        migrated = migrated + 1
+                    end
+                else
                     P11FW.Whitelist[jobId][sid] = true
                 end
             end
         end
+    end
+    if migrated > 0 then
+        SaveWhitelist() -- переписываем файл уже в безопасном виде
+        print("[P11FW] вайтлист v4.6.9: сконвертировано ключей SteamID64 → STEAM: " .. migrated)
     end
 end
 
@@ -82,6 +97,12 @@ function P11FW.SetWhitelist(jobId, sid, allow, by)
     if not job then return false, "нет такой должности: " .. tostring(jobId) end
     sid = P11FW.NormalizeSteamID(sid)
     if not sid then return false, "некорректный SteamID (нужен STEAM_0:x:y или SteamID64)" end
+    -- v4.6.9: принятый SteamID64 храним ТОЛЬКО в STEAM-форме — иначе
+    -- длинный числовой ключ в JSON после рестарта превращался в тыкву
+    -- (та же болезнь, что у ников/времени службы в v4.6.5).
+    if string.match(sid, "^%d+$") and util.SteamIDFrom64 then
+        sid = util.SteamIDFrom64(sid) or sid
+    end
 
     P11FW.Whitelist[jobId] = P11FW.Whitelist[jobId] or {}
     if allow then

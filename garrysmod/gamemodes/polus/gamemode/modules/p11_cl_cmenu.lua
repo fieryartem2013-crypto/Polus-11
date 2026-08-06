@@ -130,7 +130,7 @@ function P11.OpenCMenu()
         surface.SetDrawColor(CC.cyan)
         surface.DrawRect(0, 52, w, 2)
         draw.SimpleText("ДЕЙСТВИЯ НА СТАНЦИИ", "P11.CM.Title", 16, 26, CC.text, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-        draw.SimpleText("удерживай C • ESC — закрыть • v4.6.2", "P11.CM.Small", w - 14, 26, CC.dim, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
+        draw.SimpleText("удерживай C • ESC — закрыть • v4.6.9", "P11.CM.Small", w - 14, 26, CC.dim, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
         surface.SetAlphaMultiplier(1)
     end
 
@@ -155,6 +155,18 @@ function P11.OpenCMenu()
     CButton(f, 14, 312, 498, 48, "🪪 Мой персонаж", "позывной и описание внешности", CC.cyan, function()
         P11.CloseCMenu()
         if P11.OpenCharUI then P11.OpenCharUI() end
+    end)
+
+    -- v4.6.9: экономика станции — ларёк (запасной путь, E не нужен)
+    CButton(f, 14, 368, 246, 48, "🏪 Ларёк рядом", "витрина снабжения у торговца", CC.gold, function()
+        P11.CloseCMenu()
+        net.Start("P11_ShopTry")
+        net.SendToServer()
+    end)
+    -- v4.6.9: торговля лицом к лицу
+    CButton(f, 266, 368, 246, 48, "🤝 Обмен", "торговля с тем, кто рядом", CC.ok, function()
+        P11.CloseCMenu()
+        if P11.OpenTradePicker then P11.OpenTradePicker() end
     end)
 
     -- ---- правая колонка: БЫСТРОЕ ----
@@ -350,4 +362,4 @@ hook.Add("OnPlayerChat", "P11.CMenuChat", function(ply, text)
     end
 end)
 
-print("[POLUS-11] С-меню v4.4.0 загружено (клавиша C • p11_cmenu • !меню)")
+print("[POLUS-11] С-меню v4.6.9 загружено (клавиша C • p11_cmenu • !меню • кнопки 🏪/🤝)")

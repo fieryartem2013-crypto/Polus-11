@@ -1589,8 +1589,12 @@ function P11FW.OpenAdminMenu(forceTab)
     end
 
     -- ==================================================
-    --  ВКЛАДКА: ВАЙТЛИСТ (v4.4.0) — допуски на whitelist-
-    --  должности. Доступ: администрация ИЛИ Faction Officer/Leader.
+    --  ВКЛАДКА: ВАЙТЛИСТ — допуски на whitelist-должности.
+    --  v4.6.9 ПОЧИНЕН ВЫБОР ДОЛЖНОСТИ: раньше клик по строке
+    --  дёргал ПОЛНЫЙ рефреш (Clear() списка) и выделение
+    --  стиралось в тот же кадр → вечное «Сначала выбери
+    --  ДОЛЖНОСТЬ слева!». Теперь выбор — «липкий»: живёт в
+    --  selJobId и восстанавливается после любого рефреша.
     -- ==================================================
     do
         local p = NewTab("whitelist")
@@ -1601,10 +1605,15 @@ function P11FW.OpenAdminMenu(forceTab)
         h1:SetText("🔒 ДОЛЖНОСТИ С ВАЙТЛИСТОМ")
 
         local jobLv = vgui.Create("DListView", p)
-        jobLv:SetPos(10, 34) jobLv:SetSize(264, 398)
+        jobLv:SetPos(10, 34) jobLv:SetSize(264, 364)
         jobLv:SetMultiSelect(false)
         jobLv:AddColumn("Должность"):SetFixedWidth(185)
         jobLv:AddColumn("Допусков")
+
+        -- «липкая» подсказка выбранной должности
+        local selLab = vgui.Create("DLabel", p)
+        selLab:SetPos(10, 404) selLab:SetSize(264, 26)
+        selLab:SetFont("P11FW.Small") selLab:SetTextColor(AC.dim)
 
         local h2 = vgui.Create("DLabel", p)
         h2:SetPos(286, 8) h2:SetSize(280, 18)
@@ -1631,11 +1640,65 @@ function P11FW.OpenAdminMenu(forceTab)
         sidE:SetPos(578, 282) sidE:SetSize(268, 26)
         sidE:SetPlaceholderText("или SteamID вручную: STEAM_0:1:... / 7656...")
 
-        local function SelectedJobId()
-            local id = jobLv:GetSelectedLine()
-            if not id then return nil end
-            local line = jobLv:GetLine(id)
-            return line and line.JobId or nil
+        -- ВЫБРАННАЯ должность переживает любые рефреши (v4.6.9)
+        local selJobId = nil
+
+        local function PaintSel()
+            if selJobId and P11FW.Jobs[selJobId] then
+                selLab:SetText("✔ Выбрано: " .. P11FW.Jobs[selJobId].name)
+                selLab:SetTextColor(AC.gold)
+            else
+                selLab:SetText("← кликни должность из списка выше")
+                selLab:SetTextColor(AC.dim)
+            end
+        end
+
+        -- ПРАВЫЕ списки: игроки онлайн + обладатели допуска
+        local function FillSides()
+            local me = LocalPlayer()
+            plLv:Clear()
+            for _, pl in ipairs(player.GetAll()) do
+                local has = selJobId and P11FW.HasWhitelist and P11FW.HasWhitelist(pl, selJobId)
+                local line = plLv:AddLine(pl:Nick() .. (pl == me and " (ты)" or ""), has and "есть ✔" or "—")
+                line.PSid = pl:SteamID()
+                if has then line.Columns[2]:SetTextColor(AC.ok) end
+            end
+
+            memLv:Clear()
+            if selJobId and P11FW.Whitelist then
+                local t = P11FW.Whitelist[selJobId]
+                if t then
+                    for sid in pairs(t) do
+                        local nick = nil
+                        for _, pl in ipairs(player.GetAll()) do
+                            if pl:SteamID() == sid or pl:SteamID64() == sid then nick = pl:Nick() break end
+                        end
+                        local line = memLv:AddLine((nick and (nick .. " • ") or "") .. sid)
+                        line.PSid = sid
+                    end
+                end
+            end
+            PaintSel()
+        end
+
+        -- ЛЕВЫЙ список: перестраивается БЕРЕЖНО — после Clear()
+        -- возвращаем выделение на ту же должность
+        local function FillJobs()
+            jobLv:Clear()
+            local reselectLine = nil
+            for _, jobId in ipairs(P11FW.JobIds or {}) do
+                local job = P11FW.Jobs[jobId]
+                if job and job.whitelist then
+                    local line = jobLv:AddLine(job.name,
+                        P11FW.WhitelistCount and P11FW.WhitelistCount(jobId) or 0)
+                    line.JobId = jobId
+                    if jobId == selJobId then reselectLine = line end
+                end
+            end
+            if reselectLine then
+                jobLv:SelectItem(reselectLine)
+            end
+            PaintSel()
         end
 
         -- цель: выбранный игрок → выбранный член допуска → поле ввода
@@ -1654,8 +1717,7 @@ function P11FW.OpenAdminMenu(forceTab)
         end
 
         local function SendWlSet(allow)
-            local jobId = SelectedJobId()
-            if not jobId then
+            if not selJobId then
                 surface.PlaySound("buttons/button10.wav")
                 chat.AddText(AC.bad, "[P11FW] Сначала выбери ДОЛЖНОСТЬ слева!")
                 return
@@ -1667,7 +1729,7 @@ function P11FW.OpenAdminMenu(forceTab)
                 return
             end
             net.Start("P11FW_WL_SET")
-                net.WriteString(jobId)
+                net.WriteString(selJobId)
                 net.WriteString(sid)
                 net.WriteBool(allow)
             net.SendToServer()
@@ -1692,45 +1754,17 @@ function P11FW.OpenAdminMenu(forceTab)
         note:SetWrap(true) note:SetAutoStretchVertical(true)
         note:SetText("Снятие допуска у игрока НА этой должности увольняет его в новобранцы.\nГалочка «🔒 ВАЙТЛИСТ» ставится у профы во вкладке ДОЛЖНОСТИ.")
 
-        function f:RefreshWhitelistTab()
-            local me = LocalPlayer()
-            jobLv:Clear()
-            for _, jobId in ipairs(P11FW.JobIds or {}) do
-                local job = P11FW.Jobs[jobId]
-                if job and job.whitelist then
-                    local line = jobLv:AddLine(job.name,
-                        P11FW.WhitelistCount and P11FW.WhitelistCount(jobId) or 0)
-                    line.JobId = jobId
-                end
-            end
-
-            local selJob = SelectedJobId()
-
-            plLv:Clear()
-            for _, pl in ipairs(player.GetAll()) do
-                local has = selJob and P11FW.HasWhitelist and P11FW.HasWhitelist(pl, selJob)
-                local line = plLv:AddLine(pl:Nick() .. (pl == me and " (ты)" or ""), has and "есть ✔" or "—")
-                line.PSid = pl:SteamID()
-                if has then line.Columns[2]:SetTextColor(AC.ok) end
-            end
-
-            memLv:Clear()
-            if selJob and P11FW.Whitelist then
-                local t = P11FW.Whitelist[selJob]
-                if t then
-                    for sid in pairs(t) do
-                        local nick = nil
-                        for _, pl in ipairs(player.GetAll()) do
-                            if pl:SteamID() == sid or pl:SteamID64() == sid then nick = pl:Nick() break end
-                        end
-                        local line = memLv:AddLine((nick and (nick .. " • ") or "") .. sid)
-                        line.PSid = sid
-                    end
-                end
-            end
+        -- клик по должности: ТОЛЬКО запомнить выбор и перерисовать
+        -- правые колонки. Левый список НЕ трогаем — в этом был баг.
+        jobLv.OnRowSelected = function(_, lineId, line)
+            selJobId = (line and line.JobId) or selJobId
+            FillSides()
         end
 
-        jobLv.OnRowSelected = function() f:RefreshWhitelistTab() end
+        function f:RefreshWhitelistTab()
+            FillJobs()
+            FillSides()
+        end
 
         -- на входе данных могло не быть — запросим свежий синк
         net.Start("P11FW_WL_REQ") net.SendToServer()
