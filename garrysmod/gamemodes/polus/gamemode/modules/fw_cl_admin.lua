@@ -202,6 +202,7 @@ function P11FW.OpenAdminMenu(forceTab)
         { id = "jobs",      name = "ДОЛЖНОСТИ", minLevel = 14 },
         { id = "factions",  name = "ФРАКЦИИ",   minLevel = 14 },
         { id = "utils",     name = "УТИЛИТЫ",   minLevel = 14 },
+        { id = "spawns",    name = "СПАВНЫ",    minLevel = 14 }, -- v4.6.1
         { id = "admranks",  name = "АДМИНКИ",   minLevel = (P11FW.Config and P11FW.Config.RankManageLevel) or 10 },
         { id = "whitelist", name = "ВАЙТЛИСТ",  wl = true },
     }
@@ -219,8 +220,8 @@ function P11FW.OpenAdminMenu(forceTab)
     surface.SetFont("P11FW.Adm.Tab")
     for i, t in ipairs(tabs) do
         local tb = vgui.Create("DButton", f)
-        tb:SetPos(12 + (i - 1) * 107, 58) -- v4.4.0: 8 вкладок — короче
-        tb:SetSize(102, 32)
+        tb:SetPos(12 + (i - 1) * 96, 58) -- v4.6.1: 9 вкладок
+        tb:SetSize(92, 32)
         tb:SetText("")
         tb.TabId = t.id
         tb.Paint = function(s, w, h)
@@ -1255,6 +1256,103 @@ function P11FW.OpenAdminMenu(forceTab)
     --  ВКЛАДКА 3: УТИЛИТЫ СТАНЦИИ
     -- ==================================================
     do
+        -- ============ v4.6.1: «СПАВНЫ» — разные точки для фракций и проф ============
+        do
+            local p = NewTab("spawns")
+
+            local ttl = vgui.Create("DLabel", p)
+            ttl:SetPos(10, 6) ttl:SetSize(830, 24)
+            ttl:SetFont("P11FW.Big") ttl:SetTextColor(AC.gold)
+            ttl:SetText("СПАВНЫ СТАНЦИИ — где кто появляется")
+
+            local hint = vgui.Create("DLabel", p)
+            hint:SetPos(10, 32) hint:SetSize(830, 32)
+            hint:SetFont("P11FW.Small") hint:SetTextColor(AC.dim)
+            hint:SetText("Встань на нужное место и жми «ПОСТАВИТЬ». Приоритет: ПРОФА > ФРАКЦИЯ > общая точка > карта. Переживает рестарт.")
+
+            local function SRow(y, name, desc, b1, cb1, b2, cb2)
+                local l = vgui.Create("DLabel", p)
+                l:SetPos(10, y) l:SetSize(320, 24)
+                l:SetFont("P11FW.Big") l:SetTextColor(AC.text) l:SetText(name)
+                local d = vgui.Create("DLabel", p)
+                d:SetPos(10, y + 24) d:SetSize(420, 16)
+                d:SetFont("P11FW.Small") d:SetTextColor(AC.dim) d:SetText(desc)
+                local bb1 = MakeBtn(p, b1, AC.ok, cb1)
+                bb1:SetPos(440, y + 6) bb1:SetSize(200, 30)
+                local bb2 = MakeBtn(p, b2, AC.bad, cb2)
+                bb2:SetPos(648, y + 6) bb2:SetSize(198, 30)
+            end
+
+            SRow(70, "Общая точка гарнизона", "тут появляются все, у кого нет СВОЕЙ зоны (вайтлист/время тут ни при чём)",
+                "ПОСТАВИТЬ ЗДЕСЬ", function() SendAction(7) end,
+                "УБРАТЬ", function() SendAction(8) end)
+
+            SRow(120, "Камера ареста", "арестованных телепортирует сюда",
+                "ПОСТАВИТЬ ЗДЕСЬ", function() SendAction(9) end,
+                "УБРАТЬ", function() SendAction(10) end)
+
+            SRow(170, "Кадровик", "NPC выдачи профессий — создать перед собой / убрать ближайшего",
+                "СОЗДАТЬ", function() SendAction(11) end,
+                "УДАЛИТЬ БЛИЖ.", function() SendAction(12) end)
+
+            -- === СПАВН ФРАКЦИИ ===
+            local fl = vgui.Create("DLabel", p)
+            fl:SetPos(10, 222) fl:SetSize(300, 24)
+            fl:SetFont("P11FW.Big") fl:SetTextColor(Color(255, 205, 100)) fl:SetText("СПАВН ФРАКЦИИ")
+            local fd = vgui.Create("DLabel", p)
+            fd:SetPos(10, 246) fd:SetSize(420, 16)
+            fd:SetFont("P11FW.Small") fd:SetTextColor(AC.dim)
+            fd:SetText("вся фракция появляется тут (напр. казармы РККА, особый отдел НКВД)")
+            local facC = vgui.Create("DComboBox", p)
+            facC:SetPos(10, 266) facC:SetSize(250, 26)
+            for _, c in ipairs(P11FW.CategoryList or {}) do facC:AddChoice(c.name, c.id) end
+            f.SpawnFac = P11FW.CategoryList and P11FW.CategoryList[1] and P11FW.CategoryList[1].id or "misc"
+            facC:SetValue(P11FW.CategoryList and P11FW.CategoryList[1] and P11FW.CategoryList[1].name or "misc")
+            facC.OnSelect = function(_, _, _, data) f.SpawnFac = data end
+            local fs1 = MakeBtn(p, "ПОСТАВИТЬ ЗДЕСЬ", AC.ok, function()
+                SendAction(33, function() net.WriteString(f.SpawnFac or "misc") end)
+            end)
+            fs1:SetPos(440, 264) fs1:SetSize(200, 30)
+            local fs2 = MakeBtn(p, "УБРАТЬ ТОЧКУ", AC.bad, function()
+                SendAction(34, function() net.WriteString(f.SpawnFac or "misc") end)
+            end)
+            fs2:SetPos(648, 264) fs2:SetSize(198, 30)
+
+            -- === СПАВН ПРОФЫ ===
+            local jl = vgui.Create("DLabel", p)
+            jl:SetPos(10, 306) jl:SetSize(300, 24)
+            jl:SetFont("P11FW.Big") jl:SetTextColor(Color(150, 220, 255)) jl:SetText("СПАВН ПРОФЫ")
+            local jd = vgui.Create("DLabel", p)
+            jd:SetPos(10, 330) jd:SetSize(420, 16)
+            jd:SetFont("P11FW.Small") jd:SetTextColor(AC.dim)
+            jd:SetText("конкретная должность появляется тут (сильнее зоны фракции)")
+            local jobs = {}
+            for id, jb in pairs(P11FW.Jobs or {}) do jobs[#jobs + 1] = { id = id, name = jb.name, ord = jb.order or 99 } end
+            table.sort(jobs, function(a, b) if a.ord ~= b.ord then return a.ord < b.ord end return a.name < b.name end)
+            local jobC = vgui.Create("DComboBox", p)
+            jobC:SetPos(10, 350) jobC:SetSize(250, 26)
+            for _, j in ipairs(jobs) do jobC:AddChoice(j.name, j.id) end
+            f.SpawnJob = jobs[1] and jobs[1].id or ""
+            jobC:SetValue(jobs[1] and jobs[1].name or "")
+            jobC.OnSelect = function(_, _, _, data) f.SpawnJob = data end
+            local js1 = MakeBtn(p, "ПОСТАВИТЬ ЗДЕСЬ", AC.ok, function()
+                if (f.SpawnJob or "") ~= "" then SendAction(37, function() net.WriteString(f.SpawnJob) end) end
+            end)
+            js1:SetPos(440, 348) js1:SetSize(200, 30)
+            local js2 = MakeBtn(p, "УБРАТЬ ТОЧКУ", AC.bad, function()
+                if (f.SpawnJob or "") ~= "" then SendAction(38, function() net.WriteString(f.SpawnJob) end) end
+            end)
+            js2:SetPos(648, 348) js2:SetSize(198, 30)
+
+            -- === ГРУЗОВИК КОЛОННЫ ===
+            SRow(390, "Грузовик колонны (LVS)", "советский грузовик у зоны прибытия; в кабине тепло (нет пака — зона работает без него)",
+                "ЗАСПАВНИТЬ", function() SendAction(35) end,
+                "УБРАТЬ", function() SendAction(36) end)
+
+            local listBtn = MakeBtn(p, "ЧТО УЖЕ РАССТАВЛЕНО? (список в чат)", AC.gold, function() SendAction(39) end)
+            listBtn:SetPos(440, 436) listBtn:SetSize(406, 30)
+        end
+
         local p = NewTab("utils")
 
         local function UtilRow(y, name, desc, btn1, cb1, btn2, cb2)

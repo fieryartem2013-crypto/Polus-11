@@ -345,6 +345,16 @@ net.Receive("P11FW_AdminAction", function(len, ply)
         if POLUS11 and POLUS11.ArrivalTruckPut then POLUS11.ArrivalTruckPut(ply) end
     elseif act == 36 then -- убрать грузовик колонны
         if POLUS11 and POLUS11.ArrivalTruckRemove then POLUS11.ArrivalTruckRemove(ply) end
+
+    -- ============ v4.6.1: СПАВН ПРОФЫ + СПИСОК ============
+    elseif act == 37 then -- поставить точку спавна для ПРОФЫ
+        local jid = net.ReadString()
+        if POLUS11 and POLUS11.ArrivalJobSet then POLUS11.ArrivalJobSet(ply, jid) end
+    elseif act == 38 then -- убрать точку спавна профы
+        local jid = net.ReadString()
+        if POLUS11 and POLUS11.ArrivalJobClear then POLUS11.ArrivalJobClear(ply, jid) end
+    elseif act == 39 then -- показать, какие спавны расставлены
+        if POLUS11 and POLUS11.ArrivalList then POLUS11.ArrivalList(ply) end
     end
 
     -- свежие данные в меню

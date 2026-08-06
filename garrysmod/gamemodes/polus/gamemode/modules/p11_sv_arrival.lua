@@ -20,6 +20,7 @@ local function ArFile()
 end
 
 POLUS11.Arrivals = POLUS11.Arrivals or {} -- facId -> { pos=Vector, ang=Angle }
+POLUS11.JobArrivals = POLUS11.JobArrivals or {} -- v4.6.1: jobId -> { pos=Vector, ang=Angle } (точка спавна ПРОФЫ)
 local TruckSave = nil -- { pos, ang, class }
 
 -- ============ КЛАССЫ ГРУЗОВИКА (LVS Soviet Pack) ============
@@ -38,9 +39,15 @@ local TRUCK_CLASSES = {
 
 local function ArSave()
     if not file.IsDir("polus_framework", "DATA") then file.CreateDir("polus_framework") end
-    local out = { factions = {}, truck = nil }
+    local out = { factions = {}, jobs = {}, truck = nil }
     for id, a in pairs(POLUS11.Arrivals) do
         out.factions[id] = {
+            x = a.pos.x, y = a.pos.y, z = a.pos.z,
+            yaw = a.ang.y or 0,
+        }
+    end
+    for id, a in pairs(POLUS11.JobArrivals or {}) do
+        out.jobs[id] = {
             x = a.pos.x, y = a.pos.y, z = a.pos.z,
             yaw = a.ang.y or 0,
         }
@@ -68,6 +75,7 @@ end
 
 local function ArLoad()
     POLUS11.Arrivals = {}
+    POLUS11.JobArrivals = {}
     TruckSave = nil
     local raw = file.Read(ArFile(), "DATA")
     if not raw then return end
@@ -77,6 +85,15 @@ local function ArLoad()
     for id, d in pairs(tbl.factions or {}) do
         if istable(d) then
             POLUS11.Arrivals[id] = {
+                pos = Vector(d.x or 0, d.y or 0, d.z or 0),
+                ang = Angle(0, d.yaw or 0, 0),
+            }
+        end
+    end
+
+    for id, d in pairs(tbl.jobs or {}) do
+        if istable(d) then
+            POLUS11.JobArrivals[id] = {
                 pos = Vector(d.x or 0, d.y or 0, d.z or 0),
                 ang = Angle(0, d.yaw or 0, 0),
             }
@@ -96,9 +113,10 @@ local function ArLoad()
         end
     end
 
-    local n = 0
+    local n, nj = 0, 0
     for _ in pairs(POLUS11.Arrivals) do n = n + 1 end
-    P11FW.Log("Прибытие: зон фракций = " .. n .. (TruckSave and (", грузовик: " .. TruckSave.class) or ""))
+    for _ in pairs(POLUS11.JobArrivals) do nj = nj + 1 end
+    P11FW.Log("Прибытие: зон фракций = " .. n .. ", зон проф = " .. nj .. (TruckSave and (", грузовик: " .. TruckSave.class) or ""))
 end
 
 hook.Add("InitPostEntity", "P11.ArrivalLoad", function()
@@ -131,6 +149,51 @@ function POLUS11.ArrivalClear(ply, facId)
     POLUS11.Arrivals[facId] = nil
     ArSave()
     P11FW.Notify(ply, "Зона прибытия фракции «" .. facId .. "» убрана.")
+end
+
+-- ============ v4.6.1: СПАВН ПРОФЫ (jobId) ============
+
+function POLUS11.ArrivalJobSet(ply, jobId)
+    local job = P11FW.Jobs and P11FW.Jobs[jobId]
+    if not job then P11FW.Notify(ply, "Нет такой должности: " .. tostring(jobId)) return end
+
+    local tr = ply:GetEyeTrace()
+    POLUS11.JobArrivals[jobId] = {
+        pos = tr.HitPos + Vector(0, 0, 4),
+        ang = Angle(0, ply:EyeAngles().y, 0),
+    }
+    ArSave()
+    P11FW.Notify(ply, "Точка спавна профы «" .. job.name .. "» поставлена здесь (переживает рестарт).")
+    P11FW.Log("Прибытие: " .. ply:Nick() .. " поставил зону профы " .. jobId)
+end
+
+function POLUS11.ArrivalJobClear(ply, jobId)
+    POLUS11.JobArrivals[jobId] = nil
+    ArSave()
+    P11FW.Notify(ply, "Точка спавна профы «" .. tostring(jobId) .. "» убрана.")
+end
+
+-- показать админу, какие точки уже расставлены
+function POLUS11.ArrivalList(ply)
+    local lines = { "=== СПАВНЫ СТАНЦИИ (ты стоишь → ставишь точку туда) ===" }
+    local sp = P11FW.GetPoint and P11FW.GetPoint("spawn")
+    lines[#lines + 1] = "общий спавн гарнизона: " .. (sp and "ЕСТЬ" or "нет (спавн карты)")
+    local nf, nj = 0, 0
+    for _ in pairs(POLUS11.Arrivals or {}) do nf = nf + 1 end
+    for _ in pairs(POLUS11.JobArrivals or {}) do nj = nj + 1 end
+    lines[#lines + 1] = "зон фракций: " .. nf
+    for id in pairs(POLUS11.Arrivals or {}) do
+        local nm = id
+        for _, c in ipairs(P11FW.CategoryList or {}) do if c.id == id then nm = c.name break end end
+        lines[#lines + 1] = "  • фракция «" .. nm .. "» (" .. id .. ")"
+    end
+    lines[#lines + 1] = "зон проф: " .. nj
+    for id in pairs(POLUS11.JobArrivals or {}) do
+        local job = P11FW.Jobs and P11FW.Jobs[id]
+        lines[#lines + 1] = "  • профа «" .. (job and job.name or id) .. "» (" .. id .. ")"
+    end
+    lines[#lines + 1] = "приоритет: спавн профы > спавн фракции > общая точка > карта"
+    for _, l in ipairs(lines) do P11FW.Notify(ply, l) end
 end
 
 local function RemoveArrivalTrucks()
@@ -178,14 +241,15 @@ function POLUS11.ArrivalTruckRemove(ply)
 end
 
 -- ============ СПАВН: ОЧЕРЕДЬ ТОЧЕК ============
--- приоритет: зона прибытия МОЕЙ фракции > общий спавн-поинт > карта
+-- приоритет: точка МОЕЙ ПРОФЫ > зона МОЕЙ фракции > общий спавн-поинт > карта
 
 hook.Add("PlayerSpawn", "P11.ArrivalSpawn", function(ply)
     timer.Simple(0.09, function()
         if not IsValid(ply) or not ply:Alive() then return end
+        local jobId = P11FW.GetJobId and P11FW.GetJobId(ply)
         local job = P11FW.GetJob and P11FW.GetJob(ply)
         local fac = job and (job.faction or job.category)
-        local a = fac and POLUS11.Arrivals[fac]
+        local a = (jobId and POLUS11.JobArrivals[jobId]) or (fac and POLUS11.Arrivals[fac])
         if not a then return end
         ply:SetPos(a.pos)
         ply:SetEyeAngles(a.ang)
@@ -214,6 +278,14 @@ concommand.Add("p11_arrival", function(ply, cmd, args)
     if sub == "truck" then
         POLUS11.ArrivalTruckPut(ply)
     elseif sub == "untruck" then
+        POLUS11.ArrivalTruckRemove(ply)
+    elseif sub == "job" and args[2] then
+        POLUS11.ArrivalJobSet(ply, args[2])      -- p11_arrival job nkvd_oper
+    elseif sub == "unjob" and args[2] then
+        POLUS11.ArrivalJobClear(ply, args[2])
+    elseif sub == "list" then
+        POLUS11.ArrivalList(ply)
+    elseif sub == "untruck_legacy" then
         POLUS11.ArrivalTruckRemove(ply)
     elseif args[1] and args[1] ~= "" then
         POLUS11.ArrivalSet(ply, args[1]) -- p11_arrival rkka
