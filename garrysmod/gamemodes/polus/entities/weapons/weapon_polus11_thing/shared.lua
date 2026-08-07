@@ -11,7 +11,7 @@
 SWEP.PrintName    = "НЕЧТО: Имитатор"
 SWEP.Author       = "POLUS-11"
 SWEP.Category     = "ПОЛЮС-11"
-SWEP.Instructions = "ЛКМ — поглощение | ПКМ — тихий укол | R по трупу — съесть и стать им | R — вернуть свой облик"
+SWEP.Instructions = "ЛКМ — когти: убийство САМО съедает труп и надевает личину | ПКМ — тихий укол | R — МЕНЮ МУТАЦИЙ (личина/форма/маскировка) | R по трупу — съесть"
 
 SWEP.Spawnable      = true
 SWEP.AdminSpawnable = true
@@ -375,46 +375,36 @@ local function TraceCorpse(ply)
     return best
 end
 
--- ==================== R ====================
+-- ==================== R (v4.8.3 «ПОГЛОЩЕНИЕ») ====================
+--  Реворк Нечто по заявке владельца:
+--   • труп под прицелом → СЪЕСТЬ ЛИЧНОСТЬ (как было);
+--   • трупа нет → МЕНЮ МУТАЦИЙ (окно: тиры, прогресс, личина,
+--     маскировка, смена формы кнопками). Снятие личины и явление/
+--     скрытие монстра переехали В МЕНЮ (кнопки, сеть P11_ThingAct).
 
 function SWEP:Reload()
-    if CLIENT or not IsFirstTimePredicted() then return end
+    if not IsFirstTimePredicted() then return end
     local ply = self.Owner
+    if not IsValid(ply) then return end
+
+    if CLIENT then
+        -- труп рядом — меню НЕ открываем: R остаётся «съесть»
+        if not IsValid(TraceCorpse(ply)) and P11 and P11.OpenThingMenu then
+            P11.OpenThingMenu()
+        end
+        return
+    end
 
     self.NextReload = self.NextReload or 0
     if CurTime() < self.NextReload then return end
     self.NextReload = CurTime() + 1
 
-    -- 1) труп под прицелом → СЪЕСТЬ ЛИЧНОСТЬ
     local corpse = TraceCorpse(ply)
     if IsValid(corpse) then
         self:EatCorpse(ply, corpse)
-        return
     end
-
-    -- 2) если мы в чужом облике → вернуть свой
-    if ply.P11_FakeNick then
-        if CurTime() - (ply.P11_IdentityTakenAt or 0) < 5 then
-            POLUS11.Notify(ply, "Нечто ещё переваривает… подождите " .. math.ceil(5 - (CurTime() - ply.P11_IdentityTakenAt)) .. " сек")
-            return
-        end
-        RestoreTrueIdentity(ply)
-        ply:EmitSound("npc/zombie/zombie_voice_idle2.wav", 60, 90)
-        POLUS11.Notify(ply, "Вы сбросили чужую личность.")
-        return
-    end
-
-    -- 3) иначе — обычное раскрытие формы монстра
-    if ply.P11_Revealed then
-        if CurTime() - (ply.P11_RevealedAt or 0) < 5 then
-            POLUS11.Notify(ply, "Нечто слишком разгорячён — подождите пару секунд.")
-            return
-        end
-        POLUS11_HideThing(ply)
-        POLUS11.Notify(ply, "Вы снова выглядите как человек.")
-    else
-        POLUS11_RevealThing(ply, self)
-    end
+    -- v4.8.3: ветки «снять личину»/«явить форму» удалены отсюда —
+    -- теперь это кнопки меню мутаций (P11_ThingAct: mask/unmask).
 end
 
 -- ==================== КЛИЕНТ: подсказка над трупом ====================
@@ -452,7 +442,7 @@ if CLIENT then
             end
             local docc = me:GetNWString("P11_DocCode", "")
             local docLine = (docc ~= "") and (" · док. " .. docc) or ""
-            draw.SimpleText("ЛИЧНОСТЬ: " .. fake .. jobN .. docLine .. "  |  R — вернуть себя", "P11.HUD.Text", 18, ScrH() - 120, Color(255, 150, 150), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+            draw.SimpleText("ЛИЧНОСТЬ: " .. fake .. jobN .. docLine .. "  |  R — меню (снять личину там)", "P11.HUD.Text", 18, ScrH() - 120, Color(255, 150, 150), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
         end
     end
 end

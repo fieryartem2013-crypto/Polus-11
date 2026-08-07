@@ -276,6 +276,9 @@ hook.Add("PlayerDeath", "P11_CorpseTrack", function(victim, inf, att)
         if IsValid(best) then
             best.P11_Identity = identity
             best:SetNWString("P11_CorpseName", identity.nick)
+            -- v4.8.3 «ПОГЛОЩЕНИЕ»: свежий труп помечен — сообщаем
+            -- Нечто (авто-съедение своей жертвы когтями)
+            hook.Run("Polus11.CorpseTagged", best, identity, victim, att)
         end
     end)
 end)

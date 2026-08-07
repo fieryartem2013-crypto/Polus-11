@@ -167,24 +167,10 @@ end
 
 -- ============ R — ФОРМА ============
 
+-- v4.8.3: явление/маскировка — кнопка меню мутаций (P11_ThingAct: mask)
 function SWEP:Reload()
-    if CLIENT or not IsFirstTimePredicted() then return end
-    local ply = self.Owner
-    if not IsValid(ply) then return end
-
-    self.NextReload = self.NextReload or 0
-    if CurTime() < self.NextReload then return end
-    self.NextReload = CurTime() + 1
-
-    if ply.P11_Revealed then
-        if POLUS11_HideThing then
-            POLUS11_HideThing(ply)
-            POLUS11.Notify(ply, "Спрятали форму — ты снова «человек».")
-        end
-    else
-        if POLUS11_RevealThing then
-            POLUS11_RevealThing(ply, self)
-            POLUS11.Notify(ply, "ПОГЛОТИТЕЛЬ ЯВЛЕН. Люди глухо кричат.")
-        end
+    if not IsFirstTimePredicted() then return end
+    if CLIENT and P11 and P11.OpenThingMenu then
+        P11.OpenThingMenu()
     end
 end

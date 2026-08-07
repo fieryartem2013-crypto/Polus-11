@@ -45,6 +45,8 @@ end
 local function IsSpider(ply)
     return ply.P11_Spider == true
 end
+-- v4.8.3: паучья форма доступна меню мутаций (сеть P11_ThingAct)
+POLUS11_IsSpider = IsSpider
 
 local function SetSpider(ply, on)
     if on == IsSpider(ply) then return end
@@ -147,16 +149,10 @@ function SWEP:SecondaryAttack()
     end
 end
 
--- ==================== R — ПАУЧЬЯ ФОРМА ====================
-
-function SWEP:Reload()
-    if CLIENT or not IsFirstTimePredicted() then return end
-    local ply = self.Owner
-
-    self.NextReload = self.NextReload or 0
-    if CurTime() < self.NextReload then return end
-    self.NextReload = CurTime() + 1
-
+-- v4.8.3: переключатель паучьей формы вынесен в глобал —
+-- его зовёт и кнопка меню мутаций (P11_ThingAct: spider).
+function POLUS11_ToggleSpider(ply)
+    if not IsValid(ply) then return end
     if IsSpider(ply) then
         if CurTime() - (ply.P11_SpiderAt or 0) < FORM_MIN_TIME then
             POLUS11.Notify(ply, "Нельзя вернуться в человека ещё " .. math.ceil(FORM_MIN_TIME - (CurTime() - ply.P11_SpiderAt)) .. " сек")
@@ -167,6 +163,15 @@ function SWEP:Reload()
     else
         SetSpider(ply, true)
         POLUS11.Notify(ply, "ПАУЧЬЯ ФОРМА! Прыгайте у стен — полезете наверх.")
+    end
+end
+
+-- ==================== R — МЕНЮ МУТАЦИЙ (v4.8.3) ====================
+
+function SWEP:Reload()
+    if not IsFirstTimePredicted() then return end
+    if CLIENT and P11 and P11.OpenThingMenu then
+        P11.OpenThingMenu()
     end
 end
 

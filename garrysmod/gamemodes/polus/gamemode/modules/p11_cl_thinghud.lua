@@ -106,7 +106,7 @@ hook.Add("HUDPaint", "P11.ThingHUD", function()
         draw.RoundedBox(3, x + 12, cy + 35, w - 24, 5, Color(255, 255, 255, 16))
         draw.RoundedBox(3, x + 12, cy + 35, (w - 24) * math.Clamp(expo / 100, 0, 1), 5, TC.cyan)
     else
-        draw.SimpleText("ЛКМ — когти • R — маскировка • !разрыв (споровик) • огонь = смерть",
+        draw.SimpleText("ЛКМ — когти (труп съедается сам) • ПКМ — способность • R — МЕНЮ мутаций • огонь = смерть",
             "P11.TH.Small", x + 12, cy + 30, TC.dim)
     end
 

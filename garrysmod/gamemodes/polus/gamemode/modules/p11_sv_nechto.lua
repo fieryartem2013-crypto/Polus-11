@@ -7,6 +7,8 @@
 -- ============================================================
 
 -- классы Нечто: id -> оружие + тело монстра (v2.6: у каждой формы СВОЯ модель)
+util.AddNetworkString("P11_ThingAct") -- v4.8.3: кнопки меню мутаций (R)
+
 POLUS11.ThingForms = {
     imitator     = { wep = "weapon_polus11_thing",       name = "Имитатор",    model = "models/zombie/classic.mdl" },
     brute        = { wep = "weapon_polus11_thing_brute", name = "Поглотитель", model = "models/zombie/poison.mdl" },
@@ -227,3 +229,86 @@ hook.Add("PlayerSay", "P11_ThingChat", function(ply, text)
     end
     return ""
 end)
+
+
+-- ============================================================
+--  v4.8.3 «ПОГЛОЩЕНИЕ»: РЕВОРК НЕЧТО (заявка владельца)
+--  1) при убийстве когтями Нечто АВТОМАТОМ жрёт труп и становится
+--     им (личина жертвы: модель, имя, должность, код документа);
+--  2) R — МЕНЮ МУТАЦИЙ (клиент), это — серверная часть кнопок;
+--  3) ПКМ — способность формы (укол/масса/споры/плевок, как было).
+-- ============================================================
+
+-- 1) авто-съедение: свежий труп помечен инфекцией → съедаем сами
+hook.Add("Polus11.CorpseTagged", "P11.ThingAutoDevour", function(corpse, identity, victim, att)
+    if not (POLUS11.Config and POLUS11.Config.ThingAutoDevour) then return end
+    if not (IsValid(att) and att:IsPlayer() and IsValid(victim) and att ~= victim) then return end
+    if not (att:GetNWBool("P11_Infected", false) and att:GetNWBool("P11_InfActive", false)) then return end
+    -- только КОГТЯМИ Имитатора (у остальных форм съедения личности нет)
+    local wep = att.GetActiveWeapon and att:GetActiveWeapon()
+    if not (IsValid(wep) and wep:GetClass() == "weapon_polus11_thing") then return end
+    local cls = wep:GetClass()
+
+    timer.Simple(0.45, function()
+        if not (IsValid(att) and att:Alive() and IsValid(corpse)) then return end
+        if not istable(corpse.P11_Identity) then return end
+        local w = att:GetWeapon(cls)
+        if IsValid(w) and w.EatCorpse then
+            w:EatCorpse(att, corpse) -- личина + лечение + мутации (обёртка модуля мутаций)
+            POLUS11.Log("АВТО-ПОГЛОЩЕНИЕ: " .. att:Nick() .. " сожрал труп своей жертвы «"
+                .. tostring(identity.nick) .. "»")
+        end
+    end)
+end)
+
+-- 2) серверная часть кнопок меню мутаций
+net.Receive("P11_ThingAct", function(len, ply)
+    if not IsValid(ply) or not ply:Alive() then return end
+    if not (ply:GetNWBool("P11_Infected", false) and ply:GetNWBool("P11_InfActive", false)) then
+        return -- меню Нечто — только активному Нечто
+    end
+    local act = net.ReadString()
+
+    if act == "mask" then -- явить/скрыть форму монстра
+        if POLUS11.ToggleMask then POLUS11.ToggleMask(ply) end
+
+    elseif act == "unmask" then -- сбросить чужую личину
+        if not ply.P11_FakeNick then
+            POLUS11.Notify(ply, "Ты сейчас не в чужой личине.")
+            return
+        end
+        if CurTime() - (ply.P11_IdentityTakenAt or 0) < 5 then
+            POLUS11.Notify(ply, "Нечто ещё переваривает… "
+                .. math.ceil(5 - (CurTime() - ply.P11_IdentityTakenAt)) .. " сек")
+            return
+        end
+        if POLUS11_RestoreTrueIdentity then
+            POLUS11_RestoreTrueIdentity(ply)
+            ply:EmitSound("npc/zombie/zombie_voice_idle2.wav", 60, 90)
+            POLUS11.Notify(ply, "Вы сбросили чужую личность.")
+        end
+
+    elseif act == "spider" then -- паучья форма Разделённого
+        if (ply.P11_ThingForm or "") ~= "split" then
+            POLUS11.Notify(ply, "Паучья форма — у Разделённого.")
+            return
+        end
+        if POLUS11_ToggleSpider then POLUS11_ToggleSpider(ply) end
+
+    elseif act == "form" then -- смена формы с кулдауном как в чате
+        local formId = net.ReadString()
+        if not POLUS11.ThingForms[formId] then return end
+        ply.P11_NextForm = ply.P11_NextForm or 0
+        if CurTime() < ply.P11_NextForm then
+            POLUS11.Notify(ply, "Форму можно сменить через "
+                .. math.ceil(ply.P11_NextForm - CurTime()) .. " сек")
+            return
+        end
+        if POLUS11.SetThingForm(ply, formId) then
+            ply.P11_NextForm = CurTime() + (POLUS11.Config.ClassSwitchCooldown or 60)
+            ply:SetNWFloat("P11_FormCd", ply.P11_NextForm)
+        end
+    end
+end)
+
+print("[POLUS-11] реворк Нечто v4.8.3 «ПОГЛОЩЕНИЕ»: авто-съедение трупа при убийстве, R — меню мутаций (P11_ThingAct)")

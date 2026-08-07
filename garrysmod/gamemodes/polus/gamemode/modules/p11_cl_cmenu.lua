@@ -197,6 +197,102 @@ function P11.StringRequest(title, label, default, onOk)
 end
 
 -- ============================================================
+--  v4.8.3: ТАБЕЛЬ О РАНГАХ — инструкция админам «какие права»
+--  Все 16 рангов проекта + что открывает каждый (строки из
+--  P11FW.RankRightsInfo — одна матрица правды с сервером).
+-- ============================================================
+function P11.OpenRankTable()
+    if IsValid(P11.RankTbl) then P11.RankTbl:Remove() end
+    local me = LocalPlayer()
+
+    local f = vgui.Create("DFrame")
+    P11.RankTbl = f
+    f:SetSize(560, 580)
+    f:Center()
+    f:SetTitle("")
+    f:SetDraggable(true)
+    f:MakePopup()
+    f:SetDeleteOnClose(true)
+    f.OnRemove = function() if P11.RankTbl == f then P11.RankTbl = nil end end
+
+    f.Paint = function(s, w, h)
+        if P11.DrawDim then P11.DrawDim(s, 140) end
+        draw.RoundedBox(10, 0, 0, w, h, CC.bg)
+        draw.RoundedBoxEx(10, 0, 0, w, 66, CC.panel, true, true, false, false)
+        surface.SetDrawColor(CC.gold.r, CC.gold.g, CC.gold.b, 150)
+        surface.DrawRect(0, 66, w, 1)
+        draw.SimpleText("📜 ТАБЕЛЬ О РАНГАХ ПРОЕКТА", "P11.CM.Text", 14, 20, CC.gold, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        -- мой ранг — крупно
+        local rk = P11FW.GetRank and P11FW.GetRank(me) or nil
+        local myName = rk and (rk.name .. "  •  ур. " .. (rk.level or 0)) or "User • ур. 0"
+        local myCol = rk and rk.color or CC.dim
+        draw.SimpleText("ТВОЙ РАНГ: " .. myName, "P11.CM.Small", 14, 44, myCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        draw.SimpleText("что открывает каждый ранг — от юзера до Главы", "P11.CM.Small", w - 14, 20, CC.dim, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
+    end
+
+    local xb = vgui.Create("DButton", f)
+    xb:SetPos(560 - 34, 8) xb:SetSize(24, 22)
+    xb:SetText("")
+    xb.Paint = function(s, w, h)
+        draw.RoundedBox(4, 0, 0, w, h, s:IsHovered() and Color(120, 40, 36) or Color(60, 30, 28))
+        draw.SimpleText("✕", "P11.CM.Small", w / 2, h / 2 - 1, Color(240, 200, 195), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+    end
+    xb.DoClick = function() surface.PlaySound("buttons/button10.wav") f:Remove() end
+
+    local sc = vgui.Create("DScrollPanel", f)
+    sc:SetPos(12, 76) sc:SetSize(536, 456)
+    local sb = sc:GetVBar()
+    sb:SetWide(5)
+    sb.Paint = function(s, w, h) draw.RoundedBox(2, 0, 0, w, h, Color(255, 255, 255, 18)) end
+    sb.btnGrip.Paint = function(s, w, h) draw.RoundedBox(2, 0, 0, w, h, CC.gold) end
+
+    local myRank = P11FW.GetRank and P11FW.GetRank(me) or nil
+    local myId = myRank and myRank.id or "user"
+
+    -- ранги сверху вниз (от Главы к юзеру), чтобы власть читалась сразу
+    local ranks = {}
+    for _, r in ipairs(P11FW.Ranks or {}) do ranks[#ranks + 1] = r end
+    table.sort(ranks, function(a, b) return (a.level or 0) > (b.level or 0) end)
+
+    for _, r in ipairs(ranks) do
+        local rights = (P11FW.RankRightsInfo and P11FW.RankRightsInfo(r)) or {}
+        local cardH = 34 + 16 * #rights + 10
+        local mine = (r.id == myId)
+
+        local card = sc:Add("DPanel")
+        card:Dock(TOP) card:DockMargin(2, 2, 6, 5)
+        card:SetTall(cardH)
+        card.R, card.CR, card.Mine, card.Rights = r, r.color or CC.dim, mine, rights
+        card.Paint = function(s2, w, h)
+            local col = s2.CR
+            draw.RoundedBox(8, 0, 0, w, h, s2.Mine and Color(30, 36, 50, 255) or Color(15, 20, 28, 255))
+            surface.SetDrawColor(col.r, col.g, col.b, s2.Mine and 220 or 120)
+            surface.DrawOutlinedRect(0, 0, w, h, 1)
+            draw.RoundedBoxEx(8, 0, 0, 4, h, col, true, false, true, false)
+            local nm = s2.R.name .. (s2.Mine and "   ◀ ЭТО ТЫ" or "")
+            draw.SimpleText(nm, "P11.CM.Text", 12, 15, col, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+            draw.SimpleText("ур. " .. (s2.R.level or 0) .. (s2.R.wl and "  🔒" or ""), "P11.CM.Small", w - 10, 15, CC.dim, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
+            for i, line in ipairs(s2.Rights) do
+                draw.SimpleText("• " .. line, "P11.CM.Small", 12, 28 + (i - 1) * 16, Color(205, 214, 224), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+            end
+        end
+    end
+
+    local foot = vgui.Create("DLabel", f)
+    foot:SetPos(14, 540) foot:SetSize(532, 32)
+    foot:SetFont("P11.CM.Small") foot:SetTextColor(CC.dim)
+    foot:SetAutoStretchVertical(true)
+    foot:SetText("Шпаргалка админа: !пульт — пульт Нечто • /menu /ранги — панели • /tp /goto /bring /return — ходьба • " ..
+        "!розыск ник / !приказ текст — командование • /репорты — жалобы • ранг выдать: вкладка АДМИНКИ или p11_rank ник id • вход Главы: p11_access <секретное слово>")
+
+    f.OnKeyCodePressed = function(s, key)
+        if key == KEY_ESCAPE then f:Remove() end
+    end
+    if P11.AnimateIn then P11.AnimateIn(f) end
+    return f
+end
+
+-- ============================================================
 --  ПАНЕЛЬ C-МЕНЮ
 -- ============================================================
 
@@ -302,9 +398,14 @@ function P11.OpenCMenu()
         al:SetFont("P11.CM.Small") al:SetTextColor(CC.bad)
         al:SetText("АДМИНИСТРАЦИИ:")
 
-        CButton(f, 532, 390, 234, 48, "🛡 Админ-панель", "то же, что /menu", CC.bad, function()
+        CButton(f, 532, 390, 114, 48, "🛡 Админка", "то же, что /menu", CC.bad, function()
             P11.CloseCMenu()
             P11FW.OpenAdminMenu()
+        end)
+        -- v4.8.3: инструкция по правам — табель о рангах
+        CButton(f, 652, 390, 114, 48, "📜 Табель", "кто что может", CC.gold, function()
+            P11.CloseCMenu()
+            P11.OpenRankTable()
         end)
     elseif canWl then
         local wl = vgui.Create("DLabel", f)

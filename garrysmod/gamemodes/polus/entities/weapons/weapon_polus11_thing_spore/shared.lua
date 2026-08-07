@@ -114,19 +114,13 @@ function SWEP:SecondaryAttack()
     SpitSpore(ply)
 end
 
--- ============ R — МАСКИРОВКА (v2.6: единый стандарт всех форм) ============
--- «Разрыв» переехал на чат-команду !разрыв (обработка в sv_nechto).
+-- ============ R — МЕНЮ МУТАЦИЙ (v4.8.3) ============
+-- «Разрыв» переехал на чат-команду !разрыв (обработка в sv_nechto),
+-- маскировка — на кнопку меню мутаций (P11_ThingAct: mask).
 
 function SWEP:Reload()
-    if CLIENT or not IsFirstTimePredicted() then return end
-    local ply = self.Owner
-    if not IsValid(ply) then return end
-
-    self.NextR = self.NextR or 0
-    if CurTime() < self.NextR then return end
-    self.NextR = CurTime() + 1.2
-
-    if POLUS11.ToggleMask then
-        POLUS11.ToggleMask(ply)
+    if not IsFirstTimePredicted() then return end
+    if CLIENT and P11 and P11.OpenThingMenu then
+        P11.OpenThingMenu()
     end
 end

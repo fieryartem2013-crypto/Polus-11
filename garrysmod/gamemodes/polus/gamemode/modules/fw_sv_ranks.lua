@@ -80,8 +80,13 @@ function P11FW.SetRank(target, rankId, by)
 end
 
 -- консоль: p11_rank <игрок> <ранг>
+-- v4.8.3 «ПОГЛОЩЕНИЕ» КОРЕНЬ БАГА «админка не выдаётся»: сюда
+-- передавали targetLevel=99, а CanManageRank требует цель НИЖЕ
+-- своего ранга (99 >= любого) — поэтому выдача молча умирала
+-- ВСЕГДА. Проверяем только наличие права; потолок уровня сам
+-- смотрит P11FW.SetRank через CanManageRank(by, rec.level).
 concommand.Add("p11_rank", function(ply, cmd, args)
-    if IsValid(ply) and not P11FW.CanManageRank(ply, 99) then
+    if IsValid(ply) and not P11FW.CanManageRank(ply, nil) then
         P11FW.Notify(ply, "Выдавать ранги может Куратор и выше.")
         return
     end
@@ -127,6 +132,7 @@ concommand.Add("p11_access", function(ply, cmd, args)
 
     P11FW.SetRank(ply, "glava", nil) -- без by: ключ и есть право
     ply:SetUserGroup("superadmin")
-    ply:ChatPrint("[ПОЛЮС-11] КЛЮЧ ПРИНЯТ. Ты теперь Глава Полюса-11 (superadmin).")
+    local gname = (P11FW.RankById.glava and P11FW.RankById.glava.name) or "Глава Проекта"
+    ply:ChatPrint("[ПОЛЮС-11] КЛЮЧ ПРИНЯТ. Ты теперь " .. gname .. " (superadmin).")
     P11FW.Log("!!! КЛЮЧ ОСНОВАТЕЛЯ ИСПОЛЬЗОВАН: " .. ply:Nick() .. " [" .. ply:SteamID() .. "] !!!")
 end)

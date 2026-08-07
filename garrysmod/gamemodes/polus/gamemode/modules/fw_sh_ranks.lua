@@ -198,6 +198,73 @@ P11FW.TimeLimits = {
     },
 }
 
+--- v4.8.3: ТАБЕЛЬ О РАНГАХ — читаемая матрица прав (одна точка
+--- правды): C-меню «📜 Права» и подсказки админки берут строки отсюда.
+--- rank — таблица из P11FW.Ranks ({id, name, level, wl, fx}).
+local function LimitText(level, kind)
+    local t = P11FW.TimeLimits and P11FW.TimeLimits[kind]
+    if not t then return "∞" end
+    for l = math.min(level, 16), 0, -1 do
+        local v = t[l]
+        if v == 0 then return "∞ (включая перманент)" end
+        if v then
+            if v >= 1440 and v % 1440 == 0 then return (v / 1440) .. " сут" end
+            if v >= 60 and v % 60 == 0 then return (v / 60) .. " ч" end
+            return v .. " мин"
+        end
+    end
+    return "∞ (включая перманент)"
+end
+
+function P11FW.RankRightsInfo(rank)
+    local lvl = (rank and rank.level) or 0
+    local out = {}
+    if lvl <= 0 then
+        return { "игра в составе персонала (F4 — должности, TAB — состав)",
+                 "жалобы админам: /report <текст>, окно /репорты",
+                 "своё время службы: p11_playtime в консоли" }
+    end
+    if rank and rank.id == "vip" then
+        out[#out + 1] = "💎 VIP: должности 💎 VIP-СЛУЖБА в F4"
+    end
+    if rank and rank.wl then
+        out[#out + 1] = "🔒 вайтлист: выдача допусков на закрытые должности"
+    end
+    if lvl >= 2 then
+        out[#out + 1] = "мут до " .. LimitText(lvl, "mute")
+        out[#out + 1] = "варн игрокам (вкладка МОДЕРАЦИЯ)"
+        out[#out + 1] = "окно репортов /репорты: принять, тп к жалобщику, закрыть"
+    end
+    if lvl >= 3 then
+        out[#out + 1] = "арест/рабство до " .. LimitText(lvl, "arrest")
+        out[#out + 1] = "кик игроков"
+    end
+    if lvl >= 4 then
+        out[#out + 1] = "бан до " .. LimitText(lvl, "ban")
+        out[#out + 1] = "быстрые действия: /heal /tp /goto /bring /return /заморозка"
+    end
+    if lvl >= 5 then
+        out[#out + 1] = "казна: выдача денег !дать <ник> <сумма>"
+    end
+    if lvl >= 6 then
+        out[#out + 1] = "разбан (вкладка МОДЕРАЦИЯ)"
+    end
+    if lvl >= 9 then
+        out[#out + 1] = "Q-меню движка (спавнменю, инструменты)"
+    end
+    if lvl >= ((P11FW.Config and P11FW.Config.RankManageLevel) or 12) then
+        out[#out + 1] = "выдача и снятие рангов НИЖЕ СВОЕГО (вкладка АДМИНКИ, p11_rank)"
+    end
+    if lvl >= 16 then
+        out[#out + 1] = "ВСЁ: серверные команды p11_*/polus_* (замок p11_cmdlock)"
+        out[#out + 1] = "перманентные наказания, ранг может дать до 15-го"
+    end
+    if #out == 0 then
+        out[1] = "базовый ранг без модераторских прав"
+    end
+    return out
+end
+
 --- Есть ли у ранга игрока право на действие (perm из P11FW.PermLevel)?
 function P11FW.CanMod(ply, perm)
     if not IsValid(ply) then return false end
