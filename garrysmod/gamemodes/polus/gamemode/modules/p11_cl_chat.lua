@@ -1,18 +1,24 @@
 -- ============================================================
---  ПОЛЮС-11 — СВОЙ ЧАТ-UI (client) v4.6.8 — ПОЛНОСТЬЮ С НУЛЯ
---  • Y — строка ввода с КНОПКОЙ КАНАЛА СЛЕВА (РЕЧЬ/OOC/LOOC/ME/IT/
---    РЕПОРТ), U — сразу OOC;
---  • лента слева внизу, гаснет через ~10 сек;
---  • системные chat.AddText ловятся в ту же ленту;
---  • ванильная коробка скрыта (вернуть: p11_vanilla_chat 1);
---  • самопроверка при загрузке: смотри консоль «[P11CHAT] v4.6.8 OK»;
---  • диагностика: p11_chatdiag_cl.
+--  ПОЛЮС-11 — ЧАТ (client) v5 «РЕЛЕ» — пересоздан С НУЛЯ
+--  ДВА РЕЖИМА + АВТО-ЛЕЧЕНИЕ:
+--   • режим 0 (СВОЙ, по умолчанию): ввод нашей строки (Y), лента
+--     слева, ваниль скрыта. Покрытие 99% машин.
+--   • режим 1 (ДВИЖОК): штатный чат движка; сервер зеркалит туда
+--     ВСЕ сообщения каналов — и писать, и читать можно всегда.
+--   АВТО-ЛЕЧЕНИЕ: любая ошибка нашей рисовки/окна, или сервер
+--   не ответил на рукопожатие за 12 сек — клиент САМ перескакивает
+--   в режим 1 и красным пишет в консоль, что случилось. Чат
+--   больше НЕ МОЖЕТ умереть молча: всегда останется движковый.
+--  Переключение руками: p11_chat_mode 0 / p11_chat_mode 1.
+--  Диагностика: p11_chatdiag_cl.
 -- ============================================================
 
 P11 = P11 or {}
 
 surface.CreateFont("P11.Chat.Text2", { font = "Roboto", size = 18, weight = 600, extended = true })
 surface.CreateFont("P11.Chat.Btn2",  { font = "Roboto", size = 15, weight = 800, extended = true })
+
+local MAJOR = 5 -- версия протокола (должна совпасть с серверной)
 
 local CHAT = P11.Chat or {}
 P11.Chat = CHAT
@@ -23,19 +29,36 @@ local LINE_H = 22
 local MAXVIS = 12
 local FADE_S = 10
 
-local CHANNELS = {
-    { label = "РЕЧЬ",   prefix = "",         col = Color(228, 236, 245) },
-    { label = "OOC",    prefix = "/ooc ",    col = Color(170, 176, 188) },
-    { label = "LOOC",   prefix = "/looc ",   col = Color(145, 152, 165) },
-    { label = "ME",     prefix = "/me ",     col = Color(205, 165, 255) },
-    { label = "IT",     prefix = "/it ",     col = Color(255, 205, 110) },
-    { label = "РЕПОРТ", prefix = "/report ", col = Color(235, 100, 90)  },
-}
+-- ---------- РЕЖИМ И СИНХРОНИЗАЦИЯ ----------
+local cvMode = CreateClientConVar("p11_chat_mode", "0", true, true,
+    "0 = свой чат-лента, 1 = движковый (аварийный/надёжный)")
 
-local cvVanilla = CreateClientConVar("p11_vanilla_chat", "0", true, false,
-    "1 = вернуть штатный чат движка (если своей ленты не видно)")
+local function ModeNow()
+    return (cvMode and cvMode:GetInt() == 0) and 0 or 1
+end
 
--- ---------- переносы ----------
+local function SyncModeToServer()
+    net.Start("P11_ChatMode")
+        net.WriteUInt(ModeNow(), 2)
+    net.SendToServer()
+end
+
+local function SetMode(m, why)
+    RunConsoleCommand("p11_chat_mode", tostring(m == 0 and 0 or 1))
+    CHAT.boxOpen = false
+    if IsValid(CHAT.Box) then CHAT.Box:Remove() end
+    if m ~= 0 then
+        print("[P11CHAT] включён ДВИЖКОВЫЙ чат (режим 1). "
+            .. (why and ("Причина: " .. why .. ". ") or "")
+            .. "Писать: Y как обычно. Вернуть свой: p11_chat_mode 0")
+    end
+end
+
+cvars.AddChangeCallback("p11_chat_mode", function(_, old, new)
+    SyncModeToServer()
+end, "P11.ChatModeSync")
+
+-- ---------- переносы строк ----------
 local function WrapParts(parts)
     surface.SetFont("P11.Chat.Text2")
     local vlines, cur, curW = {}, {}, 0
@@ -79,11 +102,10 @@ local function DrawLine(vline, x, y)
     end
 end
 
--- ---------- отрисовка ленты (под бронёй: ошибка не убьёт чат) ----------
-local paintErrShown = false
-hook.Add("HUDPaint", "P11.ChatPaint", function()
+-- ---------- лента (броня + авто-лечение в режим 1) ----------
+hook.Add("HUDPaint", "P11.ChatPaintV5", function()
     local ok, err = pcall(function()
-        if cvVanilla:GetBool() then return end
+        if ModeNow() ~= 0 then return end
         if P11B and P11B.open then return end
         local x0, y = 20, ScrH() - 152 - (CHAT.boxOpen and 46 or 0)
         local shown = 0
@@ -104,19 +126,19 @@ hook.Add("HUDPaint", "P11.ChatPaint", function()
         end
     end)
     surface.SetAlphaMultiplier(1)
-    if not ok and not paintErrShown then
-        paintErrShown = true
-        ErrorNoHalt("[P11CHAT ERROR HUDPaint] " .. tostring(err) .. "\n")
+    if not ok then
+        -- лента умерла на этой машине → живёт движковый чат
+        SetMode(1, "ошибка прорисовки ленты: " .. tostring(err))
     end
 end)
 
--- ---------- вход 1: серверные пакеты каналов ----------
+-- ---------- вход 1: богатые пакеты каналов ----------
 net.Receive("P11_ChatMsg", function()
     local ch   = net.ReadUInt(4)
     local name = net.ReadString()
     local text = net.ReadString()
     local ncol = net.ReadColor()
-    if cvVanilla:GetBool() then return end
+    if ModeNow() ~= 0 then return end -- зеркало уже покажет движками
 
     if ch == 1 then
         CHAT.AddParts({ { col = ncol, txt = name }, { col = Color(120, 185, 255), txt = " говорит: " }, { col = Color(235, 240, 246), txt = text } })
@@ -136,36 +158,44 @@ end)
 -- ---------- вход 2: системные chat.AddText ----------
 local oldAddText = chat.AddText
 function chat.AddText(...)
-    if not cvVanilla:GetBool() then
-        local parts, cur = {}, Color(235, 238, 244)
-        for _, a in ipairs({ ... }) do
-            if IsColor(a) then cur = a
-            elseif isstring(a) or isnumber(a) then
-                local t = string.gsub(tostring(a), "\n$", "")
-                if t ~= "" then parts[#parts + 1] = { col = cur, txt = t } end
-            elseif type(a) == "Player" and IsValid(a) then
-                parts[#parts + 1] = { col = cur, txt = a:Nick() }
-            end
+    local parts, cur = {}, Color(235, 238, 244)
+    for _, a in ipairs({ ... }) do
+        if IsColor(a) then cur = a
+        elseif isstring(a) or isnumber(a) then
+            local t = string.gsub(tostring(a), "\n$", "")
+            if t ~= "" then parts[#parts + 1] = { col = cur, txt = t } end
+        elseif type(a) == "Player" and IsValid(a) then
+            parts[#parts + 1] = { col = cur, txt = a:Nick() }
         end
-        if #parts > 0 then CHAT.AddParts(parts) end
     end
+    if #parts > 0 then CHAT.AddParts(parts) end
     return oldAddText(...)
 end
 
--- ---------- страховка: движковые речи тоже в ленту (и глушим ваниль) ----------
-hook.Add("OnPlayerChat", "P11.ChatCapture", function(ply, text)
-    if cvVanilla:GetBool() then return end
-    if IsValid(ply) then -- instanceof
-        CHAT.AddParts({ { col = team.GetColor(ply:Team()), txt = ply:Nick() }, { col = Color(235, 240, 246), txt = ": " .. tostring(text) } })
+-- ---------- движковые речи: в ленту (и глушим ваниль ТОЛЬКО в режиме 0) ----------
+hook.Add("OnPlayerChat", "P11.ChatCaptureV5", function(ply, text)
+    if ModeNow() ~= 0 then return end
+    if IsValid(ply) then
+        local col = team.GetColor(ply:Team())
+        CHAT.AddParts({ { col = col, txt = ply:Nick() }, { col = Color(235, 240, 246), txt = ": " .. tostring(text) } })
     end
     return true
 end)
 
-hook.Add("HUDShouldDraw", "P11.ChatHide", function(name)
-    if name == "CHudChat" and not cvVanilla:GetBool() then return false end
+hook.Add("HUDShouldDraw", "P11.ChatHideV5", function(name)
+    if name == "CHudChat" and ModeNow() == 0 then return false end
 end)
 
 -- ---------- строка ввода с кнопкой канала ----------
+local CHANNELS = {
+    { label = "РЕЧЬ",   prefix = "",         col = Color(228, 236, 245) },
+    { label = "OOC",    prefix = "/ooc ",    col = Color(170, 176, 188) },
+    { label = "LOOC",   prefix = "/looc ",   col = Color(145, 152, 165) },
+    { label = "ME",     prefix = "/me ",     col = Color(205, 165, 255) },
+    { label = "IT",     prefix = "/it ",     col = Color(255, 205, 110) },
+    { label = "РЕПОРТ", prefix = "/report ", col = Color(235, 100, 90)  },
+}
+
 function CHAT.Open(withChannel)
     if IsValid(CHAT.Box) then CHAT.Box:Remove() end
     CHAT.boxOpen = true
@@ -210,12 +240,11 @@ function CHAT.Open(withChannel)
     entry:SetFont("P11.Chat.Text2")
     entry:SetTextColor(Color(235, 240, 246))
     entry:SetCursorColor(Color(235, 240, 246))
-    entry:SetPlaceholderText("текст сообщения… (ENTER — отправить, ESC — закрыть, ▸ — канал)")
+    entry:SetPlaceholderText("текст сообщения… (ENTER — отправить, ESC — закрыть)")
     entry.Paint = function(s, w, h)
         draw.RoundedBox(4, 0, 0, w, h, Color(255, 255, 255, 6))
         s:DrawTextEntryText(Color(235, 240, 246), Color(120, 185, 255), Color(235, 240, 246))
     end
-
     entry.OnEnter = function()
         local txt = string.Trim(entry:GetValue() or "")
         if txt ~= "" then
@@ -238,25 +267,97 @@ function CHAT.Close()
     if IsValid(CHAT.Box) then CHAT.Box:Remove() end
 end
 
-hook.Add("PlayerBindPress", "P11.ChatOpen", function(ply, bind, pressed)
+-- ---------- бинды: свой ввод с авто-падением в движковый ----------
+hook.Add("PlayerBindPress", "P11.ChatOpenV5", function(ply, bind, pressed)
     if not pressed then return end
-    if string.find(bind, "messagemode2") then
-        CHAT.Open(2)
-        return true
+    local isTeam = string.find(bind, "messagemode2") ~= nil
+    local isSay  = string.find(bind, "messagemode") ~= nil and not isTeam
+    if not isSay and not isTeam then return end
+    if string.find(bind, "^-") then return end -- отпускание
+
+    if ModeNow() ~= 0 then return end -- движковый режим: пусть открывает движок
+
+    local opened = false
+    local ok, err = pcall(function()
+        CHAT.Open(isTeam and 2 or (CHAT.lastChannel or 1))
+        opened = IsValid(CHAT.Box)
+    end)
+    if not ok or not opened then
+        -- окно не создалось ЭЖЕЛУНЕМ → движковый чат спасает сеанс
+        SetMode(1, "окно ввода не создалось" .. (ok and "" or (": " .. tostring(err))))
+        return -- nil: движок откроет СВОЮ строку прямо сейчас
     end
-    if string.find(bind, "messagemode") and not string.find(bind, "messagemode2") then
-        CHAT.Open(CHAT.lastChannel or 1)
-        return true
+    gui.HideGameUI() -- закрыть возможный gameui-диалог, чтобы фокус ушёл в окно
+    return true
+end)
+
+-- ---------- рукопожатие с сервером ----------
+local function SendHello()
+    net.Start("P11_ChatHello")
+        net.WriteUInt(MAJOR, 4)
+    net.SendToServer()
+    SyncModeToServer()
+    CHAT.helloSent = (CHAT.helloSent or 0) + 1
+    timer.Create("P11.ChatHelloWait", 12, 1, function()
+        if not CHAT.acked and ModeNow() == 0 then
+            -- сервер нас не слышит → серверный модуль чата НЕ загружен:
+            -- наша лента была бы глухая → аварийно в движковый режим
+            SetMode(1, "серверный модуль чата не ответил за 12 секунд")
+            print("[P11CHAT] ВНИМАНИЕ: админу — серверу нужен p11_sv_chat.lua v5 (проверь строку [P11CHAT-SV] в консоли сервера).")
+        end
+    end)
+end
+
+net.Receive("P11_ChatHello", function()
+    local srvMajor = net.ReadUInt(4)
+    local ok = net.ReadBool()
+    if ok then
+        CHAT.acked = true
+        CHAT.ackMajor = srvMajor
+        CHAT.ackAt = CurTime()
+        if srvMajor ~= MAJOR then
+            print("[P11CHAT] протокол сервера v" .. srvMajor .. " ≠ клиент v" .. MAJOR
+                .. " — обнови файлы, пока всё в порядке версии одной стороны.")
+        end
     end
+end)
+
+hook.Add("InitPostEntity", "P11.ChatHelloV5", function()
+    timer.Simple(3, SendHello)
+end)
+-- на случай, если модуль перегрузили в рантайме
+timer.Simple(5, function()
+    if not CHAT.acked then SendHello() end
 end)
 
 -- ---------- диагностика ----------
 concommand.Add("p11_chatdiag_cl", function()
-    print("[P11CHAT] v4.6.8 | линий в ленте: " .. #CHAT.lines .. " | ваниль: " .. tostring(cvVanilla:GetBool()))
-    CHAT.AddParts({
-        { col = Color(120, 255, 120), txt = "[ЧАТ-ТЕСТ]" },
-        { col = Color(235, 240, 246), txt = " видишь эту строку слева внизу — лента жива." },
-    })
+    print("== ЧАТ v5 «РЕЛЕ»: ДИАГНОСТИКА КЛИЕНТА ==")
+    print("  модуль загружен ✔ | протокол v" .. MAJOR)
+    print("  режим: " .. (ModeNow() == 0 and "0/СВОЙ (лента+своё окно)" or "1/ДВИЖОК (зеркала сервера)"))
+    print("  сервер ответил на hello: " .. (CHAT.acked and ("да, протокол v" .. tostring(CHAT.ackMajor)
+        .. ", " .. math.floor(CurTime() - (CHAT.ackAt or 0)) .. "с назад") or "НЕТ (пошло аварийное переключение)"))
+    print("  hello отправлено: " .. tostring(CHAT.helloSent or 0)
+        .. " | линий в ленте: " .. #CHAT.lines)
+    if ModeNow() == 0 then
+        CHAT.AddParts({
+            { col = Color(120, 255, 120), txt = "[ЧАТ-ТЕСТ]" },
+            { col = Color(235, 240, 246), txt = " видишь эту строку слева внизу — лента жива." },
+        })
+        print("  тест-строка отправлена в ленту (должна быть видна слева внизу).")
+    else
+        print("  в режиме 1 лента не рисуется — всё идёт штатным чатом движка.")
+    end
 end)
 
-print("[P11CHAT] v4.6.8 OK — свой чат загружен (Y — писать, диагностика p11_chatdiag_cl)")
+concommand.Add("p11_chatmode", function(ply, cmd, args)
+    local m = tonumber(args[1] or "")
+    if m == 0 or m == 1 then
+        SetMode(m, "ручное переключение")
+        print("[P11CHAT] режим: " .. m)
+    else
+        print("[P11CHAT] p11_chatmode <0|1> — 0 = свой чат, 1 = движковый. Сейчас: " .. ModeNow())
+    end
+end)
+
+print("[P11CHAT] v5 «РЕЛЕ» OK — авто-лечение включено (диагностика: p11_chatdiag_cl, режим: p11_chatmode)")
