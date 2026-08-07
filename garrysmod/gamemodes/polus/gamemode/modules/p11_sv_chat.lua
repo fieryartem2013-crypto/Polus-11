@@ -204,7 +204,7 @@ concommand.Add("p11_chatdiag", function(ply)
     if IsValid(ply) and not P11FW.Config.Admin(ply) then return end
 
     local out = { "== ЧАТ v5 «РЕЛЕ»: ДИАГНОСТИКА СЕРВЕРА ==" }
-    out[#out + 1] = "  модуль: загружен ✔ | протокол: v" .. MAJOR
+    out[#out + 1] = "  модуль: загружен ✔ | протокол: v" .. MAJOR .. " | клиенты v6 «СТОК» докладывают режим 0"
     for _, p in ipairs(player.GetAll()) do
         local mode = p.P11ChatMode
         out[#out + 1] = string.format("  %-22s режим=%s | клиент чата v%d | hello %s",
@@ -224,4 +224,4 @@ concommand.Add("p11_chatdiag", function(ply)
     if IsValid(ply) then ply:PrintMessage(HUD_PRINTCONSOLE, txt) else print(txt) end
 end)
 
-print("[P11CHAT-SV] чат v5 «РЕЛЕ» загружен: двойная дорога (лента + зеркало), режимы по пакету P11_ChatMode")
+print("[P11CHAT-SV] чат v5/v6 загружен: роутинг каналов + движковое зеркало тем, кто не поздоровался (клиенты v6 СТОК — штатный чат)")
