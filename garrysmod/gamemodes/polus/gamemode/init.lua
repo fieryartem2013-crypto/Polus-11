@@ -115,7 +115,7 @@ local sv = {
     "modules/p11_sv_chars.lua",      -- дело бойца: персонажи + сохранение (v4.3.0)
     "modules/p11_sv_models.lua",     -- выдача моделей: надеть/выдать (v4.4.0, с нуля)
     "modules/p11_sv_chat.lua",       -- чат: /ooc /looc /me /it /report + локальная речь (v4.5.0)
-    "modules/p11_sv_spawncore.lua",  -- v4.8.7 «ТОЧКА»: ЯДРО СПАВНА — PlayerSelectSpawn, без гонки таймеров
+    "modules/p11_sv_spawncore.lua",  -- v4.8.9 «МАЯК»: ЯДРО СПАВНА — прямой GM-путь + страховка с логом
     "modules/p11_sv_arrival.lua",    -- зоны прибытия/точки спавна: хранилище + LVS-грузовик (v4.8.7)
     "modules/p11_sv_playtime.lua",   -- время игры → доступ к профам (v4.5.0; v4.8.0 — честные минуты)
     "modules/p11_sv_voice.lua",      -- 3D-голос + радио-эфир линком (v4.8.1 «ЭФИР»)
@@ -189,3 +189,28 @@ end
 
 concommand.Add("polus_status", function(ply) PrintStatus(ply) end)
 concommand.Add("polus11_status", function(ply) PrintStatus(ply) end) -- совместимость
+
+-- ============================================================
+--  v4.8.9 «МАЯК»: ПРЯМОЙ ПУТЬ СПАВНА — оверрайд GM-функции.
+--  Движок зовёт GM:PlayerSelectSpawn при КАЖДОМ спавне/респавне
+--  и ставит бойца в координаты вернувшейся сущности. Точку
+--  решает ядро (p11_sv_spawncore: POLUS11.SpawnResolve), а якорь
+--  двигает POLUS11.SpawnAnchor. Своей точки нет — вежливо
+--  отдаём выбор базовому (sandbox) коду.
+-- ============================================================
+function GM:PlayerSelectSpawn(ply, transition)
+    if not transition and POLUS11 and POLUS11.SpawnResolve then
+        local r = POLUS11.SpawnResolve(ply)
+        if r then
+            local pos = POLUS11.SpawnNudge and POLUS11.SpawnNudge(ply, r.pos) or r.pos
+            local anchor = POLUS11.SpawnAnchor and POLUS11.SpawnAnchor(ply, pos, r.ang)
+            if IsValid(anchor) then
+                if P11FW and P11FW.Log then
+                    P11FW.Log("СПАВН (GM-путь): " .. ply:Nick() .. " → " .. r.why)
+                end
+                return anchor
+            end
+        end
+    end
+    return self.BaseClass:PlayerSelectSpawn(ply, transition)
+end

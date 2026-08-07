@@ -343,4 +343,4 @@ concommand.Add("p11_spawndiag", function(ply)
     if IsValid(ply) then ply:PrintMessage(HUD_PRINTCONSOLE, txt) else print(txt) end
 end)
 
-print("[POLUS-11] зоны прибытия v4.8.7 «ТОЧКА»: хранилище точек/грузовик/куб-маркеры на месте; решение о спавне делает ЯДРО (p11_sv_spawncore) — без гонки таймеров; p11_arrival marks / p11_spawndiag")
+print("[POLUS-11] зоны прибытия v4.8.9 «МАЯК»: хранилище точек/грузовик/куб-маркеры на месте; решение о спавне делает ЯДРО (p11_sv_spawncore) — без гонки таймеров; p11_arrival marks / p11_spawndiag")
