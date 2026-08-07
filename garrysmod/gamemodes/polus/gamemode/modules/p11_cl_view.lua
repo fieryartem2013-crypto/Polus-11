@@ -161,8 +161,11 @@ timer.Simple(1, function()
     VT.Setup = function(self, ply)
         oldSetup(self, ply)
         if not IsValid(ply) then return end
-        -- маскировка Нечто: говорит ТЫ, а видят жертву
+        -- v4.8.2: в плашке говорящего — ПОЗЫВНОЙ, а не steam-ник.
+        -- Порядок как у POLUS11.DisplayName: личина Нечто (вообще
+        -- скрывает тебя под жертвой) > позывной из дела бойца > ник.
         local name = ply:GetNWString("P11_FakeNick", "")
+        if name == "" then name = ply:GetNWString("P11_CharName", "") end
         if name == "" then name = ply:Nick() end
         self.LabelName:SetText("🔊 " .. name)
         local tc = team.GetColor(ply:Team())

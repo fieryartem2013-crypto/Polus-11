@@ -367,7 +367,13 @@ function P11.OpenModelMenu()
                     surface.PlaySound("buttons/button9.wav")
                     MPanel_SetModel(mdl)
                 end
-                ic.DoDoubleClick = function()
+                -- v4.8.2: двойной клик = НАДЕТЬ. Родной SpawnIcon на
+                -- даблклик открывает спавнлист (а Q-меню у нас под
+                -- дев-гейтом v4.8.0) — поэтому кнопка «не работала».
+                if ic.SetOpenSpawnlistOnDoubleClick then
+                    ic:SetOpenSpawnlistOnDoubleClick(false)
+                end
+                ic.OnDoubleClick = function()
                     MPanel_SetModel(mdl)
                     WearSelected(false)
                 end
@@ -397,6 +403,11 @@ function P11.OpenModelMenu()
                 bad.DoClick = function()
                     surface.PlaySound("buttons/button10.wav")
                     MPanel_SetModel(mdl) -- превью-подстановка + честный статус
+                end
+                -- v4.8.2: и «серые» тайлы носятся двойным кликом
+                bad.DoDoubleClick = function()
+                    MPanel_SetModel(mdl)
+                    WearSelected(false)
                 end
             end
         end

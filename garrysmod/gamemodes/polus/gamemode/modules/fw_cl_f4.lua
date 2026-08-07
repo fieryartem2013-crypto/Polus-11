@@ -195,7 +195,9 @@ function P11FW.OpenJobMenu()
 
                         -- занятые места + допуски
                         local maxT = job.max or 0
-                        local taken = P11FW.TeamCount(s.JobId, LocalPlayer():Team() == P11FW.JobTeams[s.JobId] and LocalPlayer() or nil)
+                        -- v4.8.2: показываем ОБЩЕЕ число занятых мест (раньше
+                        -- вычитали СЕБЯ — отсюда «я на поваре, а мест 0/2»)
+                        local taken = P11FW.TeamCount(s.JobId)
                         local slotsTxt = maxT > 0 and (taken .. "/" .. maxT) or "∞"
                         local slotsCol = C.dim
                         if maxT > 0 and taken >= maxT then slotsCol = C.bad end
@@ -259,7 +261,7 @@ function P11FW.OpenJobMenu()
             draw.SimpleText(string.upper(job.name), "P11FW.Huge", 14, h / 2, jc, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
 
             local maxT = job.max or 0
-            local taken = P11FW.TeamCount(jobId, LocalPlayer():Team() == P11FW.JobTeams[jobId] and LocalPlayer() or nil)
+            local taken = P11FW.TeamCount(jobId) -- v4.8.2: общий счёт занятых
             local st = maxT > 0 and ("мест занято " .. taken .. "/" .. maxT) or "мест без лимита"
             draw.SimpleText(st, "P11FW.Small", w - 14, h / 2,
                 (maxT > 0 and taken >= maxT) and C.bad or C.dim, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
@@ -437,7 +439,7 @@ function P11FW.OpenJobMenu()
         elseif timeBlocked then
             state, stateCol = "⏳ ОТКРОЕТСЯ С " .. needT .. " МИН — у тебя " .. myMin, Color(150, 200, 255)
         elseif full then
-            state, stateCol = "МЕСТ НЕТ — " .. P11FW.TeamCount(jobId, me) .. "/" .. (job.max or 0), C.bad
+            state, stateCol = "МЕСТ НЕТ — " .. P11FW.TeamCount(jobId) .. "/" .. (job.max or 0), C.bad -- v4.8.2: общий счёт
         else
             state, stateCol = "ЗАНЯТЬ ДОЛЖНОСТЬ ➜", C.ok
         end

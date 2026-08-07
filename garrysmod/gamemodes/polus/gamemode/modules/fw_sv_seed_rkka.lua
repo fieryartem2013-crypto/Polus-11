@@ -117,7 +117,7 @@ local SEED_JOBS = {
         id = "seed_rkka_komissar", time = 240, -- v4.6.6: минуты для доступа category = "rkka", order = 35,
         name = "Комиссар РККА",
         desc = "Политрук гарнизона. Дисциплина, допросы, трибунал. Трёхлинейка — за спиной, ордер на расстрел дезертиров — в кармане. Одно место. 100 ХП / 100 брони.",
-        weapons = { { "arc9_eft_mosin_sniper", "arc9_eft_mosin_infantry", "weapon_crossbow" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 100, armor = 100, max = 2, terminal = true, -- v4.6.6: лимит 2
+        weapons = { { "arc9_eft_mosin_sniper", "arc9_eft_mosin_infantry", "weapon_crossbow" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 100, armor = 100, max = 1, terminal = true, command = true, -- v4.8.2: лимит 1, трибуналу — приказы/розыск
         color = Color(160, 90, 85),
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/commissar/co/m35_1941_s1_02.mdl",
@@ -130,7 +130,7 @@ local SEED_JOBS = {
         id = "seed_rkka_general", time = 300, -- v4.6.6: минуты для доступа category = "rkka", order = 36,
         name = "Генерал РККА",
         desc = "Командующий всем военным контингентом станции из генеральского штаба. Трёхлинейка и полная власть. Одно место. 125 ХП / 125 брони.",
-        weapons = { { "arc9_eft_mosin_sniper", "arc9_eft_mosin_infantry", "weapon_crossbow" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 125, armor = 125, max = 2, terminal = true, command = true, -- v4.6.6: лимит 2,
+        weapons = { { "arc9_eft_mosin_sniper", "arc9_eft_mosin_infantry", "weapon_crossbow" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 125, armor = 125, max = 1, terminal = true, command = true, -- v4.8.2: лимит 1
         color = Color(210, 185, 90),
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/general_staff/gen/m40_1941_s1_05.mdl",
@@ -140,7 +140,7 @@ local SEED_JOBS = {
         id = "seed_rkka_generalpeh", time = 300, -- v4.6.6: минуты для доступа category = "rkka", order = 37,
         name = "Генерал РККА (Пехота)",
         desc = "Комбат пехотного звена: ближе к окопам, чем к штабу. Двустволка MR-43 для личной самообороны. Одно место. 100 ХП / 100 брони.",
-        weapons = { { "arc9_eft_mr43", "weapon_shotgun" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 100, armor = 100, max = 2, terminal = true, -- v4.6.6: лимит 2
+        weapons = { { "arc9_eft_mr43", "weapon_shotgun" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 100, armor = 100, max = 1, terminal = true, -- v4.8.2: лимит 1
         color = Color(195, 175, 85),
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/infantry/gen/m40_1941_s1_02.mdl",
@@ -190,7 +190,7 @@ local SEED_JOBS = {
         id = "seed_nkvd_osobist", time = 180, -- v4.6.6: минуты для доступа category = "nkvd", order = 53, whitelist = true, -- v4.4.0: ВАЙТЛИСТ
         name = "Особист НКВД",
         desc = "Контрразведка станции. Может объявлять РОЗЫСК (!розыск) и отдавать ПРИКАЗЫ (!приказ) без санкции генерала, если подозревает Нечто. Одно место. 115 ХП / 100 брони.",
-        weapons = { { "arc9_eft_aks74u", "arc9_eft_aks74", "weapon_smg1" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 115, armor = 100, max = 2, terminal = true, command = true, -- v4.6.6: лимит 2,
+        weapons = { { "arc9_eft_aks74u", "arc9_eft_aks74", "weapon_smg1" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 115, armor = 100, max = 1, terminal = true, command = true, -- v4.8.2: лимит 1
         color = Color(154, 30, 30), -- v4.5.0 КРАСНО-ЧЁРНЫЙ,
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/commissar/co/m35_1941_s1_02.mdl",
@@ -200,7 +200,7 @@ local SEED_JOBS = {
         id = "seed_nkvd_nachalnik", time = 240, -- v4.6.6: минуты для доступа category = "nkvd", order = 54, whitelist = true, -- v4.4.0: ВАЙТЛИСТ
         name = "Начальник Особого Отдела НКВД",
         desc = "Высшее слово станции по вопросам внутренней безопасности. Его подпись в ордере на расстрел равна приговору Военного трибунала. Одно место. 125 ХП / 125 брони.",
-        weapons = { { "arc9_eft_aks74u", "arc9_eft_aks74", "weapon_smg1" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 125, armor = 125, max = 2, terminal = true, command = true, -- v4.6.6: лимит 2,
+        weapons = { { "arc9_eft_aks74u", "arc9_eft_aks74", "weapon_smg1" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 125, armor = 125, max = 1, terminal = true, command = true, -- v4.8.2: лимит 1
         color = Color(170, 34, 34), -- v4.5.0 КРАСНО-ЧЁРНЫЙ,
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/general_staff/gen/m40_1941_s1_05.mdl",
@@ -212,7 +212,7 @@ local SEED_JOBS = {
         id = "seed_sci_laborant", time = 0, -- v4.6.6: минуты для доступа category = "science", order = 40,
         name = "Лаборант (ЦНИИ)",
         desc = "Младший научный состав исследовательского блока. Мытьё пробирок, подносы, журналы опытов. 100 ХП / 100 брони.",
-        weapons = {}, hp = 100, armor = 100, max = 4,
+        weapons = { "weapon_polus11_syringe" }, hp = 100, armor = 100, max = 4, -- v4.8.2: шприц теста крови
         color = Color(165, 205, 250),
         models = { "Models/UIF/scientists/UIF_scientist_7.mdl" },
     },
@@ -220,7 +220,7 @@ local SEED_JOBS = {
         id = "seed_sci_ucheniy", time = 30, -- v4.6.6: минуты для доступа category = "science", order = 41,
         name = "Учёный",
         desc = "Штатный исследователь комплекса. Доступ к образцам и лабораторным стендам. 100 ХП / 100 брони.",
-        weapons = {}, hp = 100, armor = 100, max = 3,
+        weapons = { "weapon_polus11_syringe" }, hp = 100, armor = 100, max = 3, -- v4.8.2: шприц теста крови
         color = Color(170, 210, 255),
         models = { "Models/UIF/scientists/UIF_scientist_7.mdl" },
     },
@@ -228,7 +228,7 @@ local SEED_JOBS = {
         id = "seed_sci_biohim", time = 60, -- v4.6.6: минуты для доступа category = "science", order = 42,
         name = "Био-химик",
         desc = "Специалист по биохимическому анализу тканей. К его холодильнику с образцами лучше не подходить без перчаток. 100 ХП / 100 брони.",
-        weapons = {}, hp = 100, armor = 100, max = 2,
+        weapons = { "weapon_polus11_syringe" }, hp = 100, armor = 100, max = 2, -- v4.8.2: шприц теста крови
         color = Color(145, 225, 210),
         models = { "Models/UIF/scientists/UIF_scientist_7.mdl" },
     },
@@ -236,7 +236,7 @@ local SEED_JOBS = {
         id = "seed_sci_vedushiy", time = 90, -- v4.6.6: минуты для доступа category = "science", order = 43,
         name = "Ведущий Учёный",
         desc = "Руководит экспериментами лично. Подписывает заключения по биологическим угрозам. 100 ХП / 100 брони.",
-        weapons = {}, hp = 100, armor = 100, max = 2, terminal = true,
+        weapons = { "weapon_polus11_syringe" }, hp = 100, armor = 100, max = 2, terminal = true, -- v4.8.2: шприц теста крови
         color = Color(130, 200, 245),
         models = { "Models/UIF/scientists/UIF_scientist_7.mdl" },
     },
@@ -244,7 +244,7 @@ local SEED_JOBS = {
         id = "seed_sci_menedzher", time = 120, -- v4.6.6: минуты для доступа category = "science", order = 44,
         name = "Менеджер Научного Отдела",
         desc = "Отвечает за сметы, графики и допуски научного блока. Знает, кого и за что пускают в лаборатории. Одно место. 100 ХП / 100 брони.",
-        weapons = {}, hp = 100, armor = 100, max = 2, terminal = true, -- v4.6.6: лимит 2
+        weapons = { "weapon_polus11_syringe" }, hp = 100, armor = 100, max = 1, terminal = true, -- v4.8.2: шприц + лимит 1
         color = Color(120, 190, 240),
         models = { "Models/UIF/scientists/UIF_scientist_7.mdl" },
     },
@@ -252,7 +252,7 @@ local SEED_JOBS = {
         id = "seed_sci_sozdatel", time = 180, -- v4.6.6: минуты для доступа category = "science", order = 45,
         name = "Создатель Научного Комплекса",
         desc = "Легенда «Полюс-11»: главный конструктор научного блока. Имеет допуск во ВСЕ отсеки, включая те, о которых нет в документах. Одно место. 100 ХП / 100 брони.",
-        weapons = {}, hp = 100, armor = 100, max = 2, terminal = true, command = true, -- v4.6.6: лимит 2,
+        weapons = { "weapon_polus11_syringe" }, hp = 100, armor = 100, max = 1, terminal = true, command = true, -- v4.8.2: шприц + лимит 1
         color = Color(105, 180, 235),
         models = { "Models/UIF/scientists/UIF_scientist_8.mdl" },
     },
@@ -482,6 +482,52 @@ local function SeedAll()
             P11FW.RegisterCustomJobs(P11FW.CustomJobs)
             P11FW.SyncCustomJobs()
             P11FW.Log("Сид v4.8.1: рация выдана всем военным (РККА/НКВД) — миграция radioV481")
+        end
+    end
+
+    -- ---------- 1.0) v4.8.2 МИГРАЦИЯ: лидеры = одно место + шприцы науке ----------
+    -- Заявка владельца: «у многих глав получил 2 места вместо 1»
+    -- (генерал, глава комплекса, глава отдела и т.д.) и «учёным нужны
+    -- шприцы». Одноразово доезжаем старые сейвы по флагам.
+    do
+        local LEADER1 = {
+            seed_rkka_komissar = true, seed_rkka_general = true,
+            seed_rkka_generalpeh = true, seed_nkvd_osobist = true,
+            seed_nkvd_nachalnik = true, seed_sci_menedzher = true,
+            seed_sci_sozdatel = true,
+        }
+        local SCI = {
+            seed_sci_laborant = true, seed_sci_ucheniy = true,
+            seed_sci_biohim = true, seed_sci_vedushiy = true,
+            seed_sci_menedzher = true, seed_sci_sozdatel = true,
+        }
+        local changed = false
+        for _, rec in ipairs(P11FW.CustomJobs) do
+            if rec and rec.id then
+                if LEADER1[rec.id] and rec.limV482 ~= true then
+                    rec.max = 1
+                    rec.limV482 = true
+                    changed = true
+                end
+                if SCI[rec.id] and rec.sciV482 ~= true then
+                    rec.weapons = istable(rec.weapons) and rec.weapons or {}
+                    local has = false
+                    for _, w in ipairs(rec.weapons) do
+                        if w == "weapon_polus11_syringe" then has = true break end
+                    end
+                    if not has then
+                        rec.weapons[#rec.weapons + 1] = "weapon_polus11_syringe"
+                    end
+                    rec.sciV482 = true
+                    changed = true
+                end
+            end
+        end
+        if changed then
+            P11FW.SaveCustomJobs()
+            P11FW.RegisterCustomJobs(P11FW.CustomJobs)
+            P11FW.SyncCustomJobs()
+            P11FW.Log("Сид v4.8.2: лидерам 1 место (limV482), науке выданы шприцы (sciV482)")
         end
     end
 

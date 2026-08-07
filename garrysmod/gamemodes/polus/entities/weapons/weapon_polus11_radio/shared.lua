@@ -8,7 +8,7 @@
 SWEP.PrintName    = "Рация"
 SWEP.Author       = "POLUS-11"
 SWEP.Category     = "ПОЛЮС-11"
-SWEP.Instructions = "R или /канал — канал | /r текст в эфир | Голос идёт в канал сам"
+SWEP.Instructions = "Канал: R (клик/удержание) или /канал общий|ркка|нквд|наука|персонал | Текст: /r сообщение | Голос сам идёт в твой канал"
 
 SWEP.Spawnable      = true
 SWEP.AdminSpawnable = true
@@ -56,23 +56,14 @@ function SWEP:Reload()
     local ply = self.Owner
     if not IsValid(ply) then return end
 
-    self.NextReload = self.NextReload or 0
-    if CurTime() < self.NextReload then return end
-    self.NextReload = CurTime() + 0.8
+    -- v4.8.2: общий кулдаун с серверным перехватом клавиши R
+    -- (p11_sv_radio) — иначе двойной щелчок по каналам.
+    ply.P11_RadioNextCycle = ply.P11_RadioNextCycle or 0
+    if CurTime() < ply.P11_RadioNextCycle then return end
+    ply.P11_RadioNextCycle = CurTime() + 0.8
 
-    local cur = ply:GetNWString("P11_RadioCh", "all")
-    local next = 1
-    for i, ch in ipairs(ORDER) do
-        if ch == cur then
-            next = (i % #ORDER) + 1
-            break
-        end
-    end
-
-    local newCh = ORDER[next]
-    if SERVER then
-        ply:SetNWString("P11_RadioCh", newCh)
-        POLUS11.Notify(ply, "Канал: " .. (POLUS11.RadioChannels[newCh] or newCh))
+    if SERVER and POLUS11.RadioCycleChannel then
+        POLUS11.RadioCycleChannel(ply) -- уведомление и звук внутри
     end
 end
 

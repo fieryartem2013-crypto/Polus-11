@@ -100,6 +100,103 @@ function P11.CloseCMenu()
 end
 
 -- ============================================================
+--  v4.8.2: СВОЁ ОКНО ВВОДА СТРОКИ (замена Derma_StringRequest)
+--  Жалоба: штатная Derma-форма заявки грузчику «вспыхивает на
+--  секунду и пропадает, второй раз вообще не открывается».
+--  Теперь окно полностью наше: живёт, пока сам не закроешь
+--  (Enter — отправить, Esc / ✕ — отмена), стиль станции.
+-- ============================================================
+function P11.StringRequest(title, label, default, onOk)
+    if IsValid(P11.StrReq) then P11.StrReq:Remove() end
+
+    local f = vgui.Create("DFrame")
+    P11.StrReq = f
+    f:SetSize(452, 158)
+    f:Center()
+    f:SetTitle("")
+    f:SetDraggable(false)
+    f:MakePopup()
+    f:SetDeleteOnClose(true)
+    f:MoveToFront()
+    f.OnRemove = function() if P11.StrReq == f then P11.StrReq = nil end end
+    f.Paint = function(s, w, h)
+        draw.RoundedBox(8, 0, 0, w, h, CC.bg)
+        draw.RoundedBoxEx(8, 0, 0, w, 36, CC.panel, true, true, false, false)
+        surface.SetDrawColor(CC.cyan.r, CC.cyan.g, CC.cyan.b, 140)
+        surface.DrawRect(0, 36, w, 1)
+        surface.SetDrawColor(150, 215, 245, 90)
+        surface.DrawRect(0, 0, 26, 2)
+        surface.DrawRect(0, 0, 2, 26)
+        draw.SimpleText(title or "ВВОД", "P11.CM.Text", 14, 18, CC.cyan, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        draw.SimpleText(label or "", "P11.CM.Small", 14, 52, CC.dim, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+    end
+
+    local xb = vgui.Create("DButton", f)
+    xb:SetPos(452 - 34, 7) xb:SetSize(24, 22)
+    xb:SetText("")
+    xb.Paint = function(s, w, h)
+        draw.RoundedBox(4, 0, 0, w, h, s:IsHovered() and Color(120, 40, 36) or Color(60, 30, 28))
+        draw.SimpleText("✕", "P11.CM.Small", w / 2, h / 2 - 1, Color(240, 200, 195), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+    end
+    xb.DoClick = function() surface.PlaySound("buttons/button10.wav") f:Remove() end
+
+    local entry = vgui.Create("DTextEntry", f)
+    entry:SetPos(14, 66) entry:SetSize(424, 30)
+    entry:SetFont("P11.CM.Text")
+    entry:SetTextColor(CC.text)
+    entry:SetCursorColor(CC.cyan)
+    entry:SetText(default or "")
+    entry:SetMaxLength(60)
+    entry.Paint = function(s, w, h)
+        draw.RoundedBox(6, 0, 0, w, h, Color(6, 10, 15, 255))
+        surface.SetDrawColor(CC.cyan.r, CC.cyan.g, CC.cyan.b, s:HasFocus() and 170 or 60)
+        surface.DrawOutlinedRect(0, 0, w, h, 1)
+        s:DrawTextEntryText(CC.text, CC.cyan, CC.text)
+    end
+    timer.Simple(0, function()
+        if IsValid(entry) then entry:RequestFocus() end
+    end)
+
+    local function Submit()
+        if not IsValid(f) then return end
+        local txt = string.Trim(entry:GetValue() or "")
+        f:Remove()
+        surface.PlaySound("buttons/button15.wav")
+        if onOk then onOk(txt) end
+    end
+    entry.OnEnter = Submit
+    entry.OnLoseFocus = function(s) timer.Simple(0, function() if IsValid(s) then s:RequestFocus() end end) end -- v4.8.2: фокус не отдаём, пока окно живо
+
+    local function SBtn(x, w, name, col, fn)
+        local b = vgui.Create("DButton", f)
+        b:SetPos(x, 110) b:SetSize(w, 34)
+        b:SetText("")
+        b.Paint = function(s, ww, hh)
+            draw.RoundedBox(6, 0, 0, ww, hh, s:IsHovered() and Color(col.r, col.g, col.b, 70) or Color(col.r, col.g, col.b, 34))
+            surface.SetDrawColor(col.r, col.g, col.b, 150)
+            surface.DrawOutlinedRect(0, 0, ww, hh, 1)
+            draw.SimpleText(name, "P11.CM.Text", ww / 2, hh / 2, col, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        end
+        b.DoClick = fn
+        return b
+    end
+    SBtn(14, 208, "ОТПРАВИТЬ ➜", CC.ok, Submit)
+    SBtn(230, 208, "ОТМЕНА (Esc)", CC.bad, function()
+        surface.PlaySound("buttons/button10.wav")
+        f:Remove()
+    end)
+
+    -- Esc закрывает даже из-под фокуса поля ввода
+    entry.OnKeyCodeTyped = function(s, code)
+        if code == KEY_ESCAPE then f:Remove() return true end
+    end
+    f.OnKeyCodePressed = function(s, code)
+        if code == KEY_ESCAPE then f:Remove() end
+    end
+    return f
+end
+
+-- ============================================================
 --  ПАНЕЛЬ C-МЕНЮ
 -- ============================================================
 
@@ -224,7 +321,7 @@ function P11.OpenCMenu()
     -- заявка грузчику + багаж + админская постановка объектов
     CButton(f, 390, 452, 130, 46, "📦 Грузчик", "заявка снабжения", CC.gold, function()
         P11.CloseCMenu()
-        Derma_StringRequest("ЗАЯВКА СНАБЖЕНИЯ", "Что притащить и для чего? (видят все грузчики)",
+        P11.StringRequest("📦 ЗАЯВКА СНАБЖЕНИЯ", "Что притащить и зачем? Видят ВСЕ грузчики (максимум 60 знаков).",
             "", function(txt)
                 net.Start("P11_PorterReq")
                     net.WriteString(txt or "")

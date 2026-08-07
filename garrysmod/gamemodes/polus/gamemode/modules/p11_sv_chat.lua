@@ -122,14 +122,49 @@ local function ColorOf(ply)
 end
 
 local FOREIGN = {
-    "/r ", "/р ", "/приказ", "/розыск", "/персонаж", "/перс",
+    "/r ", "/р ", "/приказ", "/розыск", "/wanted", "/персонаж", "/перс",
     "/char", "/name", "/ник", "/f4", "/menu", "/работа", "/job",
     "/профа", "/рейд", "/итем", "/багаж", "/дать", "/кошелёк",
     "/деньги", "/money", "/баланс",
     "/ларёк", "/ларек", "/магазин", "/shop",
     "/обмен", "/trade",
     "/канал", -- v4.8.1: переключение канала рации (p11_sv_radio)
+    "/репорты", "/reports", -- v4.8.2: окно репортов (p11_sv_reports)
+    "/меню", -- v4.8.2: клиентская команда C-меню (видна только автору)
     "/p11",
+}
+
+-- v4.8.2: «!»-КОМАНДЫ — ТРИ СУДЬБЫ (жалоба: «пишешь ! — вместо
+-- позывного виден стим-ник»; корень: строка с «!» падала в движок,
+-- а тот печатает голый steam-ник всем подряд):
+--  (A) BANG_SERVER — обрабатывают другие PlayerSay-хуки сборки;
+--      отдаём им (return nil). Они сами глушат вывод.
+--  (B) BANG_CLIENT — команды, которые ловит КЛИЕНТ (OnPlayerChat):
+--      текст обязан доехать до движка, иначе не сработает кнопка.
+--      Чтобы его не видели другие с твоим steam-ником, гейммод
+--      (shared.lua: GM:PlayerCanSeePlayersChat) показывает такие
+--      строки ТОЛЬКО самому автору.
+--  (C) всё остальное с «!» — обычный возглас (например «! как так»),
+--      поэтому уходит в OOC с позывным персонажа, а не в никуда.
+local BANG_SERVER = {
+    ["!работа"] = true, ["!job"] = true, ["!f4"] = true, ["!профа"] = true, -- fw_sv_jobs
+    ["!нпс"] = true, ["!npc"] = true, -- fw_sv_npc (нпс убрать / npc remove)
+    ["!menu"] = true, ["!фвадмин"] = true, ["!fw"] = true, ["!p11"] = true, -- fw_sv_setup
+    ["!персонаж"] = true, ["!name"] = true, -- p11_sv_chars
+    ["!приказ"] = true, ["!order"] = true, ["!розыск"] = true, ["!wanted"] = true, -- p11_sv_command
+    ["!репорт"] = true, ["!report"] = true, ["!ролл"] = true, ["!roll"] = true, -- p11_sv_command
+    ["!репорты"] = true, ["!reports"] = true, -- p11_sv_reports v4.8.2
+    ["!дать"] = true, ["!give"] = true, -- p11_sv_economy
+    ["!ларёк"] = true, ["!ларек"] = true, ["!shop"] = true, ["!магазин"] = true, -- p11_sv_inventory
+    ["!маскировка"] = true, ["!маск"] = true, ["!разрыв"] = true, ["!взрыв"] = true, -- p11_sv_nechto
+    ["!крик"] = true, -- p11_sv_nechto (крик ужаса Нечто; /крик — это громкая РЕЧЬ, без «!»)
+    ["!буря"] = true, ["!storm"] = true, -- p11_sv_shift
+    ["!обмен"] = true, ["!trade"] = true, -- p11_sv_trade
+}
+local BANG_CLIENT = {
+    ["!смена"] = true, ["!выбор"] = true, -- fw_cl_f4: открыть F4
+    ["!пульт"] = true, ["!pult"] = true, ["!panel"] = true, -- p11_cl_admin
+    ["!меню"] = true, -- p11_cl_cmenu
 }
 
 local function ChatCore(ply, text)
@@ -137,7 +172,16 @@ local function ChatCore(ply, text)
     if raw == "" then return "" end
     local low = string.lower(raw)
 
-    if string.StartWith(low, "!") then return end
+    if string.StartWith(low, "!") then
+        local first = string.match(low, "^(%S+)") or ""
+        if BANG_SERVER[first] or BANG_CLIENT[first]
+            or string.StartWith(low, "!форма") then -- «!форма <класс>» — префикс у Нечто
+            return -- (A) и (B): команды, их съедят свои обработчики
+        end
+        -- (C): неизвестная «!»-строка — это возглас, а не команда
+        ChatSend(POLUS11.ChatCh.OOC, NameOf(ply), raw, nil, ColorOf(ply))
+        return ""
+    end
 
     local muted = P11FW.IsMuted and P11FW.IsMuted(ply)
     local isReport = string.StartWith(low, "/report") or string.StartWith(low, "/репорт")

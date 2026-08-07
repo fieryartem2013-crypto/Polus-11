@@ -10,6 +10,7 @@
 
 surface.CreateFont("P11.Vitals.Big",   { font = "Roboto", size = 26, weight = 800, extended = true })
 surface.CreateFont("P11.Vitals.Med",   { font = "Roboto", size = 17, weight = 700, extended = true })
+surface.CreateFont("P11.Vitals.Tiny",  { font = "Roboto", size = 12, weight = 600, extended = true })
 surface.CreateFont("P11.Vitals.Small", { font = "Roboto", size = 13, weight = 600, extended = true })
 surface.CreateFont("P11.Vitals.Ammo",  { font = "Roboto", size = 34, weight = 800, extended = true })
 surface.CreateFont("P11.Vitals.Toast", { font = "Roboto", size = 21, weight = 800, extended = true })
@@ -142,7 +143,16 @@ hook.Add("HUDPaint", "P11.Vitals", function()
     DrawBar(px, py + 56, pw, 12, warmFrac, warmCol,
         nil, "❄ ТЕПЛО  " .. math.Round(curWarm) .. "%")
     if warmFrac <= 0.3 then
-        draw.SimpleText("ЗАМЕРЗАЕШЬ — К ГЕНЕРАТОРУ!", "P11.Vitals.Small", px + pw, py + 62,
+        -- v4.8.2 «ДОКЛАД»: жалоба «текст залез». Текст мороза теперь
+        -- под шкалой тепла (а не поверх неё) и всегда ВНУТРИ рамки:
+        -- если не влезает в ширину панели — берём мелкий шрифт.
+        local coldTxt = "ЗАМЕРЗАЕШЬ — К ГЕНЕРАТОРУ!"
+        local coldFont = "P11.Vitals.Small"
+        surface.SetFont(coldFont)
+        if (surface.GetTextSize(coldTxt) or 0) > pw then
+            coldFont = "P11.Vitals.Tiny"
+        end
+        draw.SimpleText(coldTxt, coldFont, px + pw, py + 82,
             Color(235, 245, 255, 200 + 55 * math.sin(t * 8)), TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
     end
 

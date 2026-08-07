@@ -25,6 +25,42 @@ function POLUS11.HasRadio(ply)
     return IsValid(ply) and ply:Alive() and ply:HasWeapon("weapon_polus11_radio")
 end
 
+-- v4.8.2: единый переключатель канала (одна точка правды для
+-- SWEP:Reload и страхующего перехвата клавиши R ниже).
+POLUS11.RadioOrder = { "rkka", "nkvd", "science", "personnel", "all" }
+
+function POLUS11.RadioCycleChannel(ply)
+    if not IsValid(ply) or not ply:Alive() then return end
+    local cur = ply:GetNWString("P11_RadioCh", "all")
+    local idx = 1
+    for i, ch in ipairs(POLUS11.RadioOrder) do
+        if ch == cur then idx = (i % #POLUS11.RadioOrder) + 1 break end
+    end
+    local newCh = POLUS11.RadioOrder[idx]
+    ply:SetNWString("P11_RadioCh", newCh)
+    POLUS11.Notify(ply, "Канал: " .. (POLUS11.RadioChannels[newCh] or newCh))
+    ply:EmitSound("buttons/combine_button" .. math.random(1, 3) .. ".wav", 55, 110)
+end
+
+-- v4.8.2 СТРАХОВКА КЛАВИШИ R: жалоба «в описании R, нажимаю —
+-- ничего». У части клиентов SWEP:Reload глушится связкой/паком
+-- оружия — перехватываем саму клавишу на сервере. Общий кулдаун
+-- P11_RadioNextCycle делит и SWEP:Reload — двойного щелчка нет.
+local function RadioKeyGuard(ply)
+    ply.P11_RadioNextCycle = ply.P11_RadioNextCycle or 0
+    if CurTime() < ply.P11_RadioNextCycle then return end
+    ply.P11_RadioNextCycle = CurTime() + 0.8
+    POLUS11.RadioCycleChannel(ply)
+end
+
+hook.Add("PlayerButtonDown", "P11_RadioKeyR", function(ply, btn)
+    if btn ~= KEY_R or not IsValid(ply) then return end
+    local wep = ply:GetActiveWeapon()
+    if IsValid(wep) and wep:GetClass() == "weapon_polus11_radio" then
+        RadioKeyGuard(ply)
+    end
+end)
+
 -- искажение текста помехами (ASCII-буквы/цифры, UTF-8 не трогаем)
 local function Garble(text, rate)
     local out = {}

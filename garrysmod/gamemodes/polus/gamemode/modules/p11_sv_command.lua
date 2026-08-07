@@ -117,6 +117,21 @@ function POLUS11.SendReport(ply, text)
     ReportsDir()
     file.Append("polus11/reports.txt", line .. "\n")
 
+    -- v4.8.2 «ДОКЛАД»: жалоба становится ТИКЕТОМ окна /репорты —
+    -- админы принимают её кнопкой, телепортируются и закрывают.
+    if POLUS11.RepAdd then
+        local ok, r = POLUS11.RepAdd(ply, text)
+        if ok then
+            local adm = 0
+            for _, a in ipairs(player.GetAll()) do
+                if P11FW.Config.Admin(a) then adm = adm + 1 end
+            end
+            return true, "репорт #" .. r.id .. " отправлен — админы берут его в окне /репорты"
+                .. (adm > 0 and (" (" .. adm .. " адм. онлайн)") or " (админов нет онлайн — записан)")
+        end
+    end
+
+    -- запасная дорога (модуля тикетов нет): прямой пинг, как было
     local got = 0
     for _, a in ipairs(player.GetAll()) do
         if P11FW.Config.Admin(a) then
@@ -143,7 +158,8 @@ hook.Add("PlayerSay", "P11.Command", function(ply, text)
         return ""
     end
 
-    if cmd == "!розыск" or cmd == "!wanted" then
+    -- v4.8.2: алиасы через слэш — игроки привыкли к /-командам
+    if cmd == "!розыск" or cmd == "!wanted" or cmd == "/розыск" or cmd == "/wanted" then
         local who = args[2]
         local reason = string.Trim(string.sub(rest, #(who or "") + 2))
         local ok, err = POLUS11.ToggleWanted(ply, who, reason)
