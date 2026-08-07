@@ -1,5 +1,8 @@
 -- ============================================================
---  ПОЛЮС-11 — ЗОНА ПРИБЫТИЯ + ТРАНСПОРТ (server) v4.5.0
+--  ПОЛЮС-11 — ЗОНА ПРИБЫТИЯ + ТРАНСПОРТ (server) v4.5.0 → v4.7.3
+--  v4.7.3: ЕДИНЫЙ резолвер спавна ArrivalFor (профа > фракция),
+--  телепорт на точку СРАЗУ при смене должности, общий спавн больше
+--  не драчуется с точками фракций, арестованных не двигаем.
 --  «Система спавна через НПС-транспорт»: точка прибытия колонной —
 --  сюда встаёт грузовик (LVS Soviet Pack, классы ниже) и сюда же
 --  ИГРОКИ СПАВНЯТСЯ. Зону назначаешь КОНКРЕТНОЙ фракции:
@@ -240,19 +243,57 @@ function POLUS11.ArrivalTruckRemove(ply)
     P11FW.Notify(ply, n > 0 and "Грузовик колонны убран (после рестарта не воскреснет)." or "Грузовика не было.")
 end
 
--- ============ СПАВН: ОЧЕРЕДЬ ТОЧЕК ============
--- приоритет: точка МОЕЙ ПРОФЫ > зона МОЕЙ фракции > общий спавн-поинт > карта
+-- ============ СПАВН: ЕДИНАЯ ОЧЕРЕДЬ ТОЧЕК (v4.7.3) ============
+-- приоритет: точка МОЕЙ ПРОФЫ > зона МОЕЙ фракции
+-- (общий спавн-поинт и карта — запасные, их обслуживает fw_sv_setup)
+
+-- единый резолвер: куда ЭТОГО игрока вести (nil = нет своих точек)
+function POLUS11.ArrivalFor(ply)
+    if not IsValid(ply) then return nil end
+    local jobId = P11FW.GetJobId and P11FW.GetJobId(ply)
+    local job = P11FW.GetJob and P11FW.GetJob(ply)
+    local fac = job and (job.faction or job.category)
+    return (jobId and POLUS11.JobArrivals[jobId]) or (fac and POLUS11.Arrivals[fac]) or nil
+end
+
+-- встать на точку (с античит-пропуском телепорта)
+local function ArrivalApply(ply, a, why)
+    if not (IsValid(ply) and ply:Alive() and a) then return end
+    ply:SetPos(a.pos)
+    ply:SetEyeAngles(a.ang)
+    if POLUS11.ACMarkTeleport then POLUS11.ACMarkTeleport(ply) end
+end
+
+-- арестованных/рабов спавн-системой не таскаем (их ведёт fw_sv_punish)
+local function PunishedSkip(ply)
+    return IsValid(ply) and (ply:GetNWString("P11FW_Punish", "") ~= "")
+end
 
 hook.Add("PlayerSpawn", "P11.ArrivalSpawn", function(ply)
     timer.Simple(0.09, function()
         if not IsValid(ply) or not ply:Alive() then return end
-        local jobId = P11FW.GetJobId and P11FW.GetJobId(ply)
-        local job = P11FW.GetJob and P11FW.GetJob(ply)
-        local fac = job and (job.faction or job.category)
-        local a = (jobId and POLUS11.JobArrivals[jobId]) or (fac and POLUS11.Arrivals[fac])
+        if PunishedSkip(ply) then return end
+        ArrivalApply(ply, POLUS11.ArrivalFor(ply))
+    end)
+end)
+
+-- v4.7.3: ТЕЛЕПОРТ СРАЗУ ПРИ СМЕНЕ ДОЛЖНОСТИ (вкл/выкл — конфиг
+-- JobTeleportOnChange в p11_sh_config). Багрепорт: «был поваром,
+-- стал РККА — положение не меняется вообще».
+hook.Add("P11FW.JobChanged", "P11.ArrivalJobTP", function(ply, jobId, oldId)
+    if POLUS11.Config and POLUS11.Config.JobTeleportOnChange == false then return end
+    if not IsValid(ply) or not ply:Alive() then return end
+    if PunishedSkip(ply) then return end
+    timer.Simple(0.15, function()
+        if not IsValid(ply) or not ply:Alive() then return end
+        if P11FW.GetJobId(ply) ~= jobId then return end -- успел сменить ещё раз
+        if PunishedSkip(ply) then return end
+        local a = POLUS11.ArrivalFor(ply)
         if not a then return end
-        ply:SetPos(a.pos)
-        ply:SetEyeAngles(a.ang)
+        ArrivalApply(ply, a)
+        ply:EmitSound("buttons/button15.wav", 60, 105)
+        local job = P11FW.Jobs[jobId]
+        POLUS11.Notify(ply, "📍 Ты прибыл на место службы: " .. (job and job.name or jobId) .. ".")
     end)
 end)
 
@@ -295,4 +336,33 @@ concommand.Add("p11_arrival", function(ply, cmd, args)
     end
 end)
 
-print("[POLUS-11] зона прибытия/транспорт загружен (LVS: опционально)")
+-- ============ v4.7.3: диагностика очереди спавна ============
+concommand.Add("p11_spawndiag", function(ply)
+    if IsValid(ply) and not P11FW.Config.Admin(ply) then return end
+    local out = { "== СПАВН СТАНЦИИ: ДИАГНОСТИКА v4.7.3 ==" }
+    local nf, nj = 0, 0
+    for _ in pairs(POLUS11.Arrivals or {}) do nf = nf + 1 end
+    for _ in pairs(POLUS11.JobArrivals or {}) do nj = nj + 1 end
+    out[#out + 1] = "  точек фракций: " .. nf .. " | точек проф: " .. nj
+    out[#out + 1] = "  общий спавн: " .. ((P11FW.GetPoint and P11FW.GetPoint("spawn")) and "ЕСТЬ (применяется ТОЛЬКО при отсутствии точек профы/фракции)" or "нет")
+    out[#out + 1] = "  телепорт при смене должности: "
+        .. ((POLUS11.Config and POLUS11.Config.JobTeleportOnChange ~= false) and "ВКЛ" or "ВЫКЛ (JobTeleportOnChange=false)")
+    out[#out + 1] = "  -- разбор по игрокам (куда станет при спавне):"
+    for _, p in ipairs(player.GetAll()) do
+        local jobId = P11FW.GetJobId and P11FW.GetJobId(p) or "?"
+        local job = P11FW.Jobs and P11FW.Jobs[jobId]
+        local fac = job and (job.faction or job.category) or "?"
+        local how = "карта/общая"
+        if POLUS11.JobArrivals[jobId] then how = "ТОЧКА ПРОФЫ (" .. jobId .. ")"
+        elseif POLUS11.Arrivals[fac] then how = "зона фракции (" .. fac .. ")"
+        elseif P11FW.GetPoint and P11FW.GetPoint("spawn") then how = "ОБЩИЙ спавн" end
+        local pun = p:GetNWString("P11FW_Punish", "")
+        out[#out + 1] = string.format("     %-20s %-28s → %s%s",
+            p:Nick(), job and job.name or jobId, how,
+            pun ~= "" and ("  [НАКАЗАН: ведёт пенальти-система]") or "")
+    end
+    local txt = table.concat(out, "\n")
+    if IsValid(ply) then ply:PrintMessage(HUD_PRINTCONSOLE, txt) else print(txt) end
+end)
+
+print("[POLUS-11] спавн v4.7.3: профа > фракция > общая > карта + телепорт при смене должности + p11_spawndiag")

@@ -67,6 +67,10 @@ end)
 hook.Add("PlayerSpawn", "P11FW.SpawnPoint", function(ply)
     local sp = P11FW.GetPoint("spawn")
     if not sp then return end
+    -- v4.7.3: общий спавн — только если у игрока НЕТ точки профы/фракции.
+    -- Раньше обе системы телепортировали (0.05 и 0.09) — чей таймер
+    -- заикнётся, того и спавн → игроки «зависали» на старой точке.
+    if POLUS11 and POLUS11.ArrivalFor and POLUS11.ArrivalFor(ply) then return end
     timer.Simple(0.05, function()
         if IsValid(ply) and ply:Alive() then
             ply:SetPos(sp.pos)
