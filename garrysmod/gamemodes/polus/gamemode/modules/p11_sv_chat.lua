@@ -161,6 +161,7 @@ local BANG_SERVER = {
     ["!крик"] = true, -- p11_sv_nechto (крик ужаса Нечто; /крик — это громкая РЕЧЬ, без «!»)
     ["!буря"] = true, ["!storm"] = true, -- p11_sv_shift
     ["!обмен"] = true, ["!trade"] = true, -- p11_sv_trade
+    ["!промо"] = true, ["!ПРОМО"] = true, ["!promo"] = true, -- p11_sv_promo v4.9.0 «ТАЛОН» (кириллица не lowercase'ится — оба регистра)
 }
 local BANG_CLIENT = {
     ["!смена"] = true, ["!выбор"] = true, -- fw_cl_f4: открыть F4

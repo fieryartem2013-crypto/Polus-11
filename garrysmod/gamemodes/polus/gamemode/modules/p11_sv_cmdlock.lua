@@ -13,6 +13,7 @@
 --   p11_playtime  — кадровая книжка (своё время)
 --   p11_report    — отправка жалобы
 --   p11_reports   — окно жалоб
+--   p11_promo     — погашение талона-промокода (v4.9.0)
 --   polus_fw_jobs — список профессий
 --   polus_status / polus11_status — технический статус
 --
@@ -33,6 +34,7 @@ local PUBLIC = {
     ["polus_fw_jobs"] = true,
     ["polus_status"] = true,
     ["polus11_status"] = true,
+    ["p11_promo"] = true, -- v4.9.0 «ТАЛОН»: погашение промокода — открыто всем игрокам
 }
 
 local function RankOf(ply)

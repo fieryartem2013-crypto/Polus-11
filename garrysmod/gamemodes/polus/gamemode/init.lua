@@ -126,6 +126,7 @@ local sv = {
     "modules/p11_sv_thingcore.lua",   -- v4.8.8 «ЛИЧИНА»: ядро Нечто — автомаскировка после убийства (с чистого листа)
     "modules/p11_sv_medics.lua",      -- v4.8.8 «ЛИЧИНА»: мед-регламент (шприц — только «Учёному»)
     "modules/p11_sv_killfeed.lua",    -- v4.8.8 «ЛИЧИНА»: киллфид выключен
+    "modules/p11_sv_promo.lua",       -- v4.9.0 «ТАЛОН»: промокоды (F6/!промо/p11_promo), антиперебор, журнал
 }
 
 local function Safe(f)

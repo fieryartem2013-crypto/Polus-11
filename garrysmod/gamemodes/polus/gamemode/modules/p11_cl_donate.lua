@@ -1,13 +1,14 @@
 -- ============================================================
---  ПОЛЮС-11 — F6: ВИТРИНА ПОДДЕРЖКИ СТАНЦИИ (client) v4.8.0
---  ПЛЕЙСХОЛДЕР донат-меню (заявка владельца: «сделай на F6 донат
---  меню, которое пока что как плейсхолдер»). Оплаты/выдачи тут
---  НЕТ: витрина показывает, ЧТО откроется за поддержку, и честно
---  сообщает, что ранги сейчас выдаются вручную — Главой Проекта
---  или Куратором (вкладка АДМИНКИ в /menu, консоль p11_rank).
---  Уже рабочее: ранг VIP (ур.1) сам по себе ОТКРЫВАЕТ секцию
---  💎 VIP-СЛУЖБА в F4 — см. fw_sv_jobs / fw_sh_ranks.IsVIP.
---  Открытие/закрытие: F6. ESC тоже закрывает.
+--  ПОЛЮС-11 — F6: ВИТРИНА ПОДДЕРЖКИ + ТАЛОНЫ (client) v4.9.0 «ТАЛОН»
+--  НОВОЕ (заявка владельца «промокоды в Донат меню»): внизу окна —
+--  рабочее поле «ТАЛОН НАГРАДЫ»: вводишь код → сервер (p11_sv_promo)
+--  гасит талон и сразу выдаёт награду (деньги / VIP / сюрприз).
+--  Ответ сервера = зелёная/красная строка статуса + сообщение в чат.
+--  Оплаты реальными деньгами тут по-прежнему НЕТ и НЕ БУДЕТ без
+--  донат-сервиса: автопродажу подключим через EasyDonate/CraftedStore/
+--  Tebex, когда владелец там зарегистрируется (карты в коде — никогда).
+--  Открытие/закрытие: F6. ESC тоже закрывает. Кнопки пакетов пока
+--  «СКОРО» — честный плейсхолдер, ранги пока выдаёт Глава/Куратор.
 -- ============================================================
 
 surface.CreateFont("P11D.Title", { font = "Roboto", size = 28, weight = 800, extended = true })
@@ -27,6 +28,8 @@ local C = {
     gold   = Color(235, 205, 100),
     crown  = Color(255, 185, 95),
     shield = Color(150, 200, 255),
+    green  = Color(120, 235, 140),
+    red    = Color(255, 120, 110),
 }
 
 -- витрина пакетов (плейсхолдер — кнопки бездействуют)
@@ -37,7 +40,7 @@ local PACKS = {
         perks = {
             "секция 💎 VIP-СЛУЖБА в F4 (Следопыт-охотник, Ветеран Арктики, Военврач) — УЖЕ РАБОТАЕТ",
             "золотой ранг «VIP» в составе станции (TAB)",
-            "уважение экипажа и приоритет в очередях смены",
+            "также даруется золотым ТАЛОНОМ (поле внизу) — если у тебя есть код",
         },
     },
     {
@@ -67,10 +70,27 @@ local function CloseDonate()
     end
 end
 
+local function SendPromo(entry)
+    if not IsValid(entry) then return end
+    local code = string.Trim(entry:GetValue() or "")
+    if code == "" then
+        P11D.PromoMsg = "Введи код талона в поле слева."
+        P11D.PromoOk = nil
+        surface.PlaySound("buttons/button10.wav")
+        return
+    end
+    P11D.PromoMsg = "Отправил талон на ЦНИИ-экспедит…"
+    P11D.PromoOk = nil
+    net.Start("p11_promo_use")
+        net.WriteString(code)
+    net.SendToServer()
+    surface.PlaySound("buttons/button15.wav")
+end
+
 local function OpenDonate()
     CloseDonate()
 
-    local W, H = 760, 600
+    local W, H = 760, 664
     local f = vgui.Create("DFrame")
     P11D.Frame = f
     f:SetSize(W, H)
@@ -93,7 +113,6 @@ local function OpenDonate()
         Derma_DrawBackgroundBlur(s2, SysTime())
         draw.RoundedBox(12, 0, 0, w, h, C.bg)
 
-        -- шапка с морозной кромкой
         draw.RoundedBoxEx(12, 0, 0, w, 64, C.panel2, true, true, false, false)
         sweep = (SysTime() * 110) % (w + 240) - 120
         surface.SetDrawColor(255, 225, 140, 14)
@@ -104,10 +123,9 @@ local function OpenDonate()
         surface.DrawRect(0, 66, w, 1)
 
         draw.SimpleText("ПОДДЕРЖКА СТАНЦИИ", "P11D.Title", 18, 10, C.text)
-        draw.SimpleText("витрина-плейсхолдер · приёмка платежей «ЦНИИ-экспедит» ещё не настроена",
+        draw.SimpleText("есть код? внизу поле ТАЛОНА — награда мгновенная · автопродажа — через донат-сервис, скоро",
             "P11D.Small", 18, 42, C.dim)
 
-        -- статус моего ранга справа в шапке
         draw.SimpleText("ваш ранг: " .. tostring(myRank) .. (iAmVIP and " (VIP-доступ ЕСТЬ ✔)" or ""),
             "P11D.Small", w - 16, 12, iAmVIP and C.gold or C.dim, TEXT_ALIGN_RIGHT)
     end
@@ -145,7 +163,6 @@ local function OpenDonate()
             draw.SimpleText(s2.Pack.icon .. " " .. s2.Pack.name, "P11D.Big", 12, 12, pc)
             draw.SimpleText(s2.Pack.tag, "P11D.Small", 12, 38, C.dim)
 
-            -- маркер «У ВАС» для текущих VIP
             if s2.Pack.name == "VIP" and iAmVIP then
                 draw.RoundedBox(8, w - 74, 12, 62, 22, Color(70, 120, 70, 200))
                 draw.SimpleText("У ВАС", "P11D.Small", w - 43, 23, Color(190, 255, 190), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
@@ -160,10 +177,8 @@ local function OpenDonate()
             local yy = 2
             local left = 0
             for _, perk in ipairs(s2.Pack.perks) do
-                -- текст перка в колонку: простая отрисовка с переносом
                 draw.SimpleText("•", "P11D.Text", left, yy + 4, s2.Pack.col)
                 surface.SetFont("P11D.Text")
-                -- переносим по ширине вручную через длину строки
                 local words = {}
                 for w2 in string.gmatch(perk, "%S+") do words[#words + 1] = w2 end
                 local line = ""
@@ -204,28 +219,103 @@ local function OpenDonate()
         end
     end
 
-    -- футер: как получить СЕЙЧАС (ручная выдача)
+    -- ============ ФУТЕР: ТАЛОН НАГРАДЫ (рабочий ввод промокода) ============
+    local fy0 = y0 + cardH + 16
     local foot = vgui.Create("DPanel", f)
-    foot:SetPos(16, y0 + cardH + 16)
-    foot:SetSize(W - 32, 600 - (y0 + cardH + 16) - 14)
+    foot:SetPos(16, fy0)
+    foot:SetSize(W - 32, H - fy0 - 14)
     foot.Paint = function(s2, w, h)
         draw.RoundedBox(10, 0, 0, w, h, C.panel2)
         surface.SetDrawColor(255, 225, 140, 35)
         surface.DrawRect(0, 0, w, 1)
-        draw.SimpleText("КАК ПОЛУЧИТЬ СЕЙЧАС", "P11D.Big", 14, 10, C.gold)
-        draw.SimpleText("Платёжный автомат ещё не завезён — это витрина. Привилегии выдаются ВРУЧНУЮ:", "P11D.Text", 14, 38, C.text)
-        draw.SimpleText("1) договорись с Главой Проекта / Куратором сервера   2) они выдадут тебе ранг VIP (/menu → АДМИНКИ или p11_rank)", "P11D.Small", 14, 62, C.dim)
-        draw.SimpleText("3) открой F4 — появится секция 💎 VIP-СЛУЖБА с профами   4) в TAB твой ранг станет золотым «VIP»", "P11D.Small", 14, 82, C.dim)
+        draw.SimpleText("ТАЛОН НАГРАДЫ", "P11D.Big", 14, 8, C.gold)
+        draw.SimpleText("Талон — одноразовый код от команды станции (рассылка / дискорд). Код пишется ТОЧНО как выдан, большими буквами.",
+            "P11D.Small", 14, 32, C.dim)
 
-        draw.SimpleText("F6 / ESC — закрыть витрину", "P11D.Small", w - 14, h - 12, C.dim, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
+        -- строка статуса ответа сервера
+        if P11D.PromoMsg then
+            local stCol = C.dim
+            if P11D.PromoOk == true then stCol = C.green end
+            if P11D.PromoOk == false then stCol = C.red end
+            surface.SetFont("P11D.Small")
+            local msg = tostring(P11D.PromoMsg)
+            -- перенос статуса в 2 строки по ширине
+            local words = {}
+            for w2 in string.gmatch(msg, "%S+") do words[#words + 1] = w2 end
+            local line, yy = "", 94
+            for _, wd in ipairs(words) do
+                local test = (line == "") and wd or (line .. " " .. wd)
+                if (surface.GetTextSize(test) or 0) > w - 28 then
+                    draw.SimpleText(line, "P11D.Small", 14, yy, stCol)
+                    yy = yy + 17
+                    line = wd
+                    if yy > 128 then break end
+                else
+                    line = test
+                end
+            end
+            if line ~= "" and yy <= 128 then draw.SimpleText(line, "P11D.Small", 14, yy, stCol) end
+        else
+            draw.SimpleText("Пути ввода талона: это поле • чат «!промо КОД» • консоль «p11_promo КОД».", "P11D.Small", 14, 94, C.dim)
+        end
+
+        draw.SimpleText("Без талона VIP выдаётся вручную: Глава/Куратор (p11_rank) — автопродажа подключим через донат-сервис.",
+            "P11D.Small", 14, 136, C.dim)
+        draw.SimpleText("F6 / ESC — закрыть", "P11D.Small", w - 14, h - 14, C.dim, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
     end
+
+    -- поле кода
+    local entry = vgui.Create("DTextEntry", foot)
+    entry:SetPos(14, 54)
+    entry:SetSize(W - 32 - 14 - 10 - 190 - 14, 32)
+    entry:SetFont("P11D.Text")
+    entry:SetTextColor(C.text)
+    entry:SetPlaceholderText("ВВЕДИ КОД ТАЛОНА…")
+    entry:SetPaintBackground(false)
+    entry.Paint = function(s2, w, h)
+        draw.RoundedBox(8, 0, 0, w, h, Color(12, 16, 24))
+        surface.SetDrawColor(P11D.PromoOk == false and C.red or C.gold)
+        surface.DrawOutlinedRect(0, 0, w, h, 1)
+        s2:DrawTextEntryText(C.text, Color(120, 130, 145), C.text)
+    end
+    entry.OnEnter = function(s2) SendPromo(s2) end
+
+    -- кнопка погашения
+    local go = vgui.Create("DButton", foot)
+    go:SetPos(W - 32 - 14 - 190, 54)
+    go:SetSize(190, 32)
+    go:SetText("")
+    go.Paint = function(s2, w, h)
+        local hov = s2:IsHovered()
+        draw.RoundedBox(8, 0, 0, w, h, hov and Color(70, 60, 30) or Color(52, 46, 22))
+        surface.SetDrawColor(C.gold)
+        surface.DrawOutlinedRect(0, 0, w, h, 1)
+        draw.SimpleText("ПОГАСИТЬ ТАЛОН", "P11D.Big", w / 2, h / 2 - 2, hov and Color(255, 235, 160) or C.gold,
+            TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+    end
+    go.DoClick = function() SendPromo(entry) end
 end
+
+-- ответ сервера на погашение талона (v4.9.0)
+net.Receive("p11_promo_use", function()
+    local ok = net.ReadBool()
+    local msg = net.ReadString()
+    P11D.PromoMsg = msg
+    P11D.PromoOk = ok and true or false
+    if ok then
+        surface.PlaySound("buttons/button9.wav")
+        chat.AddText(Color(235, 205, 100), "[ТАЛОН] ", Color(140, 240, 160), msg)
+    else
+        surface.PlaySound("buttons/button10.wav")
+        chat.AddText(Color(235, 205, 100), "[ТАЛОН] ", Color(255, 150, 140), msg)
+    end
+end)
 
 -- подтверждение клика по «СКОРО» (честный плейсхолдер)
 function P11D.PingSoon(packName)
     chat.AddText(Color(235, 205, 100), "[ПОДДЕРЖКА] ",
-        Color(225, 230, 240), "Пакет «" .. tostring(packName) .. "» пока в разработке — ",
-        Color(150, 165, 185), "ранг VIP уже выдаётся вручную Главой/Куратором и открывает 💎 VIP-профы в F4.")
+        Color(225, 230, 240), "Пакет «" .. tostring(packName) .. "» в разработке — ",
+        Color(150, 165, 185), "автопродажа появится после подключения донат-сервиса; VIP пока выдаёт Глава/Куратор, а талоны гасятся внизу окна.")
 end
 
 -- ============ КЛАВИША F6 ============
@@ -242,9 +332,9 @@ hook.Add("PlayerButtonDown", "P11.DonateF6", function(ply, btn)
     end
 end)
 
--- консольная копия (меню может перехватывать фокус — пусть будет запасной путь)
+-- консольная копия (запасной путь)
 concommand.Add("p11_donate", function()
     if IsValid(P11D.Frame) then CloseDonate() else OpenDonate() end
 end)
 
-print("[POLUS-11] донат-витрина v4.8.0 загружена (F6 — плейсхолдер)")
+print("[POLUS-11] донат-витрина v4.9.0 загружена (F6 — витрина + поле ТАЛОНА)")
