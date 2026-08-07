@@ -54,8 +54,17 @@ function POLUS11.ThingOfferOpen(manual)
     local cfg = Cfg()
     SetGlobalFloat("P11_ThingOfferUntil", Now() + cfg.window)
     P.NextOffer = nil
-    PrintMessage(HUD_PRINTTALK, "[КАДРЫ] Поступила ОСОБАЯ ВАКАНСИЯ — уточнить у кадровика. "
+    PrintMessage(HUD_PRINTTALK, "[КАДРЫ] Поступила ОСОБАЯ ВАКАНСИЯ — подойди к КАДРОВИКУ и нажми [E]. "
         .. "Действует " .. cfg.window .. " сек.")
+    -- v4.8.8 «ЛИЧИНА»: красная плашка над кадровиком рисует клиент
+    -- (p11_cl_thingoffer), а сервер дополнительно НАПОМИНАЕТ раз в 20 сек
+    timer.Remove("P11_ThingOfferRemind")
+    local reps = math.max(1, math.floor(cfg.window / 20) - 1)
+    timer.Create("P11_ThingOfferRemind", 20, reps, function()
+        if not POLUS11.ThingOfferActive() then return end
+        PrintMessage(HUD_PRINTTALK, "[КАДРЫ] Особая вакансия всё ещё ОТКРЫТА — красная плашка над кадровиком. Осталось "
+            .. math.ceil(GetGlobalFloat("P11_ThingOfferUntil", 0) - CurTime()) .. " сек.")
+    end)
     POLUS11.Log("Вакансия Нечто открыта" .. (manual and " (вручную)" or ""))
     print("[КАДРЫ] ОСОБАЯ ВАКАНСИЯ открыта: " .. cfg.window .. " сек (p11_offerdiag — состояние)")
 end
@@ -63,6 +72,7 @@ end
 local function ThingOfferClose(reason)
     if not POLUS11.ThingOfferActive() then return end
     SetGlobalFloat("P11_ThingOfferUntil", 0)
+    timer.Remove("P11_ThingOfferRemind")
     POLUS11.Log("Вакансия Нечто закрыта: " .. (reason or "истекла"))
 end
 

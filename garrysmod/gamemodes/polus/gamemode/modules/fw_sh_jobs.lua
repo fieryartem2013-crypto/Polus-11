@@ -124,14 +124,14 @@ P11FW.Jobs = {
     medic = {
         order = 12, category = "personnel", time = 30, -- v4.6.6
         name = "Полевой медик",
-        desc = "Санитар станции. Умеет брать кровь как лаборант, но главное — ПКМ шприца ЛЕЧИТ раненых (+12 ХП). Латать после стычек с Нечто — его хлеб и его крест.",
+        desc = "Санитар станции. Главное — ПОЛЕВОЙ МЕДКЕЙС: латает раненых лицом к лицу (ЛКМ +12, ПКМ — себя). Латать после стычек с Нечто — его хлеб и его крест. v4.8.8: шприц больше не его — тест крови делает только «Учёный».",
         models = {
             "models/player/Group03m/male_01.mdl",
             "models/player/Group03m/male_02.mdl",
             "models/player/Group03m/male_03.mdl",
         },
         color = Color(150, 230, 190),
-        weapons = { "weapon_polus11_syringe", "weapon_polus11_radio" },
+        weapons = { "weapon_polus11_medkit", "weapon_polus11_radio" }, -- v4.8.8 «ЛИЧИНА»: медикам ванильный медкейс (шприц — только «Учёному»)
         max = 2,
     },
 

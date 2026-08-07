@@ -239,27 +239,12 @@ end)
 --  3) ПКМ — способность формы (укол/масса/споры/плевок, как было).
 -- ============================================================
 
--- 1) авто-съедение: свежий труп помечен инфекцией → съедаем сами
-hook.Add("Polus11.CorpseTagged", "P11.ThingAutoDevour", function(corpse, identity, victim, att)
-    if not (POLUS11.Config and POLUS11.Config.ThingAutoDevour) then return end
-    if not (IsValid(att) and att:IsPlayer() and IsValid(victim) and att ~= victim) then return end
-    if not (att:GetNWBool("P11_Infected", false) and att:GetNWBool("P11_InfActive", false)) then return end
-    -- только КОГТЯМИ Имитатора (у остальных форм съедения личности нет)
-    local wep = att.GetActiveWeapon and att:GetActiveWeapon()
-    if not (IsValid(wep) and wep:GetClass() == "weapon_polus11_thing") then return end
-    local cls = wep:GetClass()
+-- 1) авто-съедение ПЕРЕЕХАЛО в ядро «ЛИЧИНА 2.0» (p11_sv_thingcore,
+--    v4.8.8): старая цепь через CorpseTagged-таймеры рвалась — вот
+--    откуда «автомаскировка после убийства не роботает». Теперь
+--    ядро снимает личность с ЖИВОГО тела прямо в хуке PlayerDeath.
 
-    timer.Simple(0.45, function()
-        if not (IsValid(att) and att:Alive() and IsValid(corpse)) then return end
-        if not istable(corpse.P11_Identity) then return end
-        local w = att:GetWeapon(cls)
-        if IsValid(w) and w.EatCorpse then
-            w:EatCorpse(att, corpse) -- личина + лечение + мутации (обёртка модуля мутаций)
-            POLUS11.Log("АВТО-ПОГЛОЩЕНИЕ: " .. att:Nick() .. " сожрал труп своей жертвы «"
-                .. tostring(identity.nick) .. "»")
-        end
-    end)
-end)
+-- 2) серверная часть кнопок меню мутаций
 
 -- 2) серверная часть кнопок меню мутаций
 net.Receive("P11_ThingAct", function(len, ply)
@@ -311,4 +296,4 @@ net.Receive("P11_ThingAct", function(len, ply)
     end
 end)
 
-print("[POLUS-11] реворк Нечто v4.8.3 «ПОГЛОЩЕНИЕ»: авто-съедение трупа при убийстве, R — меню мутаций (P11_ThingAct)")
+print("[POLUS-11] Нечто v4.8.8 «ЛИЧИНА»: органы на месте (крик/форма/разрыв); АВТОМАСКИРОВКА и личина — в ядре p11_sv_thingcore • R — меню мутаций (P11_ThingAct)")

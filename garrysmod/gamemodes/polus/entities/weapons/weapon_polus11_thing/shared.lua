@@ -1,11 +1,15 @@
 -- ============================================================
---  ПОЛЮС-11 — Класс Нечто: «ИМИТАТОР»
---  ЛКМ — когти (атака выдаёт тварь: облик монстра на 20 сек)
+--  ПОЛЮС-11 — Класс Нечто: «ИМИТАТОР» (v4.8.8 «ЛИЧИНА»)
+--  ЛКМ — когти (атака выдаёт тварь: облик монстра на 20 сек);
+--        убийство когтями САМО жрёт труп жертвы и надевает ЛИЧИНУ
+--        (ядро «ЛИЧИНА 2.0»: p11_sv_thingcore, без трупо-гонок).
 --  ПКМ — тихий укол заражения (цель не узнаёт сразу)
---  R по трупу — СЪЕСТЬ ТРУП: полное поглощение личности
---    (модель, скин, бодигруппы, цвет, ник, DarkRP-имя,
---     v4.2.1 — плюс ДОЛЖНОСТЬ и КОД ДОКУМЕНТА жертвы)
---  R без трупа — вернуть свой облик / раскрыть форму Нечто
+--  R по трупу — СЪЕСТЬ ТРУП вручную (личность целиком: облик,
+--        позывной, должность, код документа)
+--  R без трупа — МЕНЮ МУТАЦИЙ (личина/форма/маскировка)
+--  Личина/снятие/хранение личности — только через ядро
+--  (POLUS11.ThingApplyIdentity / ThingRestoreIdentity /
+--   ThingDevourCorpse): дубли-код прошлых версий вырезан.
 -- ============================================================
 
 SWEP.PrintName    = "НЕЧТО: Имитатор"
@@ -57,12 +61,12 @@ function POLUS11_RevealThing(ply, wep)
     ply.P11_RevealedAt = CurTime()
     ply:SetNWBool("P11_Revealed", true)
 
-    -- модель монстра по ТЕКУЩЕЙ форме (v2.6: у каждой формы своё тело)
+    -- модель монстра по ТЕКУЩЕЙ форме (у каждой формы своё тело)
     local mdl = POLUS11.MonsterModels.brute
     local forms = POLUS11.ThingForms or {}
     local form = forms[ply.P11_ThingForm or ""]
     if form and isstring(form.model) then mdl = form.model end
-    -- v4.2: мутация Т3 «АРАХНА» — паучья туша
+    -- мутация Т3 «АРАХНА» — паучья туша поверх любой формы
     if (ply:GetNWInt("P11_MutTier", 0) or 0) >= 3 then
         mdl = "models/zombie/fast.mdl"
     end
@@ -150,8 +154,8 @@ function SWEP:PrimaryAttack()
         ed:SetNormal(tr.HitNormal)
         util.Effect("BloodImpact", ed, true, true)
 
-        -- поглощение: убитый когтями может сразу заразиться (если настраивает админ)
-        -- здесь: просто тяжёлый удар
+        -- убийство этим ударом перехватит ядро «ЛИЧИНА 2.0»:
+        -- труп жертвы съеден, её личина надета автоматически.
     elseif tr.Hit then
         ply:EmitSound("npc/zombie/claw_strike" .. math.random(1, 3) .. ".wav", 70, 100)
         util.Decal("ManhackCut", tr.HitPos + tr.HitNormal, tr.HitPos - tr.HitNormal)
@@ -176,8 +180,7 @@ function SWEP:SecondaryAttack()
 
     if CLIENT then return end
 
-    -- v4.2.3: гуманный захват цели — толстый след + конус поиска,
-    -- чтобы «рядом нет цели» встречалось только когда её правда нет
+    -- гуманный захват цели — толстый след + конус поиска
     local target = nil
     local tr = util.TraceHull({
         start  = ply:GetShootPos(),
@@ -225,133 +228,8 @@ function SWEP:SecondaryAttack()
     ply:EmitSound("items/smallmedkit1.wav", 55, 90)
 end
 
--- ==================== ПОГЛОЩЕНИЕ ЛИЧНОСТИ ТРУПА ====================
+-- ==================== ПОИСК СЪЕДОБНОГО ТРУПА ====================
 
-local function SaveTrueIdentity(ply)
-    if ply.P11_TrueIdentity then return end
-
-    local bg = {}
-    for i = 0, ply:GetNumBodyGroups() - 1 do
-        bg[i] = ply:GetBodygroup(i)
-    end
-
-    ply.P11_TrueIdentity = {
-        model  = ply:GetModel(),
-        skin   = ply:GetSkin(),
-        color  = ply:GetColor(),
-        pcolor = ply:GetPlayerColor(),
-        wcolor = ply:GetWeaponColor(),
-        bodygroups = bg,
-    }
-    if DarkRP and ply.getDarkRPVar then
-        ply.P11_TrueIdentity.rpname = ply:getDarkRPVar("rpname") or ply:Nick()
-    end
-end
-
-local function RestoreTrueIdentity(ply)
-    local a = ply.P11_FakeRestore or ply.P11_TrueIdentity
-    if not a then return end
-
-    if a.model and file.Exists(a.model, "GAME") then ply:SetModel(a.model) end
-    ply:SetSkin(a.skin or 0)
-    ply:SetColor(a.color or Color(255, 255, 255, 255))
-    ply:SetPlayerColor(a.pcolor or Vector(1, 1, 1))
-    ply:SetWeaponColor(a.wcolor or Vector(0, 0.1, 0.6))
-    local maxBg = ply:GetNumBodyGroups()
-    for k, v in pairs(a.bodygroups or {}) do
-        if isnumber(k) and k < maxBg then ply:SetBodygroup(k, v) end
-    end
-
-    if DarkRP and ply.setDarkRPVar and a.rpname then
-        pcall(function() ply:setDarkRPVar("rpname", a.rpname) end)
-    end
-
-    ply.P11_FakeNick = nil
-    ply.P11_FakeRestore = nil
-    ply.P11_Revealed = false
-    ply.P11_RevealedAt = 0
-    ply:SetNWString("P11_FakeNick", "")
-    -- v4.2.1: отдаём чужую карточку — возвращаем СВОЮ должность и СВОЙ код
-    ply:SetNWInt("P11_FakeJob", 0)
-    ply:SetNWString("P11_FakeDesc", "")
-    if ply.P11_DocCode then ply:SetNWString("P11_DocCode", ply.P11_DocCode) end
-end
-POLUS11_RestoreTrueIdentity = RestoreTrueIdentity
-
-function SWEP:EatCorpse(ply, corpse)
-    local id = corpse.P11_Identity
-    if not id then return end
-
-    -- КРИТИЧНО: снять форму монстра, чтобы авто-таймер не сорвал украденную личность
-    ply.P11_Revealed = false
-    ply.P11_RevealedAt = 0
-    ply.P11_SavedModel = nil
-
-    -- своя личность запоминается ОДИН раз
-    SaveTrueIdentity(ply)
-
-    -- съедаем личность трупа
-    if id.model and file.Exists(id.model, "GAME") then ply:SetModel(id.model) end
-    ply:SetSkin(id.skin or 0)
-    ply:SetColor(id.color or Color(255, 255, 255, 255))
-    ply:SetPlayerColor(id.pcolor or Vector(1, 1, 1))
-    ply:SetWeaponColor(id.wcolor or Vector(0, 0.1, 0.6))
-    local maxBg = ply:GetNumBodyGroups()
-    for k, v in pairs(id.bodygroups or {}) do
-        if isnumber(k) and k < maxBg then ply:SetBodygroup(k, v) end
-    end
-
-    ply.P11_FakeNick = id.nick
-    ply.P11_IdentityTakenAt = CurTime()
-    ply:SetNWString("P11_FakeNick", id.nick)
-
-    -- v4.2.1: крадём и КАРТОЧКУ жертвы целиком — должность (таб/неймтаг/чат/
-    -- документ) и КОД УДОСТОВЕРЕНИЯ. Свой код лежит в ply.P11_DocCode и
-    -- вернётся при сбросе личины; в NW пишем украденный.
-    ply:SetNWInt("P11_FakeJob", tonumber(id.job) or 0)
-    ply:SetNWString("P11_FakeDesc", isstring(id.desc) and id.desc or "") -- v4.3.0: и описание жертвы
-    if isstring(id.doc) and id.doc ~= "" then
-        ply:SetNWString("P11_DocCode", id.doc)
-    end
-
-    -- DarkRP: полное имя в чате/табе/над головой
-    if DarkRP and ply.setDarkRPVar then
-        pcall(function() ply:setDarkRPVar("rpname", id.rpname or id.nick) end)
-    end
-
-    -- эффекты поглощения
-    ply:EmitSound("npc/barnacle/barnacle_digesting1.wav", 75, 90)
-    ply:EmitSound("npc/zombie/zo_attack" .. math.random(1, 2) .. ".wav", 70, 85)
-    local ed = EffectData()
-    ed:SetOrigin(corpse:GetPos() + Vector(0, 0, 20))
-    util.Effect("BloodImpact", ed, true, true)
-    util.Effect("bloodspray", ed, true, true)
-
-    -- останки исчезают
-    timer.Simple(0.2, function()
-        if IsValid(corpse) then corpse:Remove() end
-    end)
-
-    -- лечение за поглощение
-    local maxhp = ply:GetMaxHealth()
-    if maxhp <= 0 then maxhp = 100 end
-    ply:SetHealth(math.min(maxhp, ply:Health() + 25))
-
-    -- v4.2.1: понятная сводка — кем стали (должность + документ)
-    local jobLine = ""
-    if P11FW and P11FW.TeamJobs and tonumber(id.job) then
-        local jid = P11FW.TeamJobs[tonumber(id.job)]
-        local jt = jid and P11FW.Jobs and P11FW.Jobs[jid]
-        if jt and jt.name then jobLine = " · " .. jt.name end
-    end
-    local docLine = (isstring(id.doc) and id.doc ~= "") and (" · док. " .. id.doc) or ""
-    POLUS11.Notify(ply, "Личность поглощена: «" .. id.nick .. "»" .. jobLine .. docLine .. ". R — вернуть себя.")
-    ply:ChatPrint("[ПОЛЮС-11] Перевоплощение: вы — «" .. id.nick .. "»" .. jobLine .. docLine
-        .. ". Документы показывают карточку жертвы; TAB и чат — тоже. R — сбросить.")
-    POLUS11.Log("ПОГЛОЩЕНИЕ ЛИЧНОСТИ: " .. ply:Nick() .. " съел труп «" .. id.nick .. "»" .. docLine .. jobLine)
-end
-
--- поиск съедобного трупа под прицелом
 local function TraceCorpse(ply)
     local tr = util.TraceHull({
         start  = ply:GetShootPos(),
@@ -375,12 +253,7 @@ local function TraceCorpse(ply)
     return best
 end
 
--- ==================== R (v4.8.3 «ПОГЛОЩЕНИЕ») ====================
---  Реворк Нечто по заявке владельца:
---   • труп под прицелом → СЪЕСТЬ ЛИЧНОСТЬ (как было);
---   • трупа нет → МЕНЮ МУТАЦИЙ (окно: тиры, прогресс, личина,
---     маскировка, смена формы кнопками). Снятие личины и явление/
---     скрытие монстра переехали В МЕНЮ (кнопки, сеть P11_ThingAct).
+-- ==================== R: съесть труп / меню мутаций ====================
 
 function SWEP:Reload()
     if not IsFirstTimePredicted() then return end
@@ -401,13 +274,14 @@ function SWEP:Reload()
 
     local corpse = TraceCorpse(ply)
     if IsValid(corpse) then
-        self:EatCorpse(ply, corpse)
+        -- серверное съедение через ядро «ЛИЧИНА 2.0»
+        if POLUS11 and POLUS11.ThingDevourCorpse then
+            POLUS11.ThingDevourCorpse(ply, corpse)
+        end
     end
-    -- v4.8.3: ветки «снять личину»/«явить форму» удалены отсюда —
-    -- теперь это кнопки меню мутаций (P11_ThingAct: mask/unmask).
 end
 
--- ==================== КЛИЕНТ: подсказка над трупом ====================
+-- ==================== КЛИЕНТ: подсказка над трупом + статус личины ====================
 
 if CLIENT then
     function SWEP:DrawHUD()

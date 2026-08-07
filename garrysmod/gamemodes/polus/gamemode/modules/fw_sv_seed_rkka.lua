@@ -55,7 +55,7 @@ local SEED_FACTIONS = {
 local SEED_JOBS = {
     -- ================= ФРАКЦИЯ РККА =================
     {
-        id = "seed_rkka_novobranets", time = 0, -- v4.6.6: минуты для доступа category = "rkka", order = 30,
+        id = "seed_rkka_novobranets", time = 0, category = "rkka", order = 30, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Новобранец РККА",
         desc = "Свежеприбывшее пополнение. Оружия не положено — держись постовых, слушай комиссара и не выходи в метель без приказа.",
         weapons = {}, hp = 100, armor = 0, max = 0,
@@ -65,7 +65,7 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_rkka_postovoy", time = 30, -- v4.6.6: минуты для доступа category = "rkka", order = 31,
+        id = "seed_rkka_postovoy", time = 30, category = "rkka", order = 31, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Постовой РККА",
         desc = "Стоит на посту: ворота, караулка, склад. АКС-74У — короткий и злой, для коридоров станции самое то. 100 ХП / 100 брони.",
         weapons = { { "arc9_eft_aks74u", "arc9_eft_aks74", "weapon_smg1" }, "weapon_polus11_radio" }, hp = 100, armor = 100, max = 4,
@@ -79,7 +79,7 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_rkka_soldat", time = 45, -- v4.6.6: минуты для доступа category = "rkka", order = 32,
+        id = "seed_rkka_soldat", time = 45, category = "rkka", order = 32, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Солдат РККА",
         desc = "Основной боец гарнизона. Полноразмерный АК-74, патрули и сопровождение учёных. 105 ХП / 105 брони.",
         weapons = { { "arc9_eft_aks74", "arc9_eft_ak74", "weapon_ar2" }, "weapon_polus11_radio" }, hp = 105, armor = 105, max = 6,
@@ -93,7 +93,7 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_rkka_shturmovik", time = 90, -- v4.6.6: минуты для доступа category = "rkka", order = 33,
+        id = "seed_rkka_shturmovik", time = 90, category = "rkka", order = 33, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Штурмовик РККА",
         desc = "Первым вламывается в заражённые отсеки. ППШ-41 косит всё в упор, тяжёлый бронежилет. 125 ХП / 145 брони.",
         weapons = { { "arc9_eft_ppsh41", "weapon_smg1" }, "weapon_polus11_radio" }, hp = 125, armor = 145, max = 3,
@@ -107,7 +107,7 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_rkka_razvedchik", time = 60, -- v4.6.6: минуты для доступа category = "rkka", order = 34,
+        id = "seed_rkka_razvedchik", time = 60, category = "rkka", order = 34, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Разведчик РККА",
         desc = "Уходит в белую пустыню первым. Трёхлинейка бьёт точно и далеко — Нечто не любит одиночных выстрелов с вышки. 125 ХП / 115 брони. Штрафная рота — туда лучше не попадать.",
         weapons = { { "arc9_eft_mosin_infantry", "arc9_eft_mosin_sniper", "weapon_crossbow" }, "weapon_polus11_radio" }, hp = 125, armor = 115, max = 3,
@@ -121,7 +121,7 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_rkka_komissar", time = 240, -- v4.6.6: минуты для доступа category = "rkka", order = 35,
+        id = "seed_rkka_komissar", time = 240, category = "rkka", order = 35, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Комиссар РККА",
         desc = "Политрук гарнизона. Дисциплина, допросы, трибунал. Трёхлинейка — за спиной, ордер на расстрел дезертиров — в кармане. Одно место. 100 ХП / 100 брони.",
         weapons = { { "arc9_eft_mosin_sniper", "arc9_eft_mosin_infantry", "weapon_crossbow" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 100, armor = 100, max = 1, terminal = true, command = true, -- v4.8.2: лимит 1, трибуналу — приказы/розыск
@@ -134,7 +134,7 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_rkka_general", time = 300, -- v4.6.6: минуты для доступа category = "rkka", order = 36,
+        id = "seed_rkka_general", time = 300, category = "rkka", order = 36, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Генерал РККА",
         desc = "Командующий всем военным контингентом станции из генеральского штаба. Трёхлинейка и полная власть. Одно место. 125 ХП / 125 брони.",
         weapons = { { "arc9_eft_mosin_sniper", "arc9_eft_mosin_infantry", "weapon_crossbow" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 125, armor = 125, max = 1, terminal = true, command = true, -- v4.8.2: лимит 1
@@ -144,7 +144,7 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_rkka_generalpeh", time = 300, -- v4.6.6: минуты для доступа category = "rkka", order = 37,
+        id = "seed_rkka_generalpeh", time = 300, category = "rkka", order = 37, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Генерал РККА (Пехота)",
         desc = "Комбат пехотного звена: ближе к окопам, чем к штабу. Двустволка MR-43 для личной самообороны. Одно место. 100 ХП / 100 брони.",
         weapons = { { "arc9_eft_mr43", "weapon_shotgun" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 100, armor = 100, max = 1, terminal = true, -- v4.8.2: лимит 1
@@ -158,8 +158,8 @@ local SEED_JOBS = {
     {
         id = "seed_rkka_medsestra", time = 45, category = "rkka", order = 38,
         name = "Медсестра РККА",
-        desc = "Военная медсестра гарнизона: перевязки, обморожения, забор крови на анализ (шприц в снаряге). Ни стыла, ни дрогнула. 90 ХП / 25 брони.",
-        weapons = { "weapon_polus11_syringe", "weapon_polus11_radio" }, hp = 90, armor = 25, max = 2,
+        desc = "Военная медсестра гарнизона: перевязки, обморожения, латание раненых (полевой медкейс в снаряге). Ни стыла, ни дрогнула. 90 ХП / 25 брони.",
+        weapons = { "weapon_polus11_medkit", "weapon_polus11_radio" }, hp = 90, armor = 25, max = 2, -- v4.8.8: медикам — ванильный медкейс (шприц снят)
         color = Color(200, 150, 150),
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/medical/en/m35_1941_s1_01f.mdl",
@@ -169,8 +169,8 @@ local SEED_JOBS = {
     {
         id = "seed_rkka_medglav", time = 120, category = "rkka", order = 39,
         name = "Главная Медсестра РККА",
-        desc = "Старший медик гарнизона: ведёт санчасть и медицинское дело каждого бойца. Доступ к терминалу, шприц, рация. Одно место. 95 ХП / 50 брони.",
-        weapons = { "weapon_polus11_syringe", "weapon_polus11_radio" }, hp = 95, armor = 50, max = 1, terminal = true,
+        desc = "Старший медик гарнизона: ведёт санчасть и медицинское дело каждого бойца. Доступ к терминалу, полевой медкейс, рация. Одно место. 95 ХП / 50 брони.",
+        weapons = { "weapon_polus11_medkit", "weapon_polus11_radio" }, hp = 95, armor = 50, max = 1, terminal = true, -- v4.8.8: медикам — ванильный медкейс
         color = Color(215, 140, 140),
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/medical/nco/m35_1941_s1_04f.mdl",
@@ -181,7 +181,7 @@ local SEED_JOBS = {
     -- Модели: пока стоят комиссарские/штабные из пака pm0v3 — если найдёшь
     -- пак с «синими фуражками», смени пути тут или прямо в админке.
     {
-        id = "seed_nkvd_convoy", time = 45, -- v4.6.6: минуты для доступа category = "nkvd", order = 50, whitelist = true, -- v4.4.0: ВАЙТЛИСТ
+        id = "seed_nkvd_convoy", time = 45, category = "nkvd", order = 50, whitelist = true, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Конвоир НКВД",
         desc = "Конвой и караул задержанных, охрана допросной и склада вещдоков. Двустволка MR-43 — уговаривать долго не приходится. 100 ХП / 100 брони.",
         weapons = { { "arc9_eft_mr43", "weapon_shotgun" }, "weapon_polus11_radio" }, hp = 100, armor = 100, max = 2,
@@ -193,7 +193,7 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_nkvd_oper", time = 90, -- v4.6.6: минуты для доступа category = "nkvd", order = 51, whitelist = true, -- v4.4.0: ВАЙТЛИСТ
+        id = "seed_nkvd_oper", time = 90, category = "nkvd", order = 51, whitelist = true, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Оперуполномоченный НКВД",
         desc = "Оперативная работа: наружное наблюдение, агентурная сеть, тихие допросы «для протокола». АКС-74У под полой шинели. 100 ХП / 100 брони.",
         weapons = { { "arc9_eft_aks74u", "arc9_eft_aks74", "weapon_smg1" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 100, armor = 100, max = 3,
@@ -206,10 +206,10 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_nkvd_sledovatel", time = 120, -- v4.6.6: минуты для доступа category = "nkvd", order = 52, whitelist = true, -- v4.4.0: ВАЙТЛИСТ
+        id = "seed_nkvd_sledovatel", time = 120, category = "nkvd", order = 52, whitelist = true, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Следователь НКВД",
-        desc = "Протоколы, вещдоки, досье на каждого жителя станции. Имеет право требовать принудительный тест крови ПОД СВОИМ НАДЗОРОМ — шприц в сейфе следопера, трёхлинейка и ПМ на поясе. 100 ХП / 50 брони.",
-        weapons = { "weapon_polus11_syringe", { "arc9_eft_mosin_infantry", "arc9_eft_mosin_sniper", "weapon_crossbow" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 100, armor = 50, max = 2, terminal = true,
+        desc = "Протоколы, вещдоки, досье на каждого жителя станции. Имеет право ТРЕБОВАТЬ принудительный тест крови под своим надзором — забор делает штатный УЧЁНЫЙ по ордеру следователя. Трёхлинейка и ПМ на поясе. 100 ХП / 50 брони.",
+        weapons = { { "arc9_eft_mosin_infantry", "arc9_eft_mosin_sniper", "weapon_crossbow" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 100, armor = 50, max = 2, terminal = true, -- v4.8.8: шприц снят (только «Учёный») { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 100, armor = 50, max = 2, terminal = true,
         color = Color(138, 28, 32), -- v4.5.0 КРАСНО-ЧЁРНЫЙ,
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/commissar/co/m35_1941_s1_03.mdl",
@@ -217,7 +217,7 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_nkvd_osobist", time = 180, -- v4.6.6: минуты для доступа category = "nkvd", order = 53, whitelist = true, -- v4.4.0: ВАЙТЛИСТ
+        id = "seed_nkvd_osobist", time = 180, category = "nkvd", order = 53, whitelist = true, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Особист НКВД",
         desc = "Контрразведка станции. Может объявлять РОЗЫСК (!розыск) и отдавать ПРИКАЗЫ (!приказ) без санкции генерала, если подозревает Нечто. Одно место. 115 ХП / 100 брони.",
         weapons = { { "arc9_eft_aks74u", "arc9_eft_aks74", "weapon_smg1" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 115, armor = 100, max = 1, terminal = true, command = true, -- v4.8.2: лимит 1
@@ -227,7 +227,7 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_nkvd_nachalnik", time = 240, -- v4.6.6: минуты для доступа category = "nkvd", order = 54, whitelist = true, -- v4.4.0: ВАЙТЛИСТ
+        id = "seed_nkvd_nachalnik", time = 240, category = "nkvd", order = 54, whitelist = true, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Начальник Особого Отдела НКВД",
         desc = "Высшее слово станции по вопросам внутренней безопасности. Его подпись в ордере на расстрел равна приговору Военного трибунала. Одно место. 125 ХП / 125 брони.",
         weapons = { { "arc9_eft_aks74u", "arc9_eft_aks74", "weapon_smg1" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 125, armor = 125, max = 1, terminal = true, command = true, -- v4.8.2: лимит 1
@@ -239,50 +239,50 @@ local SEED_JOBS = {
 
     -- ================= НАУЧНЫЙ БЛОК =================
     {
-        id = "seed_sci_laborant", time = 0, -- v4.6.6: минуты для доступа category = "science", order = 40,
+        id = "seed_sci_laborant", time = 0, category = "science", order = 40, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Лаборант (ЦНИИ)",
         desc = "Младший научный состав исследовательского блока. Мытьё пробирок, подносы, журналы опытов. 100 ХП / 100 брони.",
-        weapons = { "weapon_polus11_syringe" }, hp = 100, armor = 100, max = 4, -- v4.8.2: шприц теста крови
+        weapons = {}, hp = 100, armor = 100, max = 4, -- v4.8.8 «ЛИЧИНА»: шприц снят — тест крови делает «Учёный»
         color = Color(165, 205, 250),
         models = { "Models/UIF/scientists/UIF_scientist_7.mdl" },
     },
     {
-        id = "seed_sci_ucheniy", time = 30, -- v4.6.6: минуты для доступа category = "science", order = 41,
+        id = "seed_sci_ucheniy", time = 30, category = "science", order = 41, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Учёный",
-        desc = "Штатный исследователь комплекса. Доступ к образцам и лабораторным стендам. 100 ХП / 100 брони.",
-        weapons = { "weapon_polus11_syringe" }, hp = 100, armor = 100, max = 3, -- v4.8.2: шприц теста крови
+        desc = "Штатный исследователь комплекса. ЕДИНСТВЕННЫЙ на станции держатель шприца теста крови: забор и лабораторный стол — его руки. 100 ХП / 100 брони.",
+        weapons = { "weapon_polus11_syringe" }, hp = 100, armor = 100, max = 3, -- v4.8.8 «ЛИЧИНА»: шприц теста крови выдаётся ТОЛЬКО этой должности (заявка владельца)
         color = Color(170, 210, 255),
         models = { "Models/UIF/scientists/UIF_scientist_7.mdl" },
     },
     {
-        id = "seed_sci_biohim", time = 60, -- v4.6.6: минуты для доступа category = "science", order = 42,
+        id = "seed_sci_biohim", time = 60, category = "science", order = 42, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Био-химик",
         desc = "Специалист по биохимическому анализу тканей. К его холодильнику с образцами лучше не подходить без перчаток. 100 ХП / 100 брони.",
-        weapons = { "weapon_polus11_syringe" }, hp = 100, armor = 100, max = 2, -- v4.8.2: шприц теста крови
+        weapons = {}, hp = 100, armor = 100, max = 2, -- v4.8.8 «ЛИЧИНА»: шприц снят
         color = Color(145, 225, 210),
         models = { "Models/UIF/scientists/UIF_scientist_7.mdl" },
     },
     {
-        id = "seed_sci_vedushiy", time = 90, -- v4.6.6: минуты для доступа category = "science", order = 43,
+        id = "seed_sci_vedushiy", time = 90, category = "science", order = 43, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Ведущий Учёный",
         desc = "Руководит экспериментами лично. Подписывает заключения по биологическим угрозам. 100 ХП / 100 брони.",
-        weapons = { "weapon_polus11_syringe" }, hp = 100, armor = 100, max = 2, terminal = true, -- v4.8.2: шприц теста крови
+        weapons = {}, hp = 100, armor = 100, max = 2, terminal = true, -- v4.8.8 «ЛИЧИНА»: шприц снят
         color = Color(130, 200, 245),
         models = { "Models/UIF/scientists/UIF_scientist_7.mdl" },
     },
     {
-        id = "seed_sci_menedzher", time = 120, -- v4.6.6: минуты для доступа category = "science", order = 44,
+        id = "seed_sci_menedzher", time = 120, category = "science", order = 44, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Менеджер Научного Отдела",
         desc = "Отвечает за сметы, графики и допуски научного блока. Знает, кого и за что пускают в лаборатории. Одно место. 100 ХП / 100 брони.",
-        weapons = { "weapon_polus11_syringe" }, hp = 100, armor = 100, max = 1, terminal = true, -- v4.8.2: шприц + лимит 1
+        weapons = {}, hp = 100, armor = 100, max = 1, terminal = true, -- v4.8.8 «ЛИЧИНА»: шприц снят
         color = Color(120, 190, 240),
         models = { "Models/UIF/scientists/UIF_scientist_7.mdl" },
     },
     {
-        id = "seed_sci_sozdatel", time = 180, -- v4.6.6: минуты для доступа category = "science", order = 45,
+        id = "seed_sci_sozdatel", time = 180, category = "science", order = 45, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Создатель Научного Комплекса",
         desc = "Легенда «Полюс-11»: главный конструктор научного блока. Имеет допуск во ВСЕ отсеки, включая те, о которых нет в документах. Одно место. 100 ХП / 100 брони.",
-        weapons = { "weapon_polus11_syringe" }, hp = 100, armor = 100, max = 1, terminal = true, command = true, -- v4.8.2: шприц + лимит 1
+        weapons = {}, hp = 100, armor = 100, max = 1, terminal = true, command = true, -- v4.8.8 «ЛИЧИНА»: шприц снят
         color = Color(105, 180, 235),
         models = { "Models/UIF/scientists/UIF_scientist_8.mdl" },
     },
@@ -379,18 +379,7 @@ local SEED_JOBS = {
         },
     },
 
-    -- ================= НЕЧТО (ИВЕНТ, только для админов) =================
-    -- v4.2: ОДНА профессия. Форма меняется командой !форма (имитатор/
-    -- поглотитель/разделённый/споровик), за жертв копятся МУТАЦИИ:
-    -- 3 — Регенерация, 5 — Мясогигант, 10 — Арахна (паучья форма).
-    {
-        id = "seed_thing_filial", time = 0, -- v4.6.6: минуты для доступа category = "nechto", order = 90,
-        name = "[ИВЕНТ] Нечто",
-        desc = "Личинка-хамелеон, крадущая тела и лица. !форма — смена формы; мутации за жертв (3/5/10). Только для админ-ивентов. 400 ХП.",
-        weapons = { "weapon_polus11_thing" }, hp = 400, armor = 0, max = 2, event = true,
-        color = Color(150, 55, 60),
-        models = { "models/player/corpse1.mdl" },
-    },
+
 }
 
 -- ============ МЕХАНИКА СИДА ============
@@ -686,6 +675,74 @@ local function SeedAll()
             P11FW.RegisterCustomJobs(P11FW.CustomJobs)
             P11FW.SyncCustomJobs()
             P11FW.Log("Сид v4.8.6: Орёл усилен (хп/броня/модели usarmy/Velociraptor диверсанту, eagleV486), НКВД fem-модель шефу и заму (femV486)")
+        end
+    end
+
+    -- ---------- v4.8.8 «ЛИЧИНА» МИГРАЦИЯ: крит-фикс v4.6.6 + шприц только учёному + [ИВЕНТ] Нечто убран ----------
+    -- КОРЕНЬ «ранги ниже допуска берут ранги выше»: v4.6.6 случайно
+    -- втащил category/order/whitelist 20 сид-строк В КОММЕНТАРИЙ —
+    -- вайтлист НКВД фактически отменялся, профы стояли ОТКРЫТЫ.
+    -- Доезжаем СЕЙВЫ: поля копируются из (уже починенного) SEED_JOBS.
+    do
+        local seedFix = {}
+        for _, sj in ipairs(SEED_JOBS) do seedFix[sj.id] = sj end
+
+        local changed = false
+        for i = #P11FW.CustomJobs, 1, -1 do
+            local rec = P11FW.CustomJobs[i]
+            if rec and rec.id then
+                -- [ИВЕНТ] Нечто — больше НЕ должность: заражение только
+                -- через вакансию у кадровика / укол / админ-пульт
+                if rec.id == "seed_thing_filial" then
+                    table.remove(P11FW.CustomJobs, i)
+                    changed = true
+                    P11FW.Log("Сид v4.8.8: должность [ИВЕНТ] Нечто СКРЫТА из штата (заражение: вакансия у кадровика/укол/админ)")
+                else
+                    -- 1) фикс v4.6.6: category/order/ВАЙТЛИСТ — из сида
+                    local sj = seedFix[rec.id]
+                    if sj and not rec.fixV488 then
+                        rec.category = sj.category
+                        rec.order    = sj.order
+                        rec.whitelist = sj.whitelist == true
+                        rec.fixV488 = true
+                        changed = true
+                    end
+                    -- 2) шприц — ТОЛЬКО «Учёному»; медикам — медкейс
+                    if not rec.syrV488 then
+                        if rec.id ~= "seed_sci_ucheniy" and istable(rec.weapons) then
+                            local w2 = {}
+                            for _, w in ipairs(rec.weapons) do
+                                if w ~= "weapon_polus11_syringe" then w2[#w2 + 1] = w end
+                            end
+                            rec.weapons = w2
+                        end
+                        if rec.id == "seed_rkka_medsestra" or rec.id == "seed_rkka_medglav" or rec.id == "medic" then
+                            rec.weapons = istable(rec.weapons) and rec.weapons or {}
+                            local has = false
+                            for _, w in ipairs(rec.weapons) do
+                                if w == "weapon_polus11_medkit" then has = true break end
+                            end
+                            if not has then rec.weapons[#rec.weapons + 1] = "weapon_polus11_medkit" end
+                        end
+                        rec.syrV488 = true
+                        changed = true
+                    end
+                end
+            end
+        end
+
+        -- бойцы на удалённой должности [ИВЕНТ] Нечто — в новобранцы
+        for _, pl in ipairs(player.GetAll()) do
+            if IsValid(pl) and P11FW.GetJobId and P11FW.GetJobId(pl) == "seed_thing_filial" then
+                P11FW.SetJob(pl, P11FW.Config.DefaultJob, nil, true)
+            end
+        end
+
+        if changed then
+            P11FW.SaveCustomJobs()
+            P11FW.RegisterCustomJobs(P11FW.CustomJobs)
+            P11FW.SyncCustomJobs()
+            P11FW.Log("Сид v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ сид-проф восстановлены (фикс дыры допуска v4.6.6), шприц — ТОЛЬКО учёному, медикам медкейс, [ИВЕНТ] Нечто скрыт")
         end
     end
 

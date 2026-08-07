@@ -39,6 +39,7 @@ local cl = {
     "modules/p11_cl_reports.lua",   -- v4.8.2 «ДОКЛАД»: окно репортов (принять/тп/закрыть)
     "modules/p11_cl_spawnviz.lua",  -- v4.8.4 «ВЫСАДКА»: куб-маркеры точек спавна
     "modules/p11_cl_disguise.lua",  -- v4.8.5 «КРАСНЫЙ ОРЁЛ»: окно кейса маскировки «ЛЕГАТ»
+    "modules/p11_cl_thingoffer.lua",-- v4.8.8 «ЛИЧИНА»: красная плашка «особой вакансии» над кадровиком
     "modules/p11_sh_bonchatboot.lua", -- v4.8.6 «НАВОДКА»: готовый чат BonChat (MIT) — клиентская база
 }
 

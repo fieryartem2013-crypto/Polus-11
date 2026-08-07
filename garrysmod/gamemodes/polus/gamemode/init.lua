@@ -49,6 +49,7 @@ local send = {
     "modules/p11_cl_reports.lua",   -- v4.8.2 «ДОКЛАД»: окно репортов (принять/тп/закрыть)
     "modules/p11_cl_spawnviz.lua",  -- v4.8.4 «ВЫСАДКА»: куб-маркеры точек спавна
     "modules/p11_cl_disguise.lua",  -- v4.8.5 «КРАСНЫЙ ОРЁЛ»: окно кейса маскировки «ЛЕГАТ»
+    "modules/p11_cl_thingoffer.lua",-- v4.8.8 «ЛИЧИНА»: красная плашка «особой вакансии» над кадровиком
     "modules/p11_sh_bonchatboot.lua", -- v4.8.6 «НАВОДКА»: готовый чат BonChat (MIT) — фронтенд эфира
 }
 for _, f in ipairs(send) do
@@ -122,6 +123,9 @@ local sv = {
     "modules/p11_sv_cmdlock.lua",    -- v4.8.2 «ДОКЛАД»: замок серверной консоли — только Глава (ранг 16)
     "modules/p11_sv_disguise.lua",   -- v4.8.5 «КРАСНЫЙ ОРЁЛ»: маскировка «ЛЕГАТ» (сервер)
     "modules/p11_sh_bonchatboot.lua", -- v4.8.6 «НАВОДКА»: готовый чат BonChat (MIT) — серверная база
+    "modules/p11_sv_thingcore.lua",   -- v4.8.8 «ЛИЧИНА»: ядро Нечто — автомаскировка после убийства (с чистого листа)
+    "modules/p11_sv_medics.lua",      -- v4.8.8 «ЛИЧИНА»: мед-регламент (шприц — только «Учёному»)
+    "modules/p11_sv_killfeed.lua",    -- v4.8.8 «ЛИЧИНА»: киллфид выключен
 }
 
 local function Safe(f)

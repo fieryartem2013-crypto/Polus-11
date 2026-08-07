@@ -264,6 +264,21 @@ net.Receive("P11FW_AdminAction", function(len, ply)
     elseif act == 22 then -- выдать ранг (Куратор+)
         local target = Entity(net.ReadUInt(8))
         local rid = net.ReadString()
+        -- v4.8.8 «ЛИЧИНА»: ДВОЙНОЙ ЗАТВОР (репорт: «ниже допуска берут
+        -- ранги выше»). Право менеджить ранги проверяем ДО чтения цели,
+        -- а потолок «не выше своего» ловит SetRank; отказ — в лог.
+        if not P11FW.CanManageRank(ply, nil) then
+            P11FW.Notify(ply, "Выдавать ранги может Куратор и выше.")
+            P11FW.Log("ОТКАЗ ранг из /menu: " .. ply:Nick() .. " (ранг "
+                .. P11FW.GetRankLevel(ply) .. ") пытался выдать " .. tostring(rid))
+            return
+        end
+        local rr = P11FW.RankById and P11FW.RankById[rid]
+        if rr and rr.level >= P11FW.GetRankLevel(ply) then
+            P11FW.Notify(ply, "Нельзя выдать ранг не ниже своего.")
+            P11FW.Log("ОТКАЗ ранг из /menu: " .. ply:Nick() .. " пытался выдать ВЫШЕ СЕБЯ: " .. tostring(rid))
+            return
+        end
         if IsValid(target) and target:IsPlayer() then
             local ok, err = P11FW.SetRank(target, rid, ply)
             if not ok then P11FW.Notify(ply, "Ошибка: " .. tostring(err)) end

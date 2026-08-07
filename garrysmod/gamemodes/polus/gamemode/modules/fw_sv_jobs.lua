@@ -95,12 +95,17 @@ function P11FW.SetJob(ply, jobId, modelIdx, force)
         if pun == "slavery" then return false, "вы в рабстве — без должности" end
     end
 
-    -- v3.8.2: ИВЕНТОВЫЕ роли (Нечто-формы и пр.) — только админ выдаёт
+    -- v3.8.2 → v4.8.8 «ЛИЧИНА»: ИВЕНТОВЫЕ роли (Нечто-формы и пр.) —
+    -- только СТАРШАЯ администрация (Куратор+, ранг 12) или движковый
+    -- superadmin. Раньше планка была ранг 4 — младшая администрация
+    -- брала себе [ИВЕНТ] Нечто (репорт: «ранги ниже берут ранги выше»).
     if job.event and not force then
-        local allowed = P11FW.Config.Admin(ply)
-            or (P11FW.GetRankLevel(ply) >= ((P11FW.Config and P11FW.Config.EventJobRankLevel) or 4))
+        local allowed = ply:IsSuperAdmin()
+            or (P11FW.GetRankLevel(ply) >= ((P11FW.Config and P11FW.Config.EventJobRankLevel) or 12))
         if not allowed then
-            return false, "ивентовая роль — выдаёт только администрация"
+            P11FW.Log("ОТКАЗ ивент-роль: " .. ply:Nick() .. " попытался взять «"
+                .. tostring(job.name) .. "» без ранга Куратор+")
+            return false, "ивентовая роль — только у старшей администрации (Куратор+): для Нечто есть укол/вакансия у кадровика/админ-пульт"
         end
     end
 
