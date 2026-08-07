@@ -47,6 +47,7 @@ local send = {
     "modules/p11_cl_donate.lua",    -- v4.8.0: F6 — донат-витрина (плейсхолдер)
     "modules/p11_cl_offer.lua",     -- v4.8.1: особая вакансия — маркер над кадровиком + баннер
     "modules/p11_cl_reports.lua",   -- v4.8.2 «ДОКЛАД»: окно репортов (принять/тп/закрыть)
+    "modules/p11_cl_spawnviz.lua",  -- v4.8.4 «ВЫСАДКА»: куб-маркеры точек спавна
 }
 for _, f in ipairs(send) do
     AddCSLuaFile(f)

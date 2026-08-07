@@ -23,7 +23,7 @@ local cl = {
     "modules/p11_cl_help.lua",     -- F1-справка новичка
     "modules/p11_cl_alerts.lua",   -- приказ-баннер / метель / розыск / распорядок
     "modules/p11_cl_view.lua",     -- F2 третье лицо / F3 курсор / голос-панели (v3.8)
-    "modules/p11_cl_chat.lua",     -- свой чат-UI: каналы РЕЧЬ/OOC/LOOC/ME/IT/РЕПОРТ (v4.5.0)
+    "modules/p11_cl_chat.lua",     -- v8 «ПУЛЬТ»: свой чат ВЫШЕ/удобнее/ничего не теряет (v4.8.4)
     "modules/p11_cl_arrival.lua",  -- заставка прибытия колонны (v4.5.0)
     "modules/p11_cl_cmenu.lua",    -- C-меню: жесты / действия (v4.4.0 — реворк с нуля)
     "modules/p11_cl_models.lua",   -- браузер внешности (v4.4.0 — с нуля)
@@ -37,6 +37,7 @@ local cl = {
     "modules/p11_cl_donate.lua",    -- v4.8.0: F6 — донат-витрина (плейсхолдер)
     "modules/p11_cl_offer.lua",     -- v4.8.1: особая вакансия — маркер над кадровиком + баннер
     "modules/p11_cl_reports.lua",   -- v4.8.2 «ДОКЛАД»: окно репортов (принять/тп/закрыть)
+    "modules/p11_cl_spawnviz.lua",  -- v4.8.4 «ВЫСАДКА»: куб-маркеры точек спавна
 }
 
 local loaded = 0

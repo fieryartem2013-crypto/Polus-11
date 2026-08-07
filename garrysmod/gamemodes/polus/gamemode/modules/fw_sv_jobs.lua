@@ -7,7 +7,7 @@ util.AddNetworkString("P11FW_OpenMenu")
 
 -- ============ СНАРЯЖЕНИЕ / МОДЕЛЬ ============
 
-function P11FW.ApplyLoadout(ply, modelIdx)
+function P11FW.ApplyLoadout(ply, modelIdx, fullHeal)
     local job = P11FW.GetJob(ply)
     if not job then return end
 
@@ -47,9 +47,15 @@ function P11FW.ApplyLoadout(ply, modelIdx)
     end
 
     -- v3.8.2: ХАРАКТЕРИСТИКИ ДОЛЖНОСТИ (у штурмовика 125ХП/145бр и т.д.)
+    -- v4.8.4 «ВЫСАДКА»: на спавне (fullHeal) — ПОЛНЫЕ ХП профы, а не
+    -- «обрезать сверху»: раньше штурмовик 125ХП возрождался с 100.
     local hp = math.Clamp(tonumber(job.hp) or 100, 1, 1000)
     ply:SetMaxHealth(hp)
-    if ply:Health() > hp then ply:SetHealth(hp) end
+    if fullHeal then
+        ply:SetHealth(hp)
+    elseif ply:Health() > hp then
+        ply:SetHealth(hp) -- смена профы/модели на лету: без халявного хила
+    end
     ply:SetArmor(math.Clamp(tonumber(job.armor) or 0, 0, 500))
 
     -- внешность: выбранный вариант из меню, иначе случайный из валидных
@@ -186,8 +192,20 @@ hook.Add("PlayerSpawn", "P11FW.SpawnLoadout", function(ply)
     -- после стандартного лоадаута песочницы
     timer.Simple(0.1, function()
         if IsValid(ply) and ply:Alive() then
-            P11FW.ApplyLoadout(ply)
+            P11FW.ApplyLoadout(ply, nil, true) -- на спавне: ПОЛНЫЕ ХП/броня профы
         end
+    end)
+    -- v4.8.4: страховочная волна ХП/брони (если чужой аддон переписал
+    -- здоровье после нашей выдачи — вернём честные цифры профы)
+    timer.Simple(0.55, function()
+        if not (IsValid(ply) and ply:Alive()) then return end
+        local job = P11FW.GetJob(ply)
+        if not job then return end
+        local hp = math.Clamp(tonumber(job.hp) or 100, 1, 1000)
+        local ar = math.Clamp(tonumber(job.armor) or 0, 0, 500)
+        ply:SetMaxHealth(hp)
+        if ply:Health() ~= hp then ply:SetHealth(hp) end
+        if ply:Armor() ~= ar then ply:SetArmor(ar) end
     end)
 end)
 

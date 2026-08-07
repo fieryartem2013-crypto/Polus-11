@@ -1,5 +1,8 @@
 -- ============================================================
---  ПОЛЮС-11 — ЗОНА ПРИБЫТИЯ + ТРАНСПОРТ (server) v4.5.0 → v4.7.3
+--  ПОЛЮС-11 — ЗОНА ПРИБЫТИЯ + ТРАНСПОРТ (server) v4.5.0 → v4.8.4
+--  v4.8.4 «ВЫСАДКА»: точки ставятся ГДЕ СТОИШЬ (раньше — по прицелу с
+--  открытым меню → «случайно и сломано»), КУБ-МАРКЕР места на 5 сек всем,
+--  анти-застревание телепорта, смена профы → спавн профы/фракции/ОБЩИЙ.
 --  v4.7.3: ЕДИНЫЙ резолвер спавна ArrivalFor (профа > фракция),
 --  телепорт на точку СРАЗУ при смене должности, общий спавн больше
 --  не драчуется с точками фракций, арестованных не двигаем.
@@ -17,6 +20,22 @@
 -- ============================================================
 
 util.AddNetworkString("P11_ArrivalFX")
+util.AddNetworkString("P11_SpawnMark")
+
+-- ============ v4.8.4: КУБ-МАРКЕР ТОЧКИ (всем клиентам) ============
+-- заявка владельца: «чтобы спавн ставился виде кубиков на 5 сек,
+-- чтобы было видно, где будет спавн». kind: 1 профа, 2 фракция,
+-- 3 общий, 4 арест, 5 грузовик. dur — секунд на экране.
+function POLUS11.SpawnMark(pos, ang, kind, label, dur)
+    if not pos then return end
+    net.Start("P11_SpawnMark")
+        net.WriteVector(pos)
+        net.WriteFloat((ang and ang.y) or 0)
+        net.WriteUInt(kind or 1, 3)
+        net.WriteString(string.sub(tostring(label or "СПАВН"), 1, 80))
+        net.WriteFloat(tonumber(dur) or 5)
+    net.Broadcast()
+end
 
 local function ArFile()
     return "polus_framework/arrival_" .. game.GetMap() .. ".json"
@@ -132,19 +151,23 @@ end)
 -- ============ API ДЛЯ АДМИН-МЕНЮ ============
 
 function POLUS11.ArrivalSet(ply, facId)
-    local ok = false
+    local ok, facName = false, facId
     for _, c in ipairs(P11FW.CategoryList) do
-        if c.id == facId then ok = true break end
+        if c.id == facId then ok = true facName = c.name or facId break end
     end
     if not ok then P11FW.Notify(ply, "Нет такой фракции: " .. tostring(facId)) return end
 
-    local tr = ply:GetEyeTrace()
+    -- v4.8.4 «ВЫСАДКА»: точка — ГДЕ СТОИШЬ ТЫ. Раньше брали прицел
+    -- (GetEyeTrace): кнопка жмётся с ОТКРЫТЫМ меню — взгляд в случайную
+    -- сторону → точка улетала «случайно и сломано» в стену/за карту.
     POLUS11.Arrivals[facId] = {
-        pos = tr.HitPos + Vector(0, 0, 4),
+        pos = ply:GetPos(),
         ang = Angle(0, ply:EyeAngles().y, 0),
     }
     ArSave()
-    P11FW.Notify(ply, "Зона прибытия фракции «" .. facId .. "» поставлена здесь (переживает рестарт).")
+    P11FW.Notify(ply, "Зона прибытия фракции «" .. facName .. "» поставлена ЗДЕСЬ (куб-ориентир на 5 сек, переживает рестарт).")
+    POLUS11.SpawnMark(POLUS11.Arrivals[facId].pos, POLUS11.Arrivals[facId].ang,
+        2, "ФРАКЦИЯ: " .. facName .. " (" .. facId .. ")", 5)
     P11FW.Log("Прибытие: " .. ply:Nick() .. " поставил зону для " .. facId)
 end
 
@@ -160,13 +183,16 @@ function POLUS11.ArrivalJobSet(ply, jobId)
     local job = P11FW.Jobs and P11FW.Jobs[jobId]
     if not job then P11FW.Notify(ply, "Нет такой должности: " .. tostring(jobId)) return end
 
-    local tr = ply:GetEyeTrace()
+    -- v4.8.4 «ВЫСАДКА»: точка — ГДЕ СТОИШЬ (прицел с открытым меню
+    -- разбрасывал точки случайно — вот откуда «спавн сломан»)
     POLUS11.JobArrivals[jobId] = {
-        pos = tr.HitPos + Vector(0, 0, 4),
+        pos = ply:GetPos(),
         ang = Angle(0, ply:EyeAngles().y, 0),
     }
     ArSave()
-    P11FW.Notify(ply, "Точка спавна профы «" .. job.name .. "» поставлена здесь (переживает рестарт).")
+    P11FW.Notify(ply, "Точка спавна профы «" .. job.name .. "» поставлена ЗДЕСЬ (куб-ориентир на 5 сек, переживает рестарт).")
+    POLUS11.SpawnMark(POLUS11.JobArrivals[jobId].pos, POLUS11.JobArrivals[jobId].ang,
+        1, "ПРОФА: " .. job.name, 5)
     P11FW.Log("Прибытие: " .. ply:Nick() .. " поставил зону профы " .. jobId)
 end
 
@@ -196,7 +222,30 @@ function POLUS11.ArrivalList(ply)
         lines[#lines + 1] = "  • профа «" .. (job and job.name or id) .. "» (" .. id .. ")"
     end
     lines[#lines + 1] = "приоритет: спавн профы > спавн фракции > общая точка > карта"
+    lines[#lines + 1] = "🧊 ВСЕ точки показаны кубиками на 8 сек — оглянись вокруг!"
     for _, l in ipairs(lines) do P11FW.Notify(ply, l) end
+
+    -- v4.8.4 «ВЫСАДКА»: и ЗРИМО показать каждую точку куб-маркером
+    if POLUS11.SpawnMark then
+        local sp = P11FW.GetPoint and P11FW.GetPoint("spawn")
+        if sp then POLUS11.SpawnMark(sp.pos, sp.ang, 3, "ОБЩИЙ СПАВН ГАРНИЗОНА", 8) end
+        local jl = P11FW.GetPoint and P11FW.GetPoint("jail")
+        if jl then POLUS11.SpawnMark(jl.pos, jl.ang, 4, "КАМЕРА АРЕСТА", 8) end
+        for id, a in pairs(POLUS11.JobArrivals or {}) do
+            local job = P11FW.Jobs and P11FW.Jobs[id]
+            POLUS11.SpawnMark(a.pos, a.ang, 1, "ПРОФА: " .. (job and job.name or id), 8)
+        end
+        for id, a in pairs(POLUS11.Arrivals or {}) do
+            local nm = id
+            for _, c in ipairs(P11FW.CategoryList or {}) do
+                if c.id == id then nm = c.name break end
+            end
+            POLUS11.SpawnMark(a.pos, a.ang, 2, "ФРАКЦИЯ: " .. nm, 8)
+        end
+        if TruckSave then
+            POLUS11.SpawnMark(TruckSave.pos, TruckSave.ang, 5, "ГРУЗОВИК КОЛОННЫ", 8)
+        end
+    end
 end
 
 local function RemoveArrivalTrucks()
@@ -231,6 +280,9 @@ function POLUS11.ArrivalTruckPut(ply)
         TruckSave = { pos = tr.HitPos + Vector(0, 0, 8), ang = ang + Angle(0, 180, 0), class = cls }
         ArSave()
         P11FW.Notify(ply, "Грузовик колонны (" .. cls .. ") стоит и сохранён на карте.")
+        if POLUS11.SpawnMark then
+            POLUS11.SpawnMark(TruckSave.pos, TruckSave.ang, 5, "ГРУЗОВИК КОЛОННЫ", 5)
+        end
     else
         P11FW.Notify(ply, "Не смог создать " .. cls)
     end
@@ -256,11 +308,39 @@ function POLUS11.ArrivalFor(ply)
     return (jobId and POLUS11.JobArrivals[jobId]) or (fac and POLUS11.Arrivals[fac]) or nil
 end
 
+-- v4.8.4: АНТИ-ЗАСТРЕВАНИЕ. Если точка оказалась в стене/в пропе —
+-- аккуратно поднимаем бойца вверх до свободного места (до ~96u).
+-- Раньше «спавн сломан» выглядел так: телепорт есть, но ты в текстурах.
+local function SafeLand(ply)
+    if not (IsValid(ply) and ply:Alive()) then return end
+    local mins, maxs = ply:GetHull()
+    local start = ply:GetPos()
+    local tr = util.TraceHull({
+        start = start, endpos = start,
+        mins = mins, maxs = maxs,
+        filter = ply, mask = MASK_PLAYERSOLID,
+    })
+    if not tr.Hit then return end
+    for dz = 8, 96, 8 do
+        local p2 = start + Vector(0, 0, dz)
+        local tr2 = util.TraceHull({
+            start = p2, endpos = p2,
+            mins = mins, maxs = maxs,
+            filter = ply, mask = MASK_PLAYERSOLID,
+        })
+        if not tr2.Hit then
+            ply:SetPos(p2)
+            return
+        end
+    end
+end
+
 -- встать на точку (с античит-пропуском телепорта)
 local function ArrivalApply(ply, a, why)
     if not (IsValid(ply) and ply:Alive() and a) then return end
     ply:SetPos(a.pos)
     ply:SetEyeAngles(a.ang)
+    SafeLand(ply)
     if POLUS11.ACMarkTeleport then POLUS11.ACMarkTeleport(ply) end
 end
 
@@ -289,6 +369,9 @@ hook.Add("P11FW.JobChanged", "P11.ArrivalJobTP", function(ply, jobId, oldId)
         if P11FW.GetJobId(ply) ~= jobId then return end -- успел сменить ещё раз
         if PunishedSkip(ply) then return end
         local a = POLUS11.ArrivalFor(ply)
+        -- v4.8.4: нет точки профы/фракции — увести хотя бы на ОБЩИЙ
+        -- спавн (заявка: «при выборе профы ты не спавнишься на спавне»)
+        if not a and P11FW.GetPoint then a = P11FW.GetPoint("spawn") end
         if not a then return end
         ArrivalApply(ply, a)
         ply:EmitSound("buttons/button15.wav", 60, 105)
@@ -324,8 +407,8 @@ concommand.Add("p11_arrival", function(ply, cmd, args)
         POLUS11.ArrivalJobSet(ply, args[2])      -- p11_arrival job nkvd_oper
     elseif sub == "unjob" and args[2] then
         POLUS11.ArrivalJobClear(ply, args[2])
-    elseif sub == "list" then
-        POLUS11.ArrivalList(ply)
+    elseif sub == "list" or sub == "marks" then
+        POLUS11.ArrivalList(ply) -- печатает и заодно показывает кубики
     elseif sub == "untruck_legacy" then
         POLUS11.ArrivalTruckRemove(ply)
     elseif args[1] and args[1] ~= "" then
@@ -365,4 +448,4 @@ concommand.Add("p11_spawndiag", function(ply)
     if IsValid(ply) then ply:PrintMessage(HUD_PRINTCONSOLE, txt) else print(txt) end
 end)
 
-print("[POLUS-11] спавн v4.7.3: профа > фракция > общая > карта + телепорт при смене должности + p11_spawndiag")
+print("[POLUS-11] спавн v4.8.4 «ВЫСАДКА»: точка ГДЕ СТОИШЬ (не прицел), куб-маркер 5с, анти-застревание, смена профы → спавн профы > фракции > ОБЩИЙ спавн; p11_arrival marks / p11_spawndiag")

@@ -75,6 +75,18 @@ hook.Add("PlayerSpawn", "P11FW.SpawnPoint", function(ply)
         if IsValid(ply) and ply:Alive() then
             ply:SetPos(sp.pos)
             ply:SetEyeAngles(sp.ang)
+            -- v4.8.4: не застрять, если точка оказалась в стене/пропе
+            local mins, maxs = ply:GetHull()
+            local tr = util.TraceHull({ start = sp.pos, endpos = sp.pos,
+                mins = mins, maxs = maxs, filter = ply, mask = MASK_PLAYERSOLID })
+            if tr.Hit then
+                for dz = 8, 96, 8 do
+                    local p2 = sp.pos + Vector(0, 0, dz)
+                    local tr2 = util.TraceHull({ start = p2, endpos = p2,
+                        mins = mins, maxs = maxs, filter = ply, mask = MASK_PLAYERSOLID })
+                    if not tr2.Hit then ply:SetPos(p2) break end
+                end
+            end
         end
     end)
 end)
@@ -183,11 +195,15 @@ net.Receive("P11FW_AdminAction", function(len, ply)
         end
 
     elseif act == 7 then  P11FW.SetPoint("spawn", ply:GetPos(), ply:EyeAngles())
-        P11FW.Notify(ply, "Точка спавна установлена здесь.")
+        P11FW.Notify(ply, "Точка спавна установлена здесь — жёлтый куб покажет её 5 сек.")
+        local sp = P11FW.GetPoint("spawn")
+        if sp and POLUS11.SpawnMark then POLUS11.SpawnMark(sp.pos, sp.ang, 3, "ОБЩИЙ СПАВН ГАРНИЗОНА", 5) end
     elseif act == 8 then  P11FW.ClearPoint("spawn")
         P11FW.Notify(ply, "Точка спавна сброшена (стандартные точки карты).")
     elseif act == 9 then  P11FW.SetPoint("jail", ply:GetPos(), ply:EyeAngles())
-        P11FW.Notify(ply, "Камера ареста установлена здесь.")
+        P11FW.Notify(ply, "Камера ареста установлена здесь — красный куб покажет её 5 сек.")
+        local jl = P11FW.GetPoint("jail")
+        if jl and POLUS11.SpawnMark then POLUS11.SpawnMark(jl.pos, jl.ang, 4, "КАМЕРА АРЕСТА", 5) end
     elseif act == 10 then P11FW.ClearPoint("jail")
         P11FW.Notify(ply, "Камера ареста сброшена (арест = заморозка на месте).")
     elseif act == 11 then P11FW.CreateNPC(ply)
@@ -370,9 +386,21 @@ net.Receive("P11FW_AdminAction", function(len, ply)
 end)
 
 -- чат-команды управления точками (паритет с меню)
-concommand.Add("polus_fw_setspawn", function(ply) if P11FW.Config.Admin(ply) then P11FW.SetPoint("spawn", ply:GetPos(), ply:EyeAngles()) P11FW.Notify(ply, "Спавн-поинт поставлен.") end end)
+concommand.Add("polus_fw_setspawn", function(ply)
+    if not P11FW.Config.Admin(ply) then return end
+    P11FW.SetPoint("spawn", ply:GetPos(), ply:EyeAngles())
+    P11FW.Notify(ply, "Спавн-поинт поставлен — жёлтый куб покажет его 5 сек.")
+    local sp = P11FW.GetPoint("spawn")
+    if sp and POLUS11.SpawnMark then POLUS11.SpawnMark(sp.pos, sp.ang, 3, "ОБЩИЙ СПАВН ГАРНИЗОНА", 5) end
+end)
 concommand.Add("polus_fw_clearspawn", function(ply) if P11FW.Config.Admin(ply) then P11FW.ClearPoint("spawn") P11FW.Notify(ply, "Спавн-поинт сброшен.") end end)
-concommand.Add("polus_fw_setjail", function(ply) if P11FW.Config.Admin(ply) then P11FW.SetPoint("jail", ply:GetPos(), ply:EyeAngles()) P11FW.Notify(ply, "Точка ареста поставлена.") end end)
+concommand.Add("polus_fw_setjail", function(ply)
+    if not P11FW.Config.Admin(ply) then return end
+    P11FW.SetPoint("jail", ply:GetPos(), ply:EyeAngles())
+    P11FW.Notify(ply, "Точка ареста поставлена — красный куб покажет её 5 сек.")
+    local jl = P11FW.GetPoint("jail")
+    if jl and POLUS11.SpawnMark then POLUS11.SpawnMark(jl.pos, jl.ang, 4, "КАМЕРА АРЕСТА", 5) end
+end)
 concommand.Add("polus_fw_clearjail", function(ply) if P11FW.Config.Admin(ply) then P11FW.ClearPoint("jail") P11FW.Notify(ply, "Точка ареста сброшена.") end end)
 
 -- открыть админ-меню из чата: /menu (главная), !menu, !fw, !фвадмин, !p11
