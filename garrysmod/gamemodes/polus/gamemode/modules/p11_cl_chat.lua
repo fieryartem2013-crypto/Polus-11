@@ -25,7 +25,7 @@ local function Trace(msg)
 end
 
 -- ---------- приём пакетов каналов → ШТАТНЫЙ чат движка ----------
-local CHNAMES = { [1] = "РЕЧЬ", [2] = "OOC", [3] = "LOOC", [4] = "ME", [5] = "IT", [6] = "РЕПОРТ" }
+local CHNAMES = { [1] = "РЕЧЬ", [2] = "OOC", [3] = "LOOC", [4] = "ME", [5] = "IT", [6] = "РЕПОРТ", [7] = "ШЁПОТ", [8] = "КРИК" }
 
 local function AddStyled(chan, name, text, ncol)
     if chan == 1 then
@@ -44,6 +44,12 @@ local function AddStyled(chan, name, text, ncol)
     elseif chan == 6 then
         chat.AddText(Color(235, 100, 90), "[РЕПОРТ] ", ncol, name,
             Color(240, 150, 140), ": " .. text)
+    elseif chan == 7 then -- v4.8.1: шёпот (тихо, ~180u)
+        chat.AddText(Color(135, 150, 190), "[шёпот] ", ncol, name,
+            Color(175, 185, 210), ": " .. text)
+    elseif chan == 8 then -- v4.8.1: крик (~1500u)
+        chat.AddText(Color(255, 140, 105), "[КРИК] ", ncol, name,
+            Color(255, 200, 180), ": " .. text)
     end
 end
 

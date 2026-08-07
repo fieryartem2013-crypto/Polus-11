@@ -35,6 +35,7 @@ local cl = {
     "modules/p11_cl_tutorial.lua",  -- туториал новичка: маяки и подсказки (v4.2)
     "modules/p11_cl_chars.lua",     -- анкета бойца (v4.3.0)
     "modules/p11_cl_donate.lua",    -- v4.8.0: F6 — донат-витрина (плейсхолдер)
+    "modules/p11_cl_offer.lua",     -- v4.8.1: особая вакансия — маркер над кадровиком + баннер
 }
 
 local loaded = 0

@@ -45,6 +45,7 @@ local send = {
     "modules/p11_cl_tutorial.lua",  -- v4.2
     "modules/p11_cl_chars.lua",     -- v4.3.0: анкета бойца (позывной+описание)
     "modules/p11_cl_donate.lua",    -- v4.8.0: F6 — донат-витрина (плейсхолдер)
+    "modules/p11_cl_offer.lua",     -- v4.8.1: особая вакансия — маркер над кадровиком + баннер
 }
 for _, f in ipairs(send) do
     AddCSLuaFile(f)
@@ -110,7 +111,8 @@ local sv = {
     "modules/p11_sv_models.lua",     -- выдача моделей: надеть/выдать (v4.4.0, с нуля)
     "modules/p11_sv_chat.lua",       -- чат: /ooc /looc /me /it /report + локальная речь (v4.5.0)
     "modules/p11_sv_arrival.lua",    -- зона прибытия по фракциям + LVS-грузовик (v4.5.0)
-    "modules/p11_sv_playtime.lua",   -- время игры → доступ к профам (v4.5.0)
+    "modules/p11_sv_playtime.lua",   -- время игры → доступ к профам (v4.5.0; v4.8.0 — честные минуты)
+    "modules/p11_sv_voice.lua",      -- 3D-голос + радио-эфир линком (v4.8.1 «ЭФИР»)
 }
 
 local function Safe(f)

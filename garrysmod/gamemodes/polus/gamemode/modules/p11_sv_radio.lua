@@ -1,8 +1,16 @@
 -- ============================================================
---  ПОЛЮС-11 — РАЦИИ (сервер)
---  Каналы: «РККА», «НКВД», «Наука», «Персонал», «Общий» (v3.9).
---  Текст: /r сообщение | Голос: дальняя связь при общем канале.
---  Буря глушит эфир. Заражённый с рацией слышит ВСЕ каналы.
+--  ПОЛЮС-11 — РАЦИИ (сервер) v4.8.1 «ЭФИР»
+--  Каналы: «РККА», «НКВД», «Наука», «Персонал», «Общий»
+--  (v3.9; v4.8.1 — канал ПО УМОЛЧАНИЮ = «Общий», чтобы рация
+--  «просто работала» из коробки у всех, кто её получил).
+--  Текст: /r сообщение • Голос-эфир: модули p11_sv_voice.lua
+--  (3D-голос + радио-линк живут там, хук один — здесь убран).
+--  Канал переключается: R на рации ИЛИ командой /канал <имя>.
+--  Буря глушит эфир (местная речь доступна и в бурю).
+--  Заражённый с рацией слышит ВСЕ каналы.
+--  v4.8.1: рация выдана ВСЕМ военным (сид v4.8.1, миграция
+--  radioV481) — жалоба «у штурмовика задача по рации, а рации
+--  нет» закрыта.
 -- ============================================================
 
 POLUS11.RadioChannels = {
@@ -51,7 +59,7 @@ hook.Add("PlayerSay", "P11_RadioSay", function(ply, text)
     local msg = string.sub(text, off)
     if msg == "" then return "" end
 
-    local channel = ply:GetNWString("P11_RadioCh", "rkka")
+    local channel = ply:GetNWString("P11_RadioCh", "all") -- v4.8.1: дефолт «Общий»
     local chName = POLUS11.RadioChannels[channel] or channel
 
     -- буря полностью рубит эфир
@@ -66,7 +74,7 @@ hook.Add("PlayerSay", "P11_RadioSay", function(ply, text)
 
     for _, recv in ipairs(player.GetAll()) do
         if recv ~= ply and POLUS11.HasRadio(recv) then
-            local rch = recv:GetNWString("P11_RadioCh", "rkka")
+            local rch = recv:GetNWString("P11_RadioCh", "all") -- v4.8.1
             local hearsAll = recv:GetNWBool("P11_Infected", false) and recv:GetNWBool("P11_InfActive", false)
 
             local ok = (channel == "all") or (rch == "all") or (rch == channel) or hearsAll
@@ -92,22 +100,43 @@ hook.Add("PlayerSay", "P11_RadioSay", function(ply, text)
     return ""
 end)
 
--- голосовая рация: один канал = слышно независимо от дистанции
-hook.Add("PlayerCanHearPlayersVoice", "P11_RadioVoice", function(listener, talker)
-    if not POLUS11.HasRadio(listener) or not POLUS11.HasRadio(talker) then return end
+-- v4.8.1: /канал — переключить канал рации БЕЗ кнопки R
+-- (страховка на случай, если R не срабатывает на чьей-то связке)
+hook.Add("PlayerSay", "P11_RadioChannelCmd", function(ply, text)
+    local t = string.Trim(text)
+    local low = string.lower(t)
+    if not string.StartWith(low, "/канал") then return end
 
-    local storm = GetGlobalBool("P11_Storm", false)
-    if storm and POLUS11.Config.StormBlocksRadio then return false, false end
-
-    local lch = listener:GetNWString("P11_RadioCh", "rkka")
-    local tch = talker:GetNWString("P11_RadioCh", "rkka")
-
-    if lch == "all" or tch == "all" or lch == tch then
-        return true, false -- слышно на любой дистанции, стерео
+    if not POLUS11.HasRadio(ply) then
+        POLUS11.Notify(ply, "У вас нет рации!")
+        return ""
     end
 
-    -- НЕЧТО с рацией слышит ВСЕ голосовые каналы
-    if listener:GetNWBool("P11_Infected", false) and listener:GetNWBool("P11_InfActive", false) then
-        return true, false
+    local arg = string.Trim(string.sub(t, #"/канал" + 1))
+    arg = string.lower(arg)
+
+    if arg == "" then
+        local cur = ply:GetNWString("P11_RadioCh", "all")
+        ply:ChatPrint("[Рация] Текущий канал: " .. (POLUS11.RadioChannels[cur] or cur)
+            .. ". Смена: /канал общий | ркка | нквд | наука | персонал — или клавиша R на рации.")
+        return ""
     end
+
+    local want = nil
+    if string.find(arg, "общ") or arg == "all" or string.find(arg, "все") then want = "all"
+    elseif string.find(arg, "ркка") or arg == "rkka" then want = "rkka"
+    elseif string.find(arg, "нквд") or arg == "nkvd" then want = "nkvd"
+    elseif string.find(arg, "наук") or arg == "science" then want = "science"
+    elseif string.find(arg, "персонал") or arg == "personnel" then want = "personnel"
+    end
+
+    if not want then
+        ply:ChatPrint("[Рация] Нет такого канала. Бывают: общий, ркка, нквд, наука, персонал.")
+        return ""
+    end
+
+    ply:SetNWString("P11_RadioCh", want)
+    POLUS11.Notify(ply, "Канал: " .. POLUS11.RadioChannels[want])
+    ply:EmitSound("buttons/combine_button2.wav", 55, 110)
+    return ""
 end)

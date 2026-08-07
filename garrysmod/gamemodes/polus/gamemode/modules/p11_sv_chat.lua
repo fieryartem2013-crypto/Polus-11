@@ -1,5 +1,5 @@
 -- ============================================================
---  ПОЛЮС-11 — ЧАТ (server) v7 «ФИЛЬТР» — ПРОЗРАЧНЫЙ, С НУЛЯ
+--  ПОЛЮС-11 — ЧАТ (server) v7.1 «ФИЛЬТР+ЭФИР» — освещённый
 --  Чем отличается от всех прошлых ревизий: ПОЛНАЯ ОСВЕЩЕННОСТЬ.
 --  Каждая ступень маршрута сообщения видна в консоли сервера
 --  (трейс), а диагностика показывает ВСЕ обработчики PlayerSay —
@@ -10,8 +10,10 @@
 --   • клиенты v6/v7 (поздоровались, режим 0) — богатые пакеты сетью;
 --   • все остальные — ДВИЖКОВОЕ зеркало ChatPrint (запасная дорога).
 --
---  КАНАЛЫ: РЕЧЬ (~700) • // = /ooc (всем) • /looc (~500) •
---  /me • /it • /report (тикет, работает и в муте).
+--  КАНАЛЫ: РЕЧЬ (радиус из SpeechRadius) • /шепот (~180) • /крик
+--  (~1500) • // = /ooc (всем) • /looc (~500) • /me • /it • /report.
+--  v4.8.1: радиусы настраиваются в p11_sh_config, голос — 3D
+--  (модуль p11_sv_voice), рация — текст /r + эфир по каналам.
 --  КОНСОЛЬ СЕРВЕРА: p11_chatdiag • p11_chat_trace 0/1 •
 --  p11_chat_passthrough 0/1.
 -- ============================================================
@@ -33,10 +35,20 @@ local function Trace(msg)
     if cvTrace:GetBool() then print("[CHAT-TRACE] " .. msg) end
 end
 
-POLUS11.ChatCh = { IC = 1, OOC = 2, LOOC = 3, ME = 4, IT = 5, REPORT = 6 }
-local CHNAME = { [1] = "РЕЧЬ", [2] = "OOC", [3] = "LOOC", [4] = "ME", [5] = "IT", [6] = "РЕПОРТ" }
+-- v4.8.1 «ЭФИР»: шёпот/крик + все радиусы в конфиге (p11_sh_config)
+POLUS11.ChatCh = { IC = 1, OOC = 2, LOOC = 3, ME = 4, IT = 5, REPORT = 6,
+                   WHISPER = 7, SHOUT = 8 }
+local CHNAME = { [1] = "РЕЧЬ", [2] = "OOC", [3] = "LOOC", [4] = "ME", [5] = "IT",
+                 [6] = "РЕПОРТ", [7] = "ШЁПОТ", [8] = "КРИК" }
 
-local R_NEAR, R_LOOC = 700, 500
+local function Rad(key, def)
+    local c = POLUS11.Config or {}
+    return tonumber(c[key]) or def
+end
+local function R_NEAR()    return Rad("SpeechRadius", 700)  end -- обычная речь
+local function R_LOOC()    return Rad("LoocRadius", 500)    end
+local function R_WHISPER() return Rad("WhisperRadius", 180) end -- /шепот
+local function R_SHOUT()   return Rad("ShoutRadius", 1500)  end -- /крик
 
 local function InRadius(pos, radius)
     local r2 = radius * radius
@@ -54,7 +66,9 @@ local function MirrorLine(chan, name, text)
     if chan == POLUS11.ChatCh.LOOC   then return "[LOOC] " .. name .. ": " .. text end
     if chan == POLUS11.ChatCh.ME     then return "* " .. name .. " " .. text end
     if chan == POLUS11.ChatCh.IT     then return "*** " .. text end
-    if chan == POLUS11.ChatCh.REPORT then return "[РЕПОРТ] " .. name .. ": " .. text end
+    if chan == POLUS11.ChatCh.REPORT  then return "[РЕПОРТ] " .. name .. ": " .. text end
+    if chan == POLUS11.ChatCh.WHISPER then return "[шёпот] " .. name .. ": " .. text end
+    if chan == POLUS11.ChatCh.SHOUT   then return "[КРИК] " .. name .. ": " .. text end
     return name .. ": " .. text
 end
 
@@ -114,6 +128,7 @@ local FOREIGN = {
     "/деньги", "/money", "/баланс",
     "/ларёк", "/ларек", "/магазин", "/shop",
     "/обмен", "/trade",
+    "/канал", -- v4.8.1: переключение канала рации (p11_sv_radio)
     "/p11",
 }
 
@@ -148,6 +163,16 @@ local function ChatCore(ply, text)
     elseif string.StartWith(low, "/оос ")   then ch = POLUS11.ChatCh.OOC;  raw = string.Trim(string.sub(raw, 9))
     elseif string.StartWith(low, "/looc ")  then ch = POLUS11.ChatCh.LOOC; raw = string.Trim(string.sub(raw, 7))
     elseif string.StartWith(low, "/лоок ")  then ch = POLUS11.ChatCh.LOOC; raw = string.Trim(string.sub(raw, 11))
+    -- v4.8.1: ШЁПОТ (тихо, только у самого уха)
+    elseif string.StartWith(low, "/шепот ") then ch = POLUS11.ChatCh.WHISPER; raw = string.Trim(string.sub(raw, 15))
+    elseif string.StartWith(low, "/ш ")     then ch = POLUS11.ChatCh.WHISPER; raw = string.Trim(string.sub(raw, 5))
+    elseif string.StartWith(low, "/whisper ") then ch = POLUS11.ChatCh.WHISPER; raw = string.Trim(string.sub(raw, 10))
+    elseif string.StartWith(low, "/w ")     then ch = POLUS11.ChatCh.WHISPER; raw = string.Trim(string.sub(raw, 4))
+    -- v4.8.1: КРИК (слышно почти через станцию)
+    elseif string.StartWith(low, "/крик ")  then ch = POLUS11.ChatCh.SHOUT; raw = string.Trim(string.sub(raw, 11))
+    elseif string.StartWith(low, "/кр ")    then ch = POLUS11.ChatCh.SHOUT; raw = string.Trim(string.sub(raw, 7))
+    elseif string.StartWith(low, "/yell ")  then ch = POLUS11.ChatCh.SHOUT; raw = string.Trim(string.sub(raw, 7))
+    elseif string.StartWith(low, "/y ")     then ch = POLUS11.ChatCh.SHOUT; raw = string.Trim(string.sub(raw, 4))
     elseif string.StartWith(low, "/me ")    then ch = POLUS11.ChatCh.ME;   raw = string.Trim(string.sub(raw, 5))
     elseif string.StartWith(low, "/мя ")    then ch = POLUS11.ChatCh.ME;   raw = string.Trim(string.sub(raw, 7))
     elseif string.StartWith(low, "/it ")    then ch = POLUS11.ChatCh.IT;   raw = string.Trim(string.sub(raw, 5))
@@ -159,9 +184,15 @@ local function ChatCore(ply, text)
         if ch == POLUS11.ChatCh.OOC then
             ChatSend(ch, NameOf(ply), raw, nil, ColorOf(ply))
         elseif ch == POLUS11.ChatCh.LOOC then
-            ChatSend(ch, NameOf(ply), raw, InRadius(ply:GetPos(), R_LOOC), ColorOf(ply))
+            ChatSend(ch, NameOf(ply), raw, InRadius(ply:GetPos(), R_LOOC()), ColorOf(ply))
+        elseif ch == POLUS11.ChatCh.WHISPER then
+            ChatSend(ch, NameOf(ply), raw, InRadius(ply:GetPos(), R_WHISPER()), ColorOf(ply))
+        elseif ch == POLUS11.ChatCh.SHOUT then
+            local shoutList = InRadius(ply:GetPos(), R_SHOUT())
+            -- крику не нужен живой приёмник за пределами: но мёртвые-наблюдатели слышат всегда
+            ChatSend(ch, NameOf(ply), raw, shoutList, ColorOf(ply))
         else
-            ChatSend(ch, NameOf(ply), raw, InRadius(ply:GetPos(), R_NEAR), ColorOf(ply))
+            ChatSend(ch, NameOf(ply), raw, InRadius(ply:GetPos(), R_NEAR()), ColorOf(ply))
         end
         return ""
     end
@@ -170,11 +201,11 @@ local function ChatCore(ply, text)
         for _, pfx in ipairs(FOREIGN) do
             if string.StartWith(low, pfx) then return end
         end
-        ply:ChatPrint("[ПОЛЮС-11] Каналы: текст = речь • // • /ooc • /looc • /me • /it • /report • /r • /ларёк • /обмен")
+        ply:ChatPrint("[ПОЛЮС-11] Каналы: текст = речь (~" .. R_NEAR() .. "u) • /шепот • /крик • // • /ooc • /looc • /me • /it • /report • /r • /канал • /ларёк • /обмен")
         return ""
     end
 
-    ChatSend(POLUS11.ChatCh.IC, NameOf(ply), raw, InRadius(ply:GetPos(), R_NEAR), ColorOf(ply))
+    ChatSend(POLUS11.ChatCh.IC, NameOf(ply), raw, InRadius(ply:GetPos(), R_NEAR()), ColorOf(ply))
     return ""
 end
 
@@ -247,4 +278,4 @@ concommand.Add("p11_chatdiag", function(ply)
     if IsValid(ply) then ply:PrintMessage(HUD_PRINTCONSOLE, txt) else print(txt) end
 end)
 
-print("[P11CHAT-SV] чат v7 «ФИЛЬТР» загружен: трейс каждого сообщения в консоль (p11_chatdiag / p11_chat_trace / p11_chat_passthrough)")
+print("[P11CHAT-SV] чат v7.1 «ФИЛЬТР+ЭФИР» загружен (v4.8.1: радиусы речи из конфига, /шепот /крик) — трейс в консоль: p11_chatdiag / p11_chat_trace / p11_chat_passthrough")

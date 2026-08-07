@@ -1,14 +1,14 @@
 -- ============================================================
 --  ПОЛЮС-11 — Армейская рация
---  R — переключить канал (Гарнизон / Лаборатория / Общий)
---  Текст в эфир: /r сообщение
---  Голос: в эфире слышат все на вашем канале.
+--  R или /канал <имя> — переключить канал (v4.8.1: дефолт «Общий»).
+--  Текст в эфир: /r сообщение • Голос-эфир: слышат все на канале
+--  (модуль p11_sv_voice — 3D-голос + радио-линк).
 -- ============================================================
 
 SWEP.PrintName    = "Рация"
 SWEP.Author       = "POLUS-11"
 SWEP.Category     = "ПОЛЮС-11"
-SWEP.Instructions = "R — канал | /r текст в эфир | Голос идёт в канал автоматически"
+SWEP.Instructions = "R или /канал — канал | /r текст в эфир | Голос идёт в канал сам"
 
 SWEP.Spawnable      = true
 SWEP.AdminSpawnable = true
@@ -42,7 +42,7 @@ function SWEP:Deploy()
     if SERVER then
         local cur = self.Owner:GetNWString("P11_RadioCh", "")
         if cur == "" then
-            self.Owner:SetNWString("P11_RadioCh", "rkka")
+            self.Owner:SetNWString("P11_RadioCh", "all") -- v4.8.1: «Общий» из коробки
         end
     end
     return true
@@ -60,7 +60,7 @@ function SWEP:Reload()
     if CurTime() < self.NextReload then return end
     self.NextReload = CurTime() + 0.8
 
-    local cur = ply:GetNWString("P11_RadioCh", "rkka")
+    local cur = ply:GetNWString("P11_RadioCh", "all")
     local next = 1
     for i, ch in ipairs(ORDER) do
         if ch == cur then
@@ -83,7 +83,7 @@ if CLIENT then
         local ply = self.Owner
         if not IsValid(ply) then return end
 
-        local ch = ply:GetNWString("P11_RadioCh", "rkka")
+        local ch = ply:GetNWString("P11_RadioCh", "all")
         local name = (POLUS11.RadioChannels and POLUS11.RadioChannels[ch]) or ch
 
         local w, h = ScrW(), ScrH()

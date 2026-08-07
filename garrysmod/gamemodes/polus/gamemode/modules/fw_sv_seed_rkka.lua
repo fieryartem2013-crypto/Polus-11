@@ -61,7 +61,7 @@ local SEED_JOBS = {
         id = "seed_rkka_postovoy", time = 30, -- v4.6.6: минуты для доступа category = "rkka", order = 31,
         name = "Постовой РККА",
         desc = "Стоит на посту: ворота, караулка, склад. АКС-74У — короткий и злой, для коридоров станции самое то. 100 ХП / 100 брони.",
-        weapons = { { "arc9_eft_aks74u", "arc9_eft_aks74", "weapon_smg1" } }, hp = 100, armor = 100, max = 4,
+        weapons = { { "arc9_eft_aks74u", "arc9_eft_aks74", "weapon_smg1" }, "weapon_polus11_radio" }, hp = 100, armor = 100, max = 4,
         color = Color(175, 165, 95),
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m35_1941_s1_02.mdl",
@@ -75,7 +75,7 @@ local SEED_JOBS = {
         id = "seed_rkka_soldat", time = 45, -- v4.6.6: минуты для доступа category = "rkka", order = 32,
         name = "Солдат РККА",
         desc = "Основной боец гарнизона. Полноразмерный АК-74, патрули и сопровождение учёных. 105 ХП / 105 брони.",
-        weapons = { { "arc9_eft_aks74", "arc9_eft_ak74", "weapon_ar2" } }, hp = 105, armor = 105, max = 6,
+        weapons = { { "arc9_eft_aks74", "arc9_eft_ak74", "weapon_ar2" }, "weapon_polus11_radio" }, hp = 105, armor = 105, max = 6,
         color = Color(185, 170, 90),
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m35_1941_s1_02.mdl",
@@ -89,7 +89,7 @@ local SEED_JOBS = {
         id = "seed_rkka_shturmovik", time = 90, -- v4.6.6: минуты для доступа category = "rkka", order = 33,
         name = "Штурмовик РККА",
         desc = "Первым вламывается в заражённые отсеки. ППШ-41 косит всё в упор, тяжёлый бронежилет. 125 ХП / 145 брони.",
-        weapons = { { "arc9_eft_ppsh41", "weapon_smg1" } }, hp = 125, armor = 145, max = 3,
+        weapons = { { "arc9_eft_ppsh41", "weapon_smg1" }, "weapon_polus11_radio" }, hp = 125, armor = 145, max = 3,
         color = Color(200, 160, 80),
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m43_s1_02.mdl",
@@ -103,7 +103,7 @@ local SEED_JOBS = {
         id = "seed_rkka_razvedchik", time = 60, -- v4.6.6: минуты для доступа category = "rkka", order = 34,
         name = "Разведчик РККА",
         desc = "Уходит в белую пустыню первым. Трёхлинейка бьёт точно и далеко — Нечто не любит одиночных выстрелов с вышки. 125 ХП / 115 брони. Штрафная рота — туда лучше не попадать.",
-        weapons = { { "arc9_eft_mosin_infantry", "arc9_eft_mosin_sniper", "weapon_crossbow" } }, hp = 125, armor = 115, max = 3,
+        weapons = { { "arc9_eft_mosin_infantry", "arc9_eft_mosin_sniper", "weapon_crossbow" }, "weapon_polus11_radio" }, hp = 125, armor = 115, max = 3,
         color = Color(165, 145, 85),
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/infantry/shtrafniki/m35_1941_s1_02.mdl",
@@ -117,7 +117,7 @@ local SEED_JOBS = {
         id = "seed_rkka_komissar", time = 240, -- v4.6.6: минуты для доступа category = "rkka", order = 35,
         name = "Комиссар РККА",
         desc = "Политрук гарнизона. Дисциплина, допросы, трибунал. Трёхлинейка — за спиной, ордер на расстрел дезертиров — в кармане. Одно место. 100 ХП / 100 брони.",
-        weapons = { { "arc9_eft_mosin_sniper", "arc9_eft_mosin_infantry", "weapon_crossbow" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" } }, hp = 100, armor = 100, max = 2, terminal = true, -- v4.6.6: лимит 2
+        weapons = { { "arc9_eft_mosin_sniper", "arc9_eft_mosin_infantry", "weapon_crossbow" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 100, armor = 100, max = 2, terminal = true, -- v4.6.6: лимит 2
         color = Color(160, 90, 85),
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/commissar/co/m35_1941_s1_02.mdl",
@@ -130,7 +130,7 @@ local SEED_JOBS = {
         id = "seed_rkka_general", time = 300, -- v4.6.6: минуты для доступа category = "rkka", order = 36,
         name = "Генерал РККА",
         desc = "Командующий всем военным контингентом станции из генеральского штаба. Трёхлинейка и полная власть. Одно место. 125 ХП / 125 брони.",
-        weapons = { { "arc9_eft_mosin_sniper", "arc9_eft_mosin_infantry", "weapon_crossbow" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" } }, hp = 125, armor = 125, max = 2, terminal = true, command = true, -- v4.6.6: лимит 2,
+        weapons = { { "arc9_eft_mosin_sniper", "arc9_eft_mosin_infantry", "weapon_crossbow" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 125, armor = 125, max = 2, terminal = true, command = true, -- v4.6.6: лимит 2,
         color = Color(210, 185, 90),
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/general_staff/gen/m40_1941_s1_05.mdl",
@@ -140,7 +140,7 @@ local SEED_JOBS = {
         id = "seed_rkka_generalpeh", time = 300, -- v4.6.6: минуты для доступа category = "rkka", order = 37,
         name = "Генерал РККА (Пехота)",
         desc = "Комбат пехотного звена: ближе к окопам, чем к штабу. Двустволка MR-43 для личной самообороны. Одно место. 100 ХП / 100 брони.",
-        weapons = { { "arc9_eft_mr43", "weapon_shotgun" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" } }, hp = 100, armor = 100, max = 2, terminal = true, -- v4.6.6: лимит 2
+        weapons = { { "arc9_eft_mr43", "weapon_shotgun" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 100, armor = 100, max = 2, terminal = true, -- v4.6.6: лимит 2
         color = Color(195, 175, 85),
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/infantry/gen/m40_1941_s1_02.mdl",
@@ -154,7 +154,7 @@ local SEED_JOBS = {
         id = "seed_nkvd_convoy", time = 45, -- v4.6.6: минуты для доступа category = "nkvd", order = 50, whitelist = true, -- v4.4.0: ВАЙТЛИСТ
         name = "Конвоир НКВД",
         desc = "Конвой и караул задержанных, охрана допросной и склада вещдоков. Двустволка MR-43 — уговаривать долго не приходится. 100 ХП / 100 брони.",
-        weapons = { { "arc9_eft_mr43", "weapon_shotgun" } }, hp = 100, armor = 100, max = 2,
+        weapons = { { "arc9_eft_mr43", "weapon_shotgun" }, "weapon_polus11_radio" }, hp = 100, armor = 100, max = 2,
         color = Color(105, 22, 26), -- v4.5.0 КРАСНО-ЧЁРНЫЙ,
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m35_1941_s1_02.mdl",
@@ -166,7 +166,7 @@ local SEED_JOBS = {
         id = "seed_nkvd_oper", time = 90, -- v4.6.6: минуты для доступа category = "nkvd", order = 51, whitelist = true, -- v4.4.0: ВАЙТЛИСТ
         name = "Оперуполномоченный НКВД",
         desc = "Оперативная работа: наружное наблюдение, агентурная сеть, тихие допросы «для протокола». АКС-74У под полой шинели. 100 ХП / 100 брони.",
-        weapons = { { "arc9_eft_aks74u", "arc9_eft_aks74", "weapon_smg1" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" } }, hp = 100, armor = 100, max = 3,
+        weapons = { { "arc9_eft_aks74u", "arc9_eft_aks74", "weapon_smg1" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 100, armor = 100, max = 3,
         color = Color(122, 25, 30), -- v4.5.0 КРАСНО-ЧЁРНЫЙ,
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/commissar/co/m35_1941_s1_02.mdl",
@@ -179,7 +179,7 @@ local SEED_JOBS = {
         id = "seed_nkvd_sledovatel", time = 120, -- v4.6.6: минуты для доступа category = "nkvd", order = 52, whitelist = true, -- v4.4.0: ВАЙТЛИСТ
         name = "Следователь НКВД",
         desc = "Протоколы, вещдоки, досье на каждого жителя станции. Имеет право требовать принудительный тест крови ПОД СВОИМ НАДЗОРОМ — шприц в сейфе следопера, трёхлинейка и ПМ на поясе. 100 ХП / 50 брони.",
-        weapons = { "weapon_polus11_syringe", { "arc9_eft_mosin_infantry", "arc9_eft_mosin_sniper", "weapon_crossbow" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" } }, hp = 100, armor = 50, max = 2, terminal = true,
+        weapons = { "weapon_polus11_syringe", { "arc9_eft_mosin_infantry", "arc9_eft_mosin_sniper", "weapon_crossbow" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 100, armor = 50, max = 2, terminal = true,
         color = Color(138, 28, 32), -- v4.5.0 КРАСНО-ЧЁРНЫЙ,
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/commissar/co/m35_1941_s1_03.mdl",
@@ -190,7 +190,7 @@ local SEED_JOBS = {
         id = "seed_nkvd_osobist", time = 180, -- v4.6.6: минуты для доступа category = "nkvd", order = 53, whitelist = true, -- v4.4.0: ВАЙТЛИСТ
         name = "Особист НКВД",
         desc = "Контрразведка станции. Может объявлять РОЗЫСК (!розыск) и отдавать ПРИКАЗЫ (!приказ) без санкции генерала, если подозревает Нечто. Одно место. 115 ХП / 100 брони.",
-        weapons = { { "arc9_eft_aks74u", "arc9_eft_aks74", "weapon_smg1" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" } }, hp = 115, armor = 100, max = 2, terminal = true, command = true, -- v4.6.6: лимит 2,
+        weapons = { { "arc9_eft_aks74u", "arc9_eft_aks74", "weapon_smg1" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 115, armor = 100, max = 2, terminal = true, command = true, -- v4.6.6: лимит 2,
         color = Color(154, 30, 30), -- v4.5.0 КРАСНО-ЧЁРНЫЙ,
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/commissar/co/m35_1941_s1_02.mdl",
@@ -200,7 +200,7 @@ local SEED_JOBS = {
         id = "seed_nkvd_nachalnik", time = 240, -- v4.6.6: минуты для доступа category = "nkvd", order = 54, whitelist = true, -- v4.4.0: ВАЙТЛИСТ
         name = "Начальник Особого Отдела НКВД",
         desc = "Высшее слово станции по вопросам внутренней безопасности. Его подпись в ордере на расстрел равна приговору Военного трибунала. Одно место. 125 ХП / 125 брони.",
-        weapons = { { "arc9_eft_aks74u", "arc9_eft_aks74", "weapon_smg1" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" } }, hp = 125, armor = 125, max = 2, terminal = true, command = true, -- v4.6.6: лимит 2,
+        weapons = { { "arc9_eft_aks74u", "arc9_eft_aks74", "weapon_smg1" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 125, armor = 125, max = 2, terminal = true, command = true, -- v4.6.6: лимит 2,
         color = Color(170, 34, 34), -- v4.5.0 КРАСНО-ЧЁРНЫЙ,
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/general_staff/gen/m40_1941_s1_05.mdl",
@@ -453,6 +453,35 @@ local function SeedAll()
             P11FW.RegisterCustomJobs(P11FW.CustomJobs)
             P11FW.SyncCustomJobs()
             P11FW.Log("Сид v4.8.0: арсенал переведён на кандидаты EFT ARC9 (Kar98 -> трёхлинейка), сток — фолбэк")
+        end
+    end
+
+    -- ---------- 0.9) v4.8.1 МИГРАЦИЯ: рация всем военным ----------
+    -- Жалоба: «у штурмовика задача поговорить по рации, а рации в
+    -- снаряге нет». Выдаём рацию всему военному блоку (РККА+НКВД):
+    -- и в пресетах выше, и в уже живущих сейвах — одноразово.
+    do
+        local MILCAT = { rkka = true, nkvd = true }
+        local changed = false
+        for _, rec in ipairs(P11FW.CustomJobs) do
+            if rec and MILCAT[rec.category] and rec.radioV481 ~= true then
+                rec.weapons = istable(rec.weapons) and rec.weapons or {}
+                local has = false
+                for _, w in ipairs(rec.weapons) do
+                    if w == "weapon_polus11_radio" then has = true break end
+                end
+                if not has then
+                    rec.weapons[#rec.weapons + 1] = "weapon_polus11_radio"
+                end
+                rec.radioV481 = true
+                changed = true
+            end
+        end
+        if changed then
+            P11FW.SaveCustomJobs()
+            P11FW.RegisterCustomJobs(P11FW.CustomJobs)
+            P11FW.SyncCustomJobs()
+            P11FW.Log("Сид v4.8.1: рация выдана всем военным (РККА/НКВД) — миграция radioV481")
         end
     end
 

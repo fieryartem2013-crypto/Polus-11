@@ -57,6 +57,7 @@ function POLUS11.ThingOfferOpen(manual)
     PrintMessage(HUD_PRINTTALK, "[КАДРЫ] Поступила ОСОБАЯ ВАКАНСИЯ — уточнить у кадровика. "
         .. "Действует " .. cfg.window .. " сек.")
     POLUS11.Log("Вакансия Нечто открыта" .. (manual and " (вручную)" or ""))
+    print("[КАДРЫ] ОСОБАЯ ВАКАНСИЯ открыта: " .. cfg.window .. " сек (p11_offerdiag — состояние)")
 end
 
 local function ThingOfferClose(reason)
@@ -104,6 +105,32 @@ timer.Create("P11_ThingOfferTimer", 5, 0, function()
         P.NextOffer = nil
         POLUS11.ThingOfferOpen(false)
     end
+end)
+
+-- v4.8.1: ДИАГНОСТИКА вакансии (владелец жаловался «не появляется»)
+concommand.Add("p11_offerdiag", function(ply)
+    if IsValid(ply) and not P11FW.Config.Admin(ply) then return end
+    local cfg = Cfg()
+    local out = {
+        "== ВАКАНСИЯ НЕЧТО: ДИАГНОСТИКА ==",
+        "  включена: " .. tostring(cfg.on),
+        "  окно открыто: " .. tostring(POLUS11.ThingOfferActive())
+            .. (POLUS11.ThingOfferActive() and (" (ещё " .. math.ceil(GetGlobalFloat("P11_ThingOfferUntil", 0) - CurTime()) .. " сек)") or ""),
+        "  активное Нечто есть: " .. tostring(POLUS11.ActiveThingExists()),
+        "  следующая плановая: " .. (P.NextOffer and ("через " .. math.max(0, math.ceil(P.NextOffer - CurTime())) .. " сек") or "не назначена (сейчас окно/последняя закрылась)"),
+        "  промежуток: " .. cfg.gapMin .. ".." .. cfg.gapMax .. " сек, окно: " .. cfg.window .. " сек",
+    }
+    local n = 0
+    for _, ent in ipairs(ents.FindByClass(NPC_CLASS)) do
+        n = n + 1
+        out[#out + 1] = string.format("  кадровик #%d: стоит (%.0f, %.0f, %.0f)",
+            n, ent:GetPos().x, ent:GetPos().y, ent:GetPos().z)
+    end
+    if n == 0 then
+        out[#out + 1] = "  КАДРОВИКА НА КАРТЕ НЕТ! Поставь: /menu → УТИЛИТЫ → NPC кадровик (это и есть причина «нет вакансий»)."
+    end
+    local txt = table.concat(out, "\n")
+    if IsValid(ply) then ply:PrintMessage(HUD_PRINTCONSOLE, txt) else print(txt) end
 end)
 
 -- админская форс-вакансия (для ивентов): p11_offer
