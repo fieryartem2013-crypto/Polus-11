@@ -1,20 +1,34 @@
 -- ============================================================
---  ПОЛЮС-11 — ВРЕМЯ ИГРЫ → ДОСТУП К ПРОФАМ (server) v4.5.0
---  У должности появилось поле time (минуты игры для входа,
---  ставится в редакторе ДОЛЖНОСТИ рядом с лимитом мест).
---  0 = без требования. Счётчик копится по минутам на сервере
---  и пишется в data/polus11/playtime.json (переживает рестарты).
+--  ПОЛЮС-11 — ВРЕМЯ ИГРЫ → ДОСТУП К ПРОФАМ (server) v4.8.0
+--  У должности поле time (минуты игры для входа, ставится в
+--  редакторе ДОЛЖНОСТИ рядом с лимитом мест). 0 = без требования.
+--  Счётчик копится по минутам на сервере и пишется в
+--  data/polus11/playtime.json (переживает рестарты).
 --  ОБХОД: с ранга Super Admin (уровень 6) и выше ВСЕ профы
---  доступны без учёта времени (вплоть до «Главы Проекта»),
---  а «Глава Проекта» (ур.16) — см. также обход всех вайтлистов
---  в fw_sv_jobs.lua.
---  Игрок видит своё время: NWInt P11_PlayMin, в F4 — чип ⏳.
---  Консоль: p11_playtime [ник] — посмотреть; p11_settime <ник> <мин> — выдать.
+--  доступны без учёта времени.
+--
+--  ███ v4.8.0: ПОЧИНЕН «ДВОЙНОЙ СЧЁТ» (багрепорт владельца:
+--  «у чела 24 мин, хотя он их не наиграл») ███
+--  КОРЕНЬ: каждый 60-сек тик писал минуту ВДВОЙНЕ — и в сейв
+--  (Playtime[sid] +1), и в сессию (PlaySession +60), а показ
+--  GetPlayMin СКЛАДЫВАЛ обе части: base + sess/60. Итог: за час
+--  реальной игры человеку рисовалось ДВА часа (12 → 24 и т.д.).
+--  ТЕПЕРЬ: ОДИН авторитетный счётчик (Playtime[sid] в минутах),
+--  сессионная переменная упразднена совсем.
+--  + две честности сверху:
+--   1) ЧЕЛОВЕК В ЗАГРУЗКЕ минут не получает — счёт начинается
+--      только ПОСЛЕ первого реального спавна на станции
+--      (PlayerSpawn), а не с момента коннекта.
+--   2) АФК-ФРИЗ (POLUS11.Config.AFKStopMinutes, по умолчанию 4):
+--      без ввода дольше N минут (ни клавиш, ни чата, ни E) —
+--      счётчик встаёт на паузу до пробуждения. 0 = отключить.
+--  Ретро-поправки накрученных цифр нет (назад их не отличить):
+--  кривые значения правь руками — p11_settime <ник> <мин>.
 -- ============================================================
 
 local FILE = "polus11/playtime.json"
 
-POLUS11.Playtime = POLUS11.Playtime or {} -- sid64 -> минут (integer)
+POLUS11.Playtime = POLUS11.Playtime or {} -- sid -> минут (integer)
 
 local function SaveTime()
     if not file.IsDir("polus11", "DATA") then file.CreateDir("polus11") end
@@ -38,12 +52,10 @@ local function SidOf(ply)
     return sid
 end
 
--- минуты игрока (сейв + текущая сессия)
+-- минуты игрока (единый авторитетный счётчик — БЕЗ сессионной добавки)
 function POLUS11.GetPlayMin(ply)
     if not IsValid(ply) then return 0 end
-    local base = POLUS11.Playtime[SidOf(ply)] or 0
-    local sess = ply.P11_PlaySession or 0
-    return math.floor((base * 60 + sess) / 60)
+    return math.floor(tonumber(POLUS11.Playtime[SidOf(ply)]) or 0)
 end
 
 -- NW для клиента (F4)
@@ -51,20 +63,44 @@ local function PushNW(ply)
     ply:SetNWInt("P11_PlayMin", POLUS11.GetPlayMin(ply))
 end
 
+local function AFKMin()
+    return (POLUS11.Config and tonumber(POLUS11.Config.AFKStopMinutes)) or 4
+end
+
+-- активность игрока (любой ввод сбрасывает АФК-таймер)
+local function Touch(ply)
+    if IsValid(ply) then ply.P11_PlayLast = CurTime() end
+end
+hook.Add("KeyPress",  "P11.PlaytimeKeys", function(ply) Touch(ply) end)
+hook.Add("PlayerSay", "P11.PlaytimeChat", function(ply) Touch(ply) end)
+hook.Add("PlayerUse", "P11.PlaytimeUse",  function(ply) Touch(ply) end)
+
 hook.Add("PlayerInitialSpawn", "P11.PlaytimeJoin", function(ply)
-    ply.P11_PlaySession = 0
+    ply.P11_PlayIn = false -- в станцию ЕЩЁ НЕ вошёл (загрузка/лобби)
+    ply.P11_PlayLast = CurTime()
     timer.Simple(3, function() if IsValid(ply) then PushNW(ply) end end)
 end)
 
--- каждые 60 сек: +1 минута всем живым, в сейв раз в 5 мин
+-- первый (и каждый) реальный спавн: человек на станции — считаем
+hook.Add("PlayerSpawn", "P11.PlaytimeEnter", function(ply)
+    ply.P11_PlayIn = true
+    Touch(ply)
+end)
+
+-- каждые 60 сек: +1 минута ТОЛЬКО вошедшим и не-АФК, в сейв раз в 5 мин
 local saveTick = 0
 timer.Create("P11.PlaytimeTick", 60, 0, function()
     saveTick = saveTick + 1
     for _, ply in ipairs(player.GetAll()) do
-        if IsValid(ply) then
-            ply.P11_PlaySession = (ply.P11_PlaySession or 0) + 60
-            local sid = SidOf(ply)
-            POLUS11.Playtime[sid] = (POLUS11.Playtime[sid] or 0) + 1
+        -- v4.8.0: только реально вошедшие на станцию (не серые в загрузке)
+        if IsValid(ply) and ply.P11_PlayIn then
+            -- АФК-фриз: давно без ввода — минуты на паузе
+            local afk = AFKMin()
+            local idle = CurTime() - (ply.P11_PlayLast or CurTime())
+            if afk <= 0 or idle <= afk * 60 then
+                local sid = SidOf(ply)
+                POLUS11.Playtime[sid] = (POLUS11.Playtime[sid] or 0) + 1
+            end
             PushNW(ply)
             -- v4.6.6: фанфары открытия — профа ровно с этой минуты
             local now = POLUS11.GetPlayMin(ply)
@@ -121,7 +157,10 @@ concommand.Add("p11_playtime", function(ply, cmd, args)
         end
     end
     if not IsValid(target) then return end
+    local idle = CurTime() - (target.P11_PlayLast or CurTime())
     local msg = "[POLUS-11] " .. target:Nick() .. ": " .. POLUS11.GetPlayMin(target) .. " мин. игры"
+        .. " | на станции: " .. tostring(target.P11_PlayIn == true)
+        .. " | без ввода: " .. math.floor(idle) .. " сек (фриз с " .. AFKMin() .. " мин АФК)"
     if IsValid(ply) then ply:ChatPrint(msg) else print(msg) end
 end)
 
@@ -137,16 +176,15 @@ concommand.Add("p11_settime", function(ply, cmd, args)
     end
     local mins = math.floor(tonumber(args[2]) or -1)
     if not IsValid(target) or mins < 0 then
-        local msg = "p11_settime <часть ника> <минуты>"
+        local msg = "p11_settime <часть ника> <минуты>  (исправление вручную после двойного счёта до v4.8.0)"
         if IsValid(ply) then ply:PrintMessage(HUD_PRINTCONSOLE, msg) else print(msg) end
         return
     end
     POLUS11.Playtime[SidOf(target)] = mins
-    target.P11_PlaySession = 0
     PushNW(target)
     SaveTime()
     local msg = "OK: " .. target:Nick() .. " → " .. mins .. " мин."
     if IsValid(ply) then P11FW.Notify(ply, msg) else print("[POLUS-11] " .. msg) end
 end)
 
-print("[POLUS-11] система времени для проф загружена")
+print("[POLUS-11] система времени игры v4.8.0: честные минуты (двойной счёт убит, АФК-фриз " .. AFKMin() .. " мин)")

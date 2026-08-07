@@ -14,6 +14,7 @@ P11FW = P11FW or {}
 P11FW.Categories = {
     { id = "science",   name = "УЧЁНЫЕ",         order = 2, color = Color(140, 200, 240) },
     { id = "personnel", name = "ПЕРСОНАЛ",       order = 3, color = Color(205, 180, 110) },
+    { id = "vip",       name = "💎 VIP-СЛУЖБА",  order = 3.5, color = Color(235, 205, 100) }, -- v4.8.0
     { id = "misc",      name = "БЕЗ НАЗНАЧЕНИЯ", order = 4, color = Color(170, 170, 170) },
     -- v3.9: встроенный «ВОЕННЫЙ ГАРНИЗОН» УБРАН по заявке владельца.
     -- РККА / НКВД / НЕЧТО приезжают АВТО-СИДОМ (fw_sv_seed_rkka.lua)
@@ -143,6 +144,65 @@ P11FW.Jobs = {
         weapons = { "weapon_polus11_flamethrower", "weapon_polus11_radio" },
         max = 2,
     },
+
+    -- ============ v4.8.0: VIP-СЛУЖБА (доступ с ранга VIP) ============
+    -- Флаг vip = true: берут только игроки с рангом VIP и старшим
+    -- (P11FW.IsVIP в fw_sh_ranks). Оружие — списки КАНДИДАТОВ:
+    -- первый класс из пака EFT ARC9, иначе стоковый аналог.
+
+    vip_stalker = {
+        order = 20, category = "vip", vip = true,
+        name = "VIP · Следопыт-охотник",
+        desc = "Погонщик твари. Знает лазы станции лучше вентиляции: читает следы, ведёт засады, первым идёт на крик в метели. Самозарядный карабин MP-153 в обрезанном ложе — билет в один конец для Нечто. Особая привилегия за поддержку станции.",
+        models = {
+            "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m43_s1_02.mdl",
+            "models/player/Group01/male_03.mdl",
+        },
+        color = Color(235, 205, 100),
+        weapons = {
+            { "arc9_eft_mp153", "arc9_eft_mr43", "weapon_shotgun" },
+            { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" },
+            "weapon_polus11_radio",
+        },
+        hp = 110, armor = 60,
+        max = 2,
+    },
+
+    vip_veteran = {
+        order = 21, category = "vip", vip = true,
+        name = "VIP · Ветеран Арктики",
+        desc = "Прожжённый полярник с тремя зимовками за спиной. Мороз для него — дом родной, буря — погодка. Полноразмерный АКС-74, укреплённый бронежилет и право первого выстрела по любой тени без формы. Особая привилегия за поддержку станции.",
+        models = {
+            "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m43_s1_03.mdl",
+            "models/player/Group01/male_05.mdl",
+        },
+        color = Color(240, 210, 110),
+        weapons = {
+            { "arc9_eft_aks74", "arc9_eft_ak74", "weapon_ar2" },
+            { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" },
+            "weapon_polus11_radio",
+        },
+        hp = 120, armor = 110,
+        max = 2,
+    },
+
+    vip_voenvrach = {
+        order = 22, category = "vip", vip = true,
+        name = "VIP · Военврач",
+        desc = "Хирург полевого госпиталя при полной выкладке. Шприц лечит раненых (+12 ХП), тест крови берёт как лаборант, а ПМ в кобуре напоминает, что спорить с ним о диагнозе — вредно. Особая привилегия за поддержку станции.",
+        models = {
+            "Models/UIF/scientists/UIF_scientist_8.mdl",
+            "models/player/Group03m/male_01.mdl",
+        },
+        color = Color(225, 220, 160),
+        weapons = {
+            "weapon_polus11_syringe",
+            { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" },
+            "weapon_polus11_radio",
+        },
+        hp = 110, armor = 70,
+        max = 2,
+    },
 }
 
 -- ============ РЕГИСТРАЦИЯ КОМАНД (team) ============
@@ -219,12 +279,21 @@ function P11FW.ValidModels(job)
     return list
 end
 
--- отфильтровать оружие, которого нет на сервере (например, нет polus11)
+-- v4.8.0: выдать только РЕАЛЬНО существующие классы.
+-- Запись может быть строкой ИЛИ списком кандидатов (арсенал EFT ARC9
+-- + стоковые фолбэки — см. modules/p11_sh_weapons.lua). Дубли режем.
 function P11FW.ValidWeapons(job)
-    local ok = {}
-    for _, class in ipairs(job.weapons or {}) do
-        if weapons.Get(class) or class:StartWith("weapon_") == false then
-            ok[#ok + 1] = class
+    local ok, seen = {}, {}
+    for _, entry in ipairs(job.weapons or {}) do
+        local cls = nil
+        if POLUS11 and POLUS11.ResolveWeaponClass then
+            cls = POLUS11.ResolveWeaponClass(entry)
+        elseif isstring(entry) and weapons.Get(entry) then
+            cls = entry
+        end
+        if cls and not seen[cls] then
+            seen[cls] = true
+            ok[#ok + 1] = cls
         end
     end
     return ok
@@ -283,6 +352,7 @@ function P11FW.RegisterCustomJobs(records)
                 job.terminal   = rec.terminal == true
                 job.whitelist  = rec.whitelist == true -- v4.4.0
                 job.time       = tonumber(rec.time) or 0 -- v4.5.0: минут игры для входа
+                if rec.vip ~= nil then job.vip = rec.vip == true end -- v4.8.0
                 job.color      = Color(tonumber(c.r) or 210, tonumber(c.g) or 170, tonumber(c.b) or 120)
                 job.overridden = true
                 team.SetUp(rec.team, job.name, job.color, true)
@@ -305,6 +375,7 @@ function P11FW.RegisterCustomJobs(records)
                 event    = rec.event == true,
                 command  = rec.command == true,
                 time     = tonumber(rec.time) or 0, -- v4.5.0: минут игры для входа
+                vip      = rec.vip == true, -- v4.8.0: VIP-должность
             }
             P11FW.JobTeams[rec.id] = rec.team
             P11FW.TeamJobs[rec.team] = rec.id

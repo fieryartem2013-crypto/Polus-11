@@ -23,7 +23,7 @@ P11FW.Version = "2.0.0"
 POLUS11 = POLUS11 or {}
 POLUS11.Version = "3.2"
 
-POLUS_BUILD = "4.7.4" -- версия сборки (v4.7.4 «ТЕЛО ТОРГОВЦА»: ларёк «не физичен, E молчит» починён — init торговца переписан по образцу терминала (без SetHull до физики) + самолечение VPHYSICS→BBOX, твёрдое тело гарантировано, p11_shopdiag показывает ТВЁРДОСТЬ)
+POLUS_BUILD = "4.8.0" -- версия сборки (v4.8.0 «ЗОЛОТОЙ ПРОПУСК»: минуты игры честные (двойной счёт убит), в TAB колонка РАНГ для всех, права Developer+: Q-меню с ранга 9, клэмп сроков 0..16, F6 — донат-витрина, 💎 VIP-СЛУЖБА — профы с ранга VIP, арсенал EFT ARC9 со стоковыми фолбэками)
 
 -- ============ ОБЩИЕ МОДУЛИ (shared) ============
 
@@ -35,6 +35,7 @@ local sh = {
     "modules/fw_sh_whitelist.lua", -- вайтлист должностей: хелперы + клиентский синк (v4.4.0)
     "modules/p11_sh_config.lua",  -- конфиг ПОЛЮС-11
     "modules/p11_sh_core.lua",    -- общая логика Нечто/заражения
+    "modules/p11_sh_weapons.lua", -- v4.8.0: арсенал EFT ARC9 + стоковые фолбэки
 }
 for _, f in ipairs(sh) do
     local ok, err = pcall(include, f)
@@ -117,10 +118,29 @@ function GM:PlayerCheckLimit(ply, name, current, defaultMax)
     return false
 end
 
---- Q-меню открыто всем (игрокам нужна вкладка «Пропы» для строительства;
---- лишние вкладки прячет клиентский модуль p11_cl_propmenu.lua,
---- а сервер сам режет запрещённые спавны).
-function GM:SpawnMenuOpen(ply)   return true end
+--- v4.8.0 «ЗОЛОТОЙ ПРОПУСК»: Q-МЕНЮ ТОЛЬКО ДЛЯ Developer+ (заявка
+--- владельца: «девелоперу и выше — да, ниже люди не могут открыть»).
+--- Хук клиентский (движок не передаёт игрока — берём LocalPlayer).
+--- Ранг ниже порога P11FW.Config.DevMenuLevel (по умолчанию 9) — меню
+--- не открывается вообще, в чат — одна подсказка раз в 2.5 сек.
+P11_DevMenuDenyT = P11_DevMenuDenyT or 0
+function GM:SpawnMenuOpen()
+    if CLIENT then
+        local ply = LocalPlayer()
+        local ok = IsValid(ply) and P11FW.CanDevMenu and P11FW.CanDevMenu(ply)
+        if not ok then
+            if CurTime() - (P11_DevMenuDenyT or 0) > 2.5 then
+                P11_DevMenuDenyT = CurTime()
+                surface.PlaySound("buttons/button10.wav")
+                chat.AddText(Color(255, 185, 110), "[ПОЛЮС-11] ", Color(225, 230, 240),
+                    "Q-меню закрыто для персонала: доступно с ранга Developer и выше.",
+                    Color(150, 165, 185), " (порог: P11FW.Config.DevMenuLevel)")
+            end
+            return false
+        end
+    end
+    return true
+end
 --- C-меню песочницы ЗАМЕНЕНО (v3.0): на C — станционное меню
 --- жестов/действий (p11_cl_cmenu.lua). v3.8: хук ContextMenuOpen
 --- больше НЕ блокирует: раньше из-за return false движок рубил ВСЮ

@@ -118,12 +118,27 @@ local function MakeBtn(parent, text, col, onClick)
 end
 
 local function ParseListEntry(str)
-    -- список через запятую/перенос строки → массив непустых строк
+    -- список через запятую/перенос строки → массив непустых строк.
+    -- v4.8.0: "a|b|c" внутри записи = СПИСОК КАНДИДАТОВ таблицей
+    -- (арсенал EFT ARC9: выдаётся первый существующий класс,
+    -- последним кандидатом ставь стоковый HL2-аналог).
     local out = {}
     str = string.gsub(str or "", "\n", ",")
     for part in string.gmatch(str, "([^,]+)") do
         part = string.Trim(part)
-        if part ~= "" then out[#out + 1] = part end
+        if part ~= "" then
+            if string.find(part, "|", 1, true) then
+                local cand = {}
+                for alt in string.gmatch(part, "([^|]+)") do
+                    alt = string.Trim(alt)
+                    if alt ~= "" then cand[#cand + 1] = alt end
+                end
+                if #cand == 1 then out[#out + 1] = cand[1]
+                elseif #cand > 1 then out[#out + 1] = cand end
+            else
+                out[#out + 1] = part
+            end
+        end
     end
     return out
 end
@@ -654,8 +669,9 @@ function P11FW.OpenAdminMenu(forceTab)
                 for _, c in ipairs(P11FW.CategoryList) do
                     if c.id == job.category then catName = c.name end
                 end
-                local line = lv:AddLine((job.whitelist and "🔒 " or "") .. job.name, catName, (job.max or 0) > 0 and job.max or "∞",
-                    (job.whitelist and "🔒 " or "") .. (job.custom and "КАСТОМ" or job.overridden and "ПРАВКА" or "встроенная"))
+                local mark = (job.whitelist and "🔒 " or "") .. (job.vip and "💎 " or "")
+                local line = lv:AddLine(mark .. job.name, catName, (job.max or 0) > 0 and job.max or "∞",
+                    mark .. (job.custom and "КАСТОМ" or job.overridden and "ПРАВКА" or "встроенная"))
                 line.JobId = jobId
             end
         end
@@ -801,7 +817,7 @@ function P11FW.OpenAdminMenu(forceTab)
         end)
         addMyModel:SetPos(376, 192) addMyModel:SetSize(80, 24)
 
-        Lbl("Оружие (классы через запятую):", 10, 248)
+        Lbl("Оружие (через запятую; a|b = кандидаты EFT→сток):", 10, 248)
         local wepsE = vgui.Create("DTextEntry", form)
         wepsE:SetPos(10, 266) wepsE:SetSize(360, 46)
         wepsE:SetMultiline(true)
@@ -829,6 +845,14 @@ function P11FW.OpenAdminMenu(forceTab)
         termC:SetText("Допуск к СМЕННОМУ ТЕРМИНАЛУ (выдача доп-задач экипажу)")
         termC:SetChecked(false)
 
+        -- v4.8.0: 💎 VIP-галочка — вход на должность только с ранга VIP
+        local vipC = vgui.Create("DCheckBoxLabel", form)
+        vipC:SetPos(302, 56) vipC:SetSize(154, 18)
+        vipC:SetFont("P11FW.Small") vipC:SetTextColor(Color(235, 205, 100))
+        vipC:SetText("💎 VIP-ПРОФА")
+        vipC:SetTooltip("вход на должность только с ранга VIP и выше\n(P11FW.IsVIP: VIP, стафф+, админы движка)")
+        vipC:SetChecked(false)
+
         -- v4.4.0: ВАЙТЛИСТ-галочка — вход на должность только с допуском
         local wlC = vgui.Create("DCheckBoxLabel", form)
         wlC:SetPos(300, 76) wlC:SetSize(156, 26)
@@ -854,6 +878,7 @@ function P11FW.OpenAdminMenu(forceTab)
                 max      = maxW:GetValue(),
                 terminal = termC:GetChecked(),
                 whitelist = wlC:GetChecked(), -- v4.4.0
+                vip      = vipC:GetChecked(), -- v4.8.0
                 time     = timeW:GetValue(), -- v4.5.0
                 color    = { r = jobCol.r, g = jobCol.g, b = jobCol.b },
                 models   = ParseListEntry(modelsE:GetValue()),
@@ -869,7 +894,14 @@ function P11FW.OpenAdminMenu(forceTab)
             descE:SetValue(job.desc or "")
             maxW:SetValue(job.max or 0)
             modelsE:SetValue(table.concat(job.models or {}, ", "))
-            wepsE:SetValue(table.concat(job.weapons or {}, ", "))
+            -- v4.8.0: кандидаты-таблицы пишем через "|", table.concat
+            -- семейства строк тут падал бы с "invalid value for concat"
+            local wser = {}
+            for _, we in ipairs(job.weapons or {}) do
+                if istable(we) then wser[#wser + 1] = table.concat(we, "|")
+                else wser[#wser + 1] = tostring(we) end
+            end
+            wepsE:SetValue(table.concat(wser, ", "))
             for _, c in ipairs(P11FW.CategoryList) do
                 if c.id == job.category then catC:SetValue(c.name) end
             end
@@ -878,6 +910,7 @@ function P11FW.OpenAdminMenu(forceTab)
             end
             termC:SetChecked(job.terminal == true)
             wlC:SetChecked(job.whitelist == true) -- v4.4.0
+            vipC:SetChecked(job.vip == true) -- v4.8.0
             timeW:SetValue(job.time or 0) -- v4.5.0
             editingId = jobId -- v3.8.1: встроенные ТОЖЕ редактируются (переопределением)
             editingKind = job.custom and "custom" or job.overridden and "override" or "builtin"

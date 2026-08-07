@@ -124,6 +124,29 @@ function P11FW.CanWhitelist(ply)
     return r ~= nil and r.wl == true
 end
 
+--- v4.8.0: VIP-СТАТУС — может ли игрок брать VIP-должности (F4 → 💎 VIP-СЛУЖБА).
+--- Пускаем: ранг VIP, любой стафф от Helper (ур.2) и выше, админов движка,
+--- слушающего хоста. Обычный User — нет (стимул поддержать станцию через F6).
+function P11FW.IsVIP(ply)
+    if not IsValid(ply) then return false end
+    if ply:IsListenServerHost() then return true end
+    if ply:IsSuperAdmin() or ply:IsAdmin() then return true end
+    local r = P11FW.GetRank(ply)
+    if not r then return false end
+    return r.id == "vip" or (r.level or 0) >= 2
+end
+
+--- v4.8.0: Q-МЕНЮ (спавнменю) — только с ранга Developer (ур.9) и выше.
+--- Ниже рангом меню НЕ открывается (заявка владельца). Порог настраивается
+--- в P11FW.Config.DevMenuLevel (fw_sh_config.lua).
+function P11FW.CanDevMenu(ply)
+    if not IsValid(ply) then return false end
+    if ply:IsListenServerHost() then return true end
+    if ply:IsSuperAdmin() then return true end
+    local need = (P11FW.Config and P11FW.Config.DevMenuLevel) or 9
+    return P11FW.GetRankLevel(ply) >= need
+end
+
 --- Может ли ply выдавать ранги (и не выше себя)?
 function P11FW.CanManageRank(ply, targetLevel)
     if not IsValid(ply) then return false end
@@ -190,7 +213,10 @@ function P11FW.PunishLimit(ply, kind)
     if not IsValid(ply) then return nil end
     if not P11FW.CanMod(ply, kind) then return nil end
     if ply:IsListenServerHost() then return 0 end
-    local lvl = math.Clamp(P11FW.GetRankLevel(ply), 0, 9)
+    -- v4.8.0: был клэмп 0..9 — ранг 10..16 (включая самого Главу) получал
+    -- лимит Девелопера и НЕ МОГ выдать постоянный бан, хотя таблица
+    -- TimeLimits такие сроки предусматривает. Клэмпим по верх школы — 16.
+    local lvl = math.Clamp(P11FW.GetRankLevel(ply), 0, 16)
     local t = P11FW.TimeLimits and P11FW.TimeLimits[kind]
     if not t then return 0 end
     for l = lvl, 0, -1 do
@@ -207,7 +233,10 @@ function P11FW.CanTarget(ply, target)
     if ply:IsListenServerHost() then return true end
     local mine   = P11FW.GetRankLevel(ply)
     local theirs = P11FW.GetRankLevel(target)
-    if mine >= 9 then return theirs < 9 end
+    -- v4.8.0: раньше «mine >= 9 → theirs < 9» не пускало даже Главу
+    -- наказывать свой штаб (10..15) — чиним в соответствии с описанием.
+    if mine >= 16 then return theirs < 16 end -- Глава: всех, кроме других Глав
+    if mine >= 9 then return theirs < 9 end   -- штаб не трогает друг друга
     return mine > theirs
 end
 

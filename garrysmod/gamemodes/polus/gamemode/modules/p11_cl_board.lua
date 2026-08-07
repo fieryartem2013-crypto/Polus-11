@@ -76,16 +76,17 @@ local function RowOf(ply) -- вызывается под pcall: сбой = иг�
     d.doc      = ply:GetNWString("P11_DocCode", "") -- у нечто здесь УКРАДЕННЫЙ код
     d.ping     = tonumber(ply:Ping()) or 0
 
-    -- ранг администрации
-    d.rank, d.rankName, d.rankCol, d.rankFx = 0, "", COL_GREY, false
+    -- v4.8.0: ранг нужен в колонке РАНГ ВСЕМ — «User» серым, «VIP» золотом,
+    -- «Moderator» и выше — родными цветами с переливом (раньше рисовался
+    -- только с level 2 чипом рядом с ником, а обычные не видели свой User).
+    d.ply = ply
+    d.rank, d.rankName, d.rankCol, d.rankFx = 0, "User", COL_GREY, false
     if P11FW and P11FW.GetRankLevel then
         d.rank = tonumber(P11FW.GetRankLevel(ply)) or 0
-        if d.rank >= 2 then
-            if P11FW.GetRankName then d.rankName = tostring(P11FW.GetRankName(ply) or "") end
-            local rc = P11FW.GetRankColor and P11FW.GetRankColor(ply)
-            if istable(rc) then d.rankCol = rc end
-            d.rankFx = (P11FW.RankHasFx and P11FW.RankHasFx(ply)) and true or false
-        end
+        if P11FW.GetRankName then d.rankName = tostring(P11FW.GetRankName(ply) or "User") end
+        local rc = P11FW.GetRankColor and P11FW.GetRankColor(ply)
+        if istable(rc) then d.rankCol = rc end
+        d.rankFx = (P11FW.RankHasFx and P11FW.RankHasFx(ply)) and true or false
     end
 
     -- должность: у нечто в чужой шкуре — УКРАДЕННАЯ (P11_FakeJob)
@@ -188,10 +189,26 @@ end
 
 -- ================= ОТРИСОВКА =================
 
-local X_NAME, X_JOB, X_DOC = 14, 348, 476
+-- v4.8.0: табло шире (720), заведена отдельная колонка РАНГ
+local X_NAME, X_RANK, X_JOB, X_DOC = 14, 252, 400, 572
 
 local function FaceColorOf(c)
     return Color(c.r, c.g, c.b, 255)
+end
+
+-- усечь строку под ширину с многоточием (имена не залезают на колонки)
+local function FitText(txt, font, maxW)
+    surface.SetFont(font)
+    local w = surface.GetTextSize(txt) or 0
+    if w <= maxW then return txt end
+    txt = tostring(txt)
+    local t = txt
+    while #t > 1 do
+        t = string.sub(t, 1, #t - 1)
+        surface.SetFont(font)
+        if (surface.GetTextSize(t .. "…") or 0) <= maxW then return t .. "…" end
+    end
+    return t .. "…"
 end
 
 local function DrawRow(d, x, y, W)
@@ -204,41 +221,39 @@ local function DrawRow(d, x, y, W)
 
     local cy = y + ROW_H / 2
 
-    -- имя (+суффиксы) с чипом ранга
+    -- имя (+суффиксы) — v4.8.0: с усечением под колонку РАНГ;
+    -- чип ранга рядом с ником убран: теперь у ранга СВОЯ колонка
     local nx = x + 12
     local nameCol = d.alive and COL_TXT or COL_DEAD
-    draw.SimpleText(d.name, "P11B.Text", nx, cy, nameCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+    local niceName = FitText(d.name, "P11B.Text", X_RANK - 26)
+    draw.SimpleText(niceName, "P11B.Text", nx, cy, nameCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
 
-    local wN = 0
     surface.SetFont("P11B.Text")
-    wN = surface.GetTextSize(d.name) or 0
-    nx = nx + wN + 6
-
-    if d.rank >= 2 and d.rankName ~= "" then
-        local rc = d.rankCol
-        if d.rankFx then
-            local p = 0.55 + math.sin(CurTime() * 2.6) * 0.45
-            rc = Color(
-                math.min(255, d.rankCol.r + math.floor(70 * p)),
-                math.min(255, d.rankCol.g + math.floor(70 * p)),
-                math.min(255, d.rankCol.b + math.floor(70 * p)))
-        end
-        local tag = "«" .. d.rankName .. "»"
-        draw.SimpleText(tag, "P11B.Small", nx, cy, rc, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-        surface.SetFont("P11B.Small")
-        local wT = surface.GetTextSize(tag) or 0
-        nx = nx + wT + 6
-    end
-
-    -- маркеры состояния
+    local wN = surface.GetTextSize(niceName) or 0
+    local marked = tostring(niceName)
     local marks = ""
     if not d.alive then marks = marks .. " †" end
     if d.muted then marks = marks .. " 🔇" end
     if P11B.amAdmin and d.disguised then marks = marks .. "  (наст.: " .. d.real .. ")" end
     if P11B.amAdmin and d.infected then marks = marks .. " ☣" end
     if marks ~= "" then
-        draw.SimpleText(marks, "P11B.Tiny", nx, cy, Color(150, 160, 175, 190), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        draw.SimpleText(marks, "P11B.Tiny", nx + wN + 6, cy, Color(150, 160, 175, 190), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
     end
+
+    -- колонка РАНГ (v4.8.0): от User до Главы, цвет ранга + перелив у высших
+    local rc = d.rankCol
+    if d.rankFx and IsValid(d.ply) and P11FW and P11FW.RankFxColor then
+        local okFx, cfx = pcall(P11FW.RankFxColor, d.ply)
+        if okFx and istable(cfx) then rc = cfx end
+    elseif d.rankFx then
+        local p2 = 0.55 + math.sin(CurTime() * 2.6) * 0.45
+        rc = Color(
+            math.min(255, d.rankCol.r + math.floor(70 * p2)),
+            math.min(255, d.rankCol.g + math.floor(70 * p2)),
+            math.min(255, d.rankCol.b + math.floor(70 * p2)))
+    end
+    draw.SimpleText(FitText(d.rankName, "P11B.Small", X_JOB - X_RANK - 12), "P11B.Small",
+        x + X_RANK, cy, rc, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
 
     -- должность + ★звание смены
     local jobStr = d.job
@@ -304,7 +319,7 @@ local function DrawBoard()
         if not ok then print("[POLUS][WARN] TAB v2 снимок: " .. tostring(err)) end
     end
 
-    local W = 660
+    local W = math.min(720, ScrW() - 40) -- v4.8.0: шире под колонку РАНГ
     local H = math.floor(ScrH() * 0.85)
     local x = math.floor((ScrW() - W) / 2)
     local y = math.floor((ScrH() - H) / 2) - 26
@@ -346,6 +361,7 @@ local function DrawBoard()
     -- заголовок колонок
     local colY = y + 84
     draw.SimpleText("ИГРОК", "P11B.Tiny", x + X_NAME + 2, colY, COL_DIM, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+    draw.SimpleText("РАНГ", "P11B.Tiny", x + X_RANK, colY, COL_DIM, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP) -- v4.8.0
     draw.SimpleText("ДОЛЖНОСТЬ / ЗВАНИЕ СМЕНЫ", "P11B.Tiny", x + X_JOB, colY, COL_DIM, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
     draw.SimpleText("ДОКУМЕНТ", "P11B.Tiny", x + X_DOC, colY, COL_DIM, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
     draw.SimpleText("ПИНГ", "P11B.Tiny", x + W - 14, colY, COL_DIM, TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP)
@@ -380,7 +396,7 @@ local function DrawBoard()
         if okJ and isstring(jn) then myJob = jn end
     end
     draw.SimpleText(myName .. (myJob ~= "" and (" · " .. myJob) or ""), "P11B.Tiny", x + 12, y + H - footH / 2, COL_GREY, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-    draw.SimpleText("F1 — памятка · F4 — должности · /досье — НКВД · C (удерж.) — действия", "P11B.Tiny",
+    draw.SimpleText("F1 — памятка · F4 — должности · F6 — поддержка · /досье — НКВД · C (удерж.) — действия", "P11B.Tiny",
         x + W - 12, y + H - footH / 2, COL_DIM, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
 end
 
@@ -473,4 +489,4 @@ hook.Add("OnPlayerChat", "P11.BoardChat", function(ply, text)
     return true
 end)
 
-print("[POLUS-11] TAB v2 загружен (ноль vgui — крашить нечему)")
+print("[POLUS-11] TAB v2.1 загружен (колонка РАНГ для всех — v4.8.0)")

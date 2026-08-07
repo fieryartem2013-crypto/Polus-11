@@ -130,7 +130,7 @@ function P11.OpenCMenu()
         surface.SetDrawColor(CC.cyan)
         surface.DrawRect(0, 52, w, 2)
         draw.SimpleText("ДЕЙСТВИЯ НА СТАНЦИИ", "P11.CM.Title", 16, 26, CC.text, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-        draw.SimpleText("удерживай C • ESC — закрыть • v4.6.9", "P11.CM.Small", w - 14, 26, CC.dim, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
+        draw.SimpleText("удерживай C • ESC — закрыть • F6 — поддержка • v4.8.0", "P11.CM.Small", w - 14, 26, CC.dim, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
         surface.SetAlphaMultiplier(1)
     end
 
@@ -247,7 +247,7 @@ function P11.OpenCMenu()
     foot:SetPos(14, 556) foot:SetSize(748, 20)
     foot:SetFont("P11.CM.Small") foot:SetTextColor(CC.dim)
     local rk = P11FW.GetRankName and P11FW.GetRankName(me) or "User"
-    foot:SetText("Ты — " .. rk .. " • документы и пустые руки уже в снаряжении • C закроет это меню")
+    foot:SetText("Ты — " .. rk .. " • F6 — поддержка станции • документы и пустые руки уже в снаряжении • C закроет это меню")
 
     f.OnKeyCodePressed = function(s, key)
         if key == KEY_ESCAPE then f:Remove() end
@@ -362,4 +362,4 @@ hook.Add("OnPlayerChat", "P11.CMenuChat", function(ply, text)
     end
 end)
 
-print("[POLUS-11] С-меню v4.6.9 загружено (клавиша C • p11_cmenu • !меню • кнопки 🏪/🤝)")
+print("[POLUS-11] С-меню v4.8.0 загружено (клавиша C • p11_cmenu • !меню • кнопки 🏪/🤝 • F6 донат)")

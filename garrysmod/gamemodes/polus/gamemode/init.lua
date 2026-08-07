@@ -11,6 +11,7 @@ local send = {
     "modules/fw_sh_jobs.lua",
     "modules/p11_sh_config.lua",
     "modules/p11_sh_core.lua",
+    "modules/p11_sh_weapons.lua",  -- v4.8.0: арсенал EFT ARC9 + фолбэки
     "modules/fw_sh_factions.lua",
     "modules/fw_sh_ranks.lua",
     "modules/fw_sh_whitelist.lua",  -- v4.4.0: вайтлист должностей (shared)
@@ -43,6 +44,7 @@ local send = {
     "modules/p11_cl_mutations.lua", -- v4.2
     "modules/p11_cl_tutorial.lua",  -- v4.2
     "modules/p11_cl_chars.lua",     -- v4.3.0: анкета бойца (позывной+описание)
+    "modules/p11_cl_donate.lua",    -- v4.8.0: F6 — донат-витрина (плейсхолдер)
 }
 for _, f in ipairs(send) do
     AddCSLuaFile(f)

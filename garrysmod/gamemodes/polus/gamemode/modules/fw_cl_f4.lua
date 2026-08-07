@@ -205,6 +205,7 @@ function P11FW.OpenJobMenu()
                         if job.terminal then flags = flags .. " ⌨" end
                         if job.command then flags = flags .. " ★" end
                         if job.whitelist then flags = flags .. " 🔒" end -- v4.4.0: ВАЙТЛИСТ
+                        if job.vip then flags = flags .. " 💎" end -- v4.8.0: VIP-СЛУЖБА
                         if flags ~= "" then
                             draw.SimpleText(flags, "P11FW.Text", w - 10, h / 2,
                                 job.command and C.gold or C.cyan, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
@@ -323,6 +324,7 @@ function P11FW.OpenJobMenu()
         Chip("★ КОМАНДИР", C.gold, job.command)
         Chip("🔒 ВАЙТЛИСТ", Color(255, 180, 110), job.whitelist) -- v4.4.0
         Chip("⏳ " .. (job.time or 0) .. " МИН", Color(150, 200, 255), (job.time or 0) > 0) -- v4.5.0: время игры для профы
+        Chip("💎 VIP-СЛУЖБА", Color(235, 205, 100), job.vip == true) -- v4.8.0
 
         -- текстовый блок справа
         local info = vgui.Create("DPanel", right)
@@ -417,6 +419,10 @@ function P11FW.OpenJobMenu()
             and not (P11FW.GetRankLevel and P11FW.GetRankLevel(me) >= 6)
             and myMin < needT
 
+        -- v4.8.0: 💎 VIP-ЗАМОК — с ранга VIP (P11FW.IsVIP)
+        local vipBlocked = job.vip and not isCurrent
+            and not (P11FW.IsVIP and P11FW.IsVIP(me))
+
         local take = vgui.Create("DButton", bottom)
         take:Dock(FILL)
         take:SetText("")
@@ -424,6 +430,8 @@ function P11FW.OpenJobMenu()
         local state, stateCol
         if isCurrent then
             state, stateCol = "ВЫ НА ЭТОЙ ДОЛЖНОСТИ ✓", C.dim
+        elseif vipBlocked then
+            state, stateCol = "💎 ТОЛЬКО ДЛЯ VIP — жми F6 (поддержка станции)", Color(235, 205, 100)
         elseif wlBlocked then
             state, stateCol = "🔒 НУЖЕН ДОПУСК — проси офицера НКВД", Color(255, 180, 110)
         elseif timeBlocked then
@@ -435,7 +443,7 @@ function P11FW.OpenJobMenu()
         end
 
         take.Paint = function(s, w, h)
-            local locked = isCurrent or full or wlBlocked or timeBlocked
+            local locked = isCurrent or full or wlBlocked or timeBlocked or vipBlocked
             local col = locked and Color(66, 72, 80) or Color(38, 88, 56)
             if s:IsHovered() and not locked then col = Color(50, 118, 74) end
             draw.RoundedBox(8, 0, 0, w, h, col)
@@ -452,6 +460,12 @@ function P11FW.OpenJobMenu()
         take.DoClick = function()
             if isCurrent or full then
                 surface.PlaySound("buttons/button10.wav")
+                return
+            end
+            if vipBlocked then
+                surface.PlaySound("buttons/button10.wav")
+                chat.AddText(Color(235, 205, 100), "[ПОЛЮС-11] Должность 💎 из VIP-СЛУЖБЫ — берётся с ранга VIP.",
+                    Color(200, 205, 215), " Жми F6 — там витрина поддержки станции (ранг выдаёт Глава/Куратор).")
                 return
             end
             if wlBlocked then

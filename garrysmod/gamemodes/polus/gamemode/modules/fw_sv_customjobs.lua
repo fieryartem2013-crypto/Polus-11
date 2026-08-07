@@ -83,6 +83,16 @@ local function SanitizeRecord(rec)
     for _, w in ipairs(istable(rec.weapons) and rec.weapons or {}) do
         if isstring(w) and #out.weapons < 8 then
             out.weapons[#out.weapons + 1] = string.sub(w, 1, 64)
+        elseif istable(w) and #out.weapons < 8 then
+            -- v4.8.0: СПИСОК КАНДИДАТОВ (EFT ARC9) — живёт таблицей,
+            -- сервер выдаст первый существующий класс.
+            local cand = {}
+            for _, alt in ipairs(w) do
+                if isstring(alt) and #cand < 4 then
+                    cand[#cand + 1] = string.sub(alt, 1, 64)
+                end
+            end
+            if #cand > 0 then out.weapons[#out.weapons + 1] = cand end
         end
     end
 
@@ -96,6 +106,9 @@ local function SanitizeRecord(rec)
 
     -- v4.5.0: ВРЕМЯ для входа (минуты игры, 0 = без требования).
     if rec.time ~= nil then out.time = math.Clamp(tonumber(rec.time) or 0, 0, 50000) end
+
+    -- v4.8.0: VIP-галочка. nil = оставить как было при правке.
+    if rec.vip ~= nil then out.vip = rec.vip == true end
 
     return out
 end
@@ -180,6 +193,7 @@ net.Receive("P11FW_JobEdit", function(len, ply)
         if clean.event == nil then clean.event = old.event end
         if clean.whitelist == nil then clean.whitelist = old.whitelist end -- v4.4.0
         if clean.time == nil then clean.time = old.time end -- v4.5.0
+        if clean.vip == nil then clean.vip = old.vip end -- v4.8.0
         for i, r in ipairs(P11FW.CustomJobs) do
             if r.id == old.id then P11FW.CustomJobs[i] = clean end
         end

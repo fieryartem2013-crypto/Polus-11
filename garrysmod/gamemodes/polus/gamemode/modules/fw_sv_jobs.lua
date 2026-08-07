@@ -30,6 +30,9 @@ function P11FW.ApplyLoadout(ply, modelIdx)
 
     for _, class in ipairs(P11FW.ValidWeapons(job)) do
         ply:Give(class)
+        -- v4.8.0: стоковым фолбэкам (HL2) — боезапас; EFT-стволы сами разберутся
+        local am = POLUS11 and POLUS11.WepAmmoHL2 and POLUS11.WepAmmoHL2[class]
+        if am then ply:GiveAmmo(am[2] or 30, am[1], true) end
     end
 
     -- v3.8.2: РУКИ выдаются всем (ношение ящиков/бочек, обыск и т.д.)
@@ -112,6 +115,14 @@ function P11FW.SetJob(ply, jobId, modelIdx, force)
     if not force and (job.time or 0) > 0 and POLUS11 and POLUS11.TimeGate then
         local toks, terr = POLUS11.TimeGate(ply, job)
         if not toks then return false, terr end
+    end
+
+    -- v4.8.0: VIP-ДОЛЖНОСТЬ (секция 💎 VIP-СЛУЖБА) — с ранга VIP
+    -- (P11FW.IsVIP: VIP, стафф уровня 2+, админы движка, хост).
+    if job.vip and not force then
+        if not (P11FW.IsVIP and P11FW.IsVIP(ply)) then
+            return false, "VIP-должность 💎 — доступна с ранга VIP (поддержка станции, меню F6)"
+        end
     end
 
     if not force and P11FW.JobFull(jobId, ply) then
