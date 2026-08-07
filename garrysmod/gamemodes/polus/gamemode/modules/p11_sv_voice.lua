@@ -76,4 +76,28 @@ hook.Add("PlayerCanHearPlayersVoice", "P11.Voice3D", function(listener, talker)
     return true, VC().use3d
 end)
 
-print("[POLUS-11] 3D-голос v4.8.1: местная речь до " .. VC().hear .. "u (затухание), рация — эфирным линком")
+-- v4.9.2 «ПРИЁМ»: самопроверка рации и голосового линка — p11_voiceradio.
+-- Отвечает игроку: есть ли у него рация, канал, сколько бойцов сейчас
+-- слышит его в эфире. Эфир «не работает» в 99% случаев = у одной
+-- стороны НЕТ РАЦИИ в снаряге (до этой версии её не было у НАУКИ — раньше
+-- радио выдавалось только РККА/НКВД; с v4.9.2 рация — у всей науки,
+-- сид + миграция radioV492).
+concommand.Add("p11_voiceradio", function(ply)
+    if not IsValid(ply) then print("p11_voiceradio — команда ИГРОКА") return end
+    local has = POLUS11.HasRadio and POLUS11.HasRadio(ply)
+    local ch = ply:GetNWString("P11_RadioCh", "all")
+    local linked = 0
+    for _, p2 in ipairs(player.GetAll()) do
+        if p2 ~= ply and IsValid(p2) and p2:Alive() and ply:Alive()
+            and RadioLinked(p2, ply) then
+            linked = linked + 1
+        end
+    end
+    POLUS11.Notify(ply, "📻 РАЦИЯ: у тебя " .. (has and "ЕСТЬ" or "НЕТ в снаряге — в эфир не выйдешь (возьми в ларьке/у командира)")
+        .. " • канал: «" .. tostring(ch == "all" and "Общий" or ch) .. "»"
+        .. (ch == "all" and " (слышит каждый носитель рации)" or ""))
+    POLUS11.Notify(ply, "📻 ЭФИР СЕЙЧАС: тебя в рации слышит живых: " .. linked .. ". Местная речь голосом — до "
+        .. tostring(VC().hear) .. "u. Буря " .. (GetGlobalBool("P11_Storm", false) and "ИДЁТ — эфир глушится!" or "ясная — эфир работает."))
+end)
+
+print("[POLUS-11] 3D-голос v4.9.2 «ПРИЁМ»: местная речь до " .. VC().hear .. "u (затухание), рация — эфирным линком; самодиагностика p11_voiceradio")

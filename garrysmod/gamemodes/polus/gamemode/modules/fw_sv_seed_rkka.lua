@@ -257,7 +257,7 @@ local SEED_JOBS = {
         id = "seed_sci_laborant", time = 0, category = "science", order = 40, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Лаборант (ЦНИИ)",
         desc = "Младший научный состав исследовательского блока. Мытьё пробирок, подносы, журналы опытов. 100 ХП / 100 брони.",
-        weapons = { "weapon_polus11_syringe" }, hp = 100, armor = 100, max = 4, -- v4.9.1 «ИГЛА»: шприц возвращён — им пользуется ВСЯ научная фракция (заявка)
+        weapons = { "weapon_polus11_syringe", "weapon_polus11_radio" }, hp = 100, armor = 100, max = 4, -- v4.9.2 «ПРИЁМ»: рация и науке — голосовой эфир для всех фракций
         color = Color(165, 205, 250),
         models = { "Models/UIF/scientists/UIF_scientist_7.mdl" },
     },
@@ -265,7 +265,7 @@ local SEED_JOBS = {
         id = "seed_sci_ucheniy", time = 30, category = "science", order = 41, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Учёный",
         desc = "Штатный исследователь комплекса. Шприц теста крови — рабочий инструмент всей науки; забор и стол «КРОВЬ-2» — его руки. 100 ХП / 100 брони.",
-        weapons = { "weapon_polus11_syringe" }, hp = 100, armor = 100, max = 3, -- v4.9.1 «ИГЛА»: шприц — вся научная фракция (была монополия «Учёного»)
+        weapons = { "weapon_polus11_syringe", "weapon_polus11_radio" }, hp = 100, armor = 100, max = 3, -- v4.9.2 «ПРИЁМ»: рация и науке — эфир для всех
         color = Color(170, 210, 255),
         models = { "Models/UIF/scientists/UIF_scientist_7.mdl" },
     },
@@ -273,7 +273,7 @@ local SEED_JOBS = {
         id = "seed_sci_biohim", time = 60, category = "science", order = 42, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Био-химик",
         desc = "Специалист по биохимическому анализу тканей. К его холодильнику с образцами лучше не подходить без перчаток. 100 ХП / 100 брони.",
-        weapons = { "weapon_polus11_syringe" }, hp = 100, armor = 100, max = 2, -- v4.9.1 «ИГЛА»: шприц возвращён — вся научная фракция
+        weapons = { "weapon_polus11_syringe", "weapon_polus11_radio" }, hp = 100, armor = 100, max = 2, -- v4.9.2 «ПРИЁМ»: рация и науке
         color = Color(145, 225, 210),
         models = { "Models/UIF/scientists/UIF_scientist_7.mdl" },
     },
@@ -281,7 +281,7 @@ local SEED_JOBS = {
         id = "seed_sci_vedushiy", time = 90, category = "science", order = 43, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Ведущий Учёный",
         desc = "Руководит экспериментами лично. Подписывает заключения по биологическим угрозам. 100 ХП / 100 брони.",
-        weapons = { "weapon_polus11_syringe" }, hp = 100, armor = 100, max = 2, terminal = true, -- v4.9.1 «ИГЛА»: шприц возвращён — вся научная фракция
+        weapons = { "weapon_polus11_syringe", "weapon_polus11_radio" }, hp = 100, armor = 100, max = 2, terminal = true, -- v4.9.2 «ПРИЁМ»: рация и науке
         color = Color(130, 200, 245),
         models = { "Models/UIF/scientists/UIF_scientist_7.mdl" },
     },
@@ -289,7 +289,7 @@ local SEED_JOBS = {
         id = "seed_sci_menedzher", time = 120, category = "science", order = 44, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Менеджер Научного Отдела",
         desc = "Отвечает за сметы, графики и допуски научного блока. Знает, кого и за что пускают в лаборатории. Одно место. 100 ХП / 100 брони.",
-        weapons = { "weapon_polus11_syringe" }, hp = 100, armor = 100, max = 1, terminal = true, -- v4.9.1 «ИГЛА»: шприц возвращён — вся научная фракция
+        weapons = { "weapon_polus11_syringe", "weapon_polus11_radio" }, hp = 100, armor = 100, max = 1, terminal = true, -- v4.9.2 «ПРИЁМ»: рация и науке
         color = Color(120, 190, 240),
         models = { "Models/UIF/scientists/UIF_scientist_7.mdl" },
     },
@@ -297,7 +297,7 @@ local SEED_JOBS = {
         id = "seed_sci_sozdatel", time = 180, category = "science", order = 45, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Создатель Научного Комплекса",
         desc = "Легенда «Полюс-11»: главный конструктор научного блока. Имеет допуск во ВСЕ отсеки, включая те, о которых нет в документах. Одно место. 100 ХП / 100 брони.",
-        weapons = { "weapon_polus11_syringe" }, hp = 100, armor = 100, max = 1, terminal = true, command = true, -- v4.9.1 «ИГЛА»: шприц возвращён — вся научная фракция
+        weapons = { "weapon_polus11_syringe", "weapon_polus11_radio" }, hp = 100, armor = 100, max = 1, terminal = true, command = true, -- v4.9.2 «ПРИЁМ»: рация и науке
         color = Color(105, 180, 235),
         models = { "Models/UIF/scientists/UIF_scientist_8.mdl" },
     },
@@ -788,6 +788,36 @@ local function SeedAll()
             P11FW.RegisterCustomJobs(P11FW.CustomJobs)
             P11FW.SyncCustomJobs()
             P11FW.Log("Сид v4.9.1 «ИГЛА»: порядок РККА (медсёстры выше, генералы последние, iglaV491); шприцы — вся наука + медсёстры")
+        end
+    end
+
+    -- ---------- v4.9.2 «ПРИЁМ» МИГРАЦИЯ: РАЦИЯ ВСЕЙ НАУКЕ ----------
+    -- Голосовой радио-линк работает только у носителей рации; у науки её
+    -- раньше не было в снаряге — «эфир молчит» именно оттуда мёрзли связные.
+    do
+        local SCI = {
+            seed_sci_laborant = true, seed_sci_ucheniy = true,
+            seed_sci_biohim = true, seed_sci_vedushiy = true,
+            seed_sci_menedzher = true, seed_sci_sozdatel = true,
+        }
+        local changed = false
+        for _, rec in ipairs(P11FW.CustomJobs or {}) do
+            if rec and rec.id and SCI[rec.id] and not rec.radioV492 then
+                rec.weapons = istable(rec.weapons) and rec.weapons or {}
+                local has = false
+                for _, w in ipairs(rec.weapons) do
+                    if w == "weapon_polus11_radio" then has = true break end
+                end
+                if not has then rec.weapons[#rec.weapons + 1] = "weapon_polus11_radio" end
+                rec.radioV492 = true
+                changed = true
+            end
+        end
+        if changed then
+            P11FW.SaveCustomJobs()
+            P11FW.RegisterCustomJobs(P11FW.CustomJobs)
+            P11FW.SyncCustomJobs()
+            P11FW.Log("Сид v4.9.2 «ПРИЁМ»: рация выдана всей науке (radioV492) — голосовой эфир у всех фракций")
         end
     end
 

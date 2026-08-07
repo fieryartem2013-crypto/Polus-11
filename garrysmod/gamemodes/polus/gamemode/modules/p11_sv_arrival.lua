@@ -309,23 +309,138 @@ end)
 
 -- ============ КОНСОЛЬ ============
 
+-- v4.9.2 «ПРИЁМ»: ПОСТАНОВКА СТАЛА ДУРАЦКО-ПРОСТОЙ И ГРОМКОЙ.
+-- Рецидив «фракции/профы не ставятся»: владелец ставил по id,
+-- а случалась опечатка/нулевой аргумент — точка не писалась.
+-- Теперь: `p11_arrival here` — точка твоей ПРОФЫ и ФРАКЦИИ под ноги,
+-- `p11_arrival all` — расставить ВСЕ фракции и ВСЕ профы где стоишь,
+-- после ЛЮБОЙ записи — чтение назад из JSON и громкий ✓/✗ вердикт.
+
+-- прочитать обратно из файла: сколько зон реально улетело в JSON
+local function ArVerify(ply)
+    local raw = file.Read(ArFile(), "DATA")
+    if not raw then
+        P11FW.Notify(ply, "✗ ТОЧКИ НЕ ЗАПИСАЛИСЬ: файл " .. ArFile() .. " пуст. Проверь права папки garrysmod/data!")
+        print("[POLUS-11] СПАВН: ✗ запись прибытий не дошла до файла " .. ArFile())
+        return false
+    end
+    local ok, tbl = pcall(util.JSONToTable, raw)
+    local nf, nj = 0, 0
+    if ok and istable(tbl) then
+        for _ in pairs(tbl.factions or {}) do nf = nf + 1 end
+        for _ in pairs(tbl.jobs or {}) do nj = nj + 1 end
+    end
+    P11FW.Notify(ply, "✓ Проверка записи: в " .. ArFile() .. " теперь зон фракций = " .. nf .. ", проф = " .. nj .. " (рестарт переживут)")
+    print("[POLUS-11] СПАВН: ✓ прибытия в JSON — фракций " .. nf .. ", проф " .. nj)
+    return true
+end
+
+-- принять id ИЛИ кусок НАЗВАНИЯ профы (умный поиск «мед», «пулем», «учён»)
+local function FindJobId(q)
+    q = tostring(q or ""):gsub("^%s+", ""):gsub("%s+$", "")
+    if q == "" then return nil end
+    if P11FW.Jobs and P11FW.Jobs[q] then return q end
+    local low = string.lower(q)
+    local best = nil
+    for id, j in pairs(P11FW.Jobs or {}) do
+        if string.lower(id) == low then return id end
+        if j.name and string.lower(j.name) == low then return id end
+    end
+    for id, j in pairs(P11FW.Jobs or {}) do
+        if string.find(string.lower(id), low, 1, true)
+            or (j.name and string.find(string.lower(j.name), low, 1, true)) then
+            if not best then best = id end
+        end
+    end
+    return best
+end
+
 concommand.Add("p11_arrival", function(ply, cmd, args)
     if IsValid(ply) and not P11FW.Config.Admin(ply) then return end
     local sub = tostring(args[1] or "")
+
     if sub == "truck" then
         POLUS11.ArrivalTruckPut(ply)
+
     elseif sub == "untruck" then
         POLUS11.ArrivalTruckRemove(ply)
+
+    elseif sub == "here" then
+        -- одна команда: СВОЯ ПРОФА + СВОЯ ФРАКЦИЯ — точки под ноги
+        local jobId = P11FW.GetJobId and P11FW.GetJobId(ply)
+        local job = P11FW.Jobs and P11FW.Jobs[jobId]
+        if not job then P11FW.Notify(ply, "Ты без должности — точку профы ставить некуда.") return end
+        POLUS11.JobArrivals[jobId] = { pos = ply:GetPos(), ang = Angle(0, ply:EyeAngles().y, 0) }
+        local fac = job.faction or job.category
+        if fac then
+            POLUS11.Arrivals[fac] = { pos = ply:GetPos(), ang = Angle(0, ply:EyeAngles().y, 0) }
+        end
+        ArSave()
+        P11FW.Notify(ply, "✓ Поставил ЗДЕСЬ: профа «" .. tostring(job.name) .. "»" .. (fac and (" + фракция «" .. tostring(fac) .. "»") or "") .. " (рестарт переживут)")
+        POLUS11.SpawnMark(ply:GetPos(), Angle(0, ply:EyeAngles().y, 0), 1, "ПРОФА: " .. tostring(job.name), 6)
+        if fac then POLUS11.SpawnMark(ply:GetPos(), Angle(0, ply:EyeAngles().y, 0), 2, "ФРАКЦИЯ: " .. tostring(fac), 6) end
+        P11FW.Log("Прибытие(here): " .. ply:Nick() .. " поставил " .. jobId .. (fac and ("+" .. fac) or ""))
+        ArVerify(ply)
+
+    elseif sub == "all" then
+        -- халява-кнопка владельца: ВСЕ фракции и ВСЕ профы → здесь
+        local base, ay = ply:GetPos(), Angle(0, ply:EyeAngles().y, 0)
+        local i = 0
+        for _, c in ipairs(P11FW.CategoryList or {}) do
+            POLUS11.Arrivals[c.id] = { pos = base, ang = ay }
+            i = i + 1
+        end
+        local j = 0
+        for id in pairs(P11FW.Jobs or {}) do
+            POLUS11.JobArrivals[id] = { pos = base, ang = ay }
+            j = j + 1
+        end
+        ArSave()
+        P11FW.Notify(ply, "✓ Расставил ЗДЕСЬ все: фракций " .. i .. ", проф " .. j .. " — бойцы будут спавниться на этом плацу")
+        POLUS11.SpawnMark(base, ay, 2, "ВСЕ ФРАКЦИИ + ВСЕ ПРОФЫ (" .. i .. "/" .. j .. ")", 8)
+        P11FW.Log("Прибытие(all): " .. ply:Nick() .. " расставил ВСЕ зоны (" .. i .. " фракций, " .. j .. " проф)")
+        ArVerify(ply)
+
     elseif sub == "job" and args[2] then
-        POLUS11.ArrivalJobSet(ply, args[2])      -- p11_arrival job nkvd_oper
+        local jid = FindJobId(table.concat(args, " ", 2)) -- v4.9.2: принимаем id ИЛИ название («мед», «Пулемётчик»)
+        if not jid then
+            P11FW.Notify(ply, "Профа не найдена: «" .. table.concat(args, " ", 2) .. "». Список: polus_fw_jobs")
+        else
+            POLUS11.ArrivalJobSet(ply, jid)
+            ArVerify(ply)
+        end
+
     elseif sub == "unjob" and args[2] then
-        POLUS11.ArrivalJobClear(ply, args[2])
+        local jid = FindJobId(table.concat(args, " ", 2)) or table.concat(args, " ", 2)
+        POLUS11.ArrivalJobClear(ply, jid)
+
     elseif sub == "list" or sub == "marks" then
         POLUS11.ArrivalList(ply) -- печатает и заодно показывает кубики
+
     elseif args[1] and args[1] ~= "" then
-        POLUS11.ArrivalSet(ply, args[1]) -- p11_arrival rkka
+        -- фракция: id как раньше + верификация
+        local hit = nil
+        for _, c in ipairs(P11FW.CategoryList or {}) do
+            if c.id == sub or (c.name and string.lower(c.name) == string.lower(sub)) then hit = c.id break end
+        end
+        if not hit then
+            -- может, название крилицей куском?
+            for _, c in ipairs(P11FW.CategoryList or {}) do
+                if c.name and string.find(string.lower(c.name), string.lower(sub), 1, true) then hit = c.id break end
+            end
+        end
+        if not hit then
+            P11FW.Notify(ply, "Фракция не найдена: «" .. sub .. "». Есть: " .. table.concat((function()
+                local t = {}
+                for _, c in ipairs(P11FW.CategoryList or {}) do t[#t + 1] = c.id end
+                return t
+            end)(), ", ") .. " — попробуй p11_arrival here")
+        else
+            POLUS11.ArrivalSet(ply, hit)
+            ArVerify(ply)
+        end
     else
-        local out = "p11_arrival <facId> — поставить зону прибытия здесь • p11_arrival job/unjob <jobId> — точка профы • p11_arrival truck/untruck — грузовик • p11_arrival marks — показать ВСЕ точки кубиками"
+        local out = "СПАВН-ТОЧКИ (ставишь гдe стоишь): p11_arrival here — своя профа+фракция • p11_arrival all — ВСЕ точки сразу • p11_arrival <facId> — зона фракции • p11_arrival job <id/имя> — точка профы • p11_arrival marks — показать кубики • polus_fw_setspawn — общий спавн гарнизона • p11_spawntest — себя проверить"
         if IsValid(ply) then ply:PrintMessage(HUD_PRINTCONSOLE, out) else print(out) end
     end
 end)

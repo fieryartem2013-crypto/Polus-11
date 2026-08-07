@@ -259,7 +259,7 @@ local function OpenDonate()
             draw.SimpleText("Пути ввода талона: это поле • чат «!промо КОД» • консоль «p11_promo КОД».", "P11D.Small", 14, 94, C.dim)
         end
 
-        draw.SimpleText("Без талона VIP выдаётся вручную: Глава/Куратор (p11_rank) — автопродажа подключим через донат-сервис.",
+        draw.SimpleText("Без талона VIP можно 1) купить в магазине CraftedStore (хозяину: пошаговая инструкция — docs/DONATE.md, команда p11_donorvip) 2) вручную у Главы (p11_rank).",
             "P11D.Small", 14, 136, C.dim)
         draw.SimpleText("F6 / ESC — закрыть", "P11D.Small", w - 14, h - 14, C.dim, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
     end

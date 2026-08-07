@@ -51,6 +51,7 @@ local send = {
     "modules/p11_cl_disguise.lua",  -- v4.8.5 «КРАСНЫЙ ОРЁЛ»: окно кейса маскировки «ЛЕГАТ»
     "modules/p11_cl_thingoffer.lua",-- v4.8.8 «ЛИЧИНА»: красная плашка «особой вакансии» над кадровиком
     "modules/p11_cl_minigames2.lua",-- v4.9.1 «ИГЛА»: стрелка-ползунок — «КРОВЬ-2» и «УКОЛ-С» + окно вердикта
+    "modules/p11_cl_chatsel.lua",   -- v4.9.2 «ПРИЁМ»: полоса выбора канала над BonChat (РЕЧЬ/OOC/РАЦИЯ/РЕПОРТ…)
     "modules/p11_sh_bonchatboot.lua", -- v4.8.6 «НАВОДКА»: готовый чат BonChat (MIT) — фронтенд эфира
 }
 for _, f in ipairs(send) do
@@ -128,6 +129,7 @@ local sv = {
     "modules/p11_sv_medics.lua",      -- v4.8.8 «ЛИЧИНА»: мед-регламент (шприц — только «Учёному»)
     "modules/p11_sv_killfeed.lua",    -- v4.8.8 «ЛИЧИНА»: киллфид выключен
     "modules/p11_sv_promo.lua",       -- v4.9.0 «ТАЛОН»: промокоды (F6/!промо/p11_promo), антиперебор, журнал
+    "modules/p11_sv_donor.lua",       -- v4.9.2 «ПРИЁМ»: донат-мост магазина (p11_donorvip, оффлайн-очередь)
 }
 
 local function Safe(f)

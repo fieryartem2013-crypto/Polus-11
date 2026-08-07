@@ -35,6 +35,7 @@ local PUBLIC = {
     ["polus_status"] = true,
     ["polus11_status"] = true,
     ["p11_promo"] = true, -- v4.9.0 «ТАЛОН»: погашение промокода — открыто всем игрокам
+    ["p11_voiceradio"] = true, -- v4.9.2 «ПРИЁМ»: самопроверка рации — открыта всем
 }
 
 local function RankOf(ply)
