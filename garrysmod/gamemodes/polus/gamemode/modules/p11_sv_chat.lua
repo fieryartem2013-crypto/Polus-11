@@ -1,32 +1,43 @@
 -- ============================================================
---  ПОЛЮС-11 — ЧАТ (server) v5 «РЕЛЕ» — пересоздан С НУЛЯ
---  АРХИТЕКТУРА ОТКАЗОУСТОЙЧИВОСТИ:
---   • Каждое сообщение уходит СРАЗУ ДВУМЯ дорогами:
---       1) богатая лента P11_ChatMsg (цвета/каналы) — клиентам
---          в ПОЛНОМ режиме (режим 0);
---       2) ДВИЖКОВОЕ зеркало через ChatPrint — клиентам в
---          ДВИЖКОВОМ режиме (режим 1) и всем, чей режим неизвестен.
---     Если причуда клиентской машины ломает нашу ленту, движковый
---     чат всё равно показывает СЛОВО В СЛОВО — ничего не теряется.
---   • Клиент докладывает режим пакетом P11_ChatMode + рукопожатие
---     P11_ChatHello (сервер отвечает ack с мажором протокола);
---     p11_chatdiag показывает живые режимы всех он-лайн клиентов.
---  КАНАЛЫ: РЕЧЬ (~700) • // = /ooc (всем) • /looc (~500) • /me •
---  /it • /report (тикет админам, работает и в муте).
---  Диагностика: p11_chatdiag (админ/серверная консоль).
+--  ПОЛЮС-11 — ЧАТ (server) v7 «ФИЛЬТР» — ПРОЗРАЧНЫЙ, С НУЛЯ
+--  Чем отличается от всех прошлых ревизий: ПОЛНАЯ ОСВЕЩЕННОСТЬ.
+--  Каждая ступень маршрута сообщения видна в консоли сервера
+--  (трейс), а диагностика показывает ВСЕ обработчики PlayerSay —
+--  чужой чат-аддон виден мгновенно. Плюс аварийный выключатель:
+--  p11_chat_passthrough 1 = чистый движковый чат (роутинг спит).
+--
+--  АРХИТЕКТУРА ДОРОГ (как в «РЕЛЕ» — она уцелела аудитом):
+--   • клиенты v6/v7 (поздоровались, режим 0) — богатые пакеты сетью;
+--   • все остальные — ДВИЖКОВОЕ зеркало ChatPrint (запасная дорога).
+--
+--  КАНАЛЫ: РЕЧЬ (~700) • // = /ooc (всем) • /looc (~500) •
+--  /me • /it • /report (тикет, работает и в муте).
+--  КОНСОЛЬ СЕРВЕРА: p11_chatdiag • p11_chat_trace 0/1 •
+--  p11_chat_passthrough 0/1.
 -- ============================================================
 
 util.AddNetworkString("P11_ChatMsg")
-util.AddNetworkString("P11_ChatMode")   -- клиент → сервер: его режим (0/1)
-util.AddNetworkString("P11_ChatHello")  -- клиент → сервер → ack обратно
+util.AddNetworkString("P11_ChatMode")
+util.AddNetworkString("P11_ChatHello")
 
-local MAJOR = 5 -- версия протокола чата (должна совпасть с клиентской)
+local MAJOR = 6
+
+-- трейс в консоль сервера (включён по умолчанию на время ЗАТ)
+local cvTrace = CreateConVar("p11_chat_trace", "1", FCVAR_ARCHIVE,
+    "1 = писать каждую ступень чат-маршрута в консоль сервера")
+-- аварийный режим: чистый ванильный чат движка (роутинг отключён)
+local cvPass = CreateConVar("p11_chat_passthrough", "0", FCVAR_ARCHIVE,
+    "1 = чат полностью движковый (без каналов/радиусов)")
+
+local function Trace(msg)
+    if cvTrace:GetBool() then print("[CHAT-TRACE] " .. msg) end
+end
 
 POLUS11.ChatCh = { IC = 1, OOC = 2, LOOC = 3, ME = 4, IT = 5, REPORT = 6 }
+local CHNAME = { [1] = "РЕЧЬ", [2] = "OOC", [3] = "LOOC", [4] = "ME", [5] = "IT", [6] = "РЕПОРТ" }
 
 local R_NEAR, R_LOOC = 700, 500
 
--- живая аудитория в радиусе
 local function InRadius(pos, radius)
     local r2 = radius * radius
     local out = {}
@@ -38,17 +49,15 @@ local function InRadius(pos, radius)
     return out
 end
 
--- плоская строка для движкового зеркала (без цветов, но читаема)
 local function MirrorLine(chan, name, text)
     if chan == POLUS11.ChatCh.OOC    then return "[OOC] " .. name .. ": " .. text end
     if chan == POLUS11.ChatCh.LOOC   then return "[LOOC] " .. name .. ": " .. text end
     if chan == POLUS11.ChatCh.ME     then return "* " .. name .. " " .. text end
     if chan == POLUS11.ChatCh.IT     then return "*** " .. text end
     if chan == POLUS11.ChatCh.REPORT then return "[РЕПОРТ] " .. name .. ": " .. text end
-    return name .. ": " .. text -- РЕЧЬ
+    return name .. ": " .. text
 end
 
--- режим клиента: nil = ещё не докладывал → считаем ДВИЖКОВЫМ (зеркалим!)
 local function IsEngineMode(ply)
     return (ply.P11ChatMode or 1) ~= 0
 end
@@ -58,18 +67,18 @@ local function ChatSend(chan, name, text, who, nameCol)
     name = tostring(name or "?")
     local audience = who or player.GetAll()
 
-    local netList = {}
+    local netList, mirrors = {}, 0
     local engineText = MirrorLine(chan, name, text)
     for _, p in ipairs(audience) do
         if IsValid(p) then
             if IsEngineMode(p) then
-                p:ChatPrint(engineText)        -- дорога 2: движковое зеркало
+                p:ChatPrint(engineText)
+                mirrors = mirrors + 1
             else
-                netList[#netList + 1] = p      -- дорога 1: богатая лента
+                netList[#netList + 1] = p
             end
         end
     end
-
     if #netList > 0 then
         net.Start("P11_ChatMsg")
             net.WriteUInt(chan, 4)
@@ -78,10 +87,12 @@ local function ChatSend(chan, name, text, who, nameCol)
             net.WriteColor(nameCol or color_white)
         net.Send(netList)
     end
+    Trace("канал=" .. (CHNAME[chan] or chan) .. " | от: " .. name ..
+        " | получателей: " .. #netList + mirrors .. " (сеть " .. #netList ..
+        ", зеркало " .. mirrors .. ") | «" .. string.sub(text, 1, 60) .. "»")
 end
 POLUS11.ChatSend = ChatSend
 
--- позывной: личина Нечто > RP-ник > стим-ник (всё под pcall)
 local function NameOf(ply)
     local ok, nm = pcall(function()
         if POLUS11.DisplayName then return POLUS11.DisplayName(ply) end
@@ -96,15 +107,14 @@ local function ColorOf(ply)
     return Color(220, 225, 232)
 end
 
--- чужие слэш-команды НЕ глотаем (все чат-команды сборки!)
 local FOREIGN = {
     "/r ", "/р ", "/приказ", "/розыск", "/персонаж", "/перс",
     "/char", "/name", "/ник", "/f4", "/menu", "/работа", "/job",
     "/профа", "/рейд", "/итем", "/багаж", "/дать", "/кошелёк",
-    "/деньги", "/money", "/баланс", -- экономика
-    "/ларёк", "/ларек", "/магазин", "/shop", -- ларёк v4.6.9
-    "/обмен", "/trade", -- обмен v4.6.9
-    "/p11", -- все служебные p11_*
+    "/деньги", "/money", "/баланс",
+    "/ларёк", "/ларек", "/магазин", "/shop",
+    "/обмен", "/trade",
+    "/p11",
 }
 
 local function ChatCore(ply, text)
@@ -112,13 +122,14 @@ local function ChatCore(ply, text)
     if raw == "" then return "" end
     local low = string.lower(raw)
 
-    if string.StartWith(low, "!") then return end -- чужие банг-команды
+    if string.StartWith(low, "!") then return end
 
     local muted = P11FW.IsMuted and P11FW.IsMuted(ply)
     local isReport = string.StartWith(low, "/report") or string.StartWith(low, "/репорт")
-    if muted and not isReport then return end -- MuteGate уже сказал причину
+    if muted and not isReport then
+        Trace("ОТКЛОНЕНО мутом: " .. ply:Nick() .. " | «" .. string.sub(raw, 1, 40) .. "»")
+        return end
 
-    -- репорт/тикет администрации (работает и в муте)
     if isReport then
         local pfx = string.StartWith(low, "/report") and "/report" or "/репорт"
         local rest = string.Trim(string.sub(raw, #pfx + 1))
@@ -131,7 +142,6 @@ local function ChatCore(ply, text)
         return ""
     end
 
-    -- префикс-каналы
     local ch = nil
     if     string.StartWith(low, "//")      then ch = POLUS11.ChatCh.OOC;  raw = string.Trim(string.sub(raw, 3))
     elseif string.StartWith(low, "/ooc ")   then ch = POLUS11.ChatCh.OOC;  raw = string.Trim(string.sub(raw, 6))
@@ -150,13 +160,12 @@ local function ChatCore(ply, text)
             ChatSend(ch, NameOf(ply), raw, nil, ColorOf(ply))
         elseif ch == POLUS11.ChatCh.LOOC then
             ChatSend(ch, NameOf(ply), raw, InRadius(ply:GetPos(), R_LOOC), ColorOf(ply))
-        else -- ME / IT
+        else
             ChatSend(ch, NameOf(ply), raw, InRadius(ply:GetPos(), R_NEAR), ColorOf(ply))
         end
         return ""
     end
 
-    -- чужие слэш-команды — их модули разберутся сами
     if string.StartWith(low, "/") then
         for _, pfx in ipairs(FOREIGN) do
             if string.StartWith(low, pfx) then return end
@@ -165,18 +174,21 @@ local function ChatCore(ply, text)
         return ""
     end
 
-    -- обычная речь (рядом)
     ChatSend(POLUS11.ChatCh.IC, NameOf(ply), raw, InRadius(ply:GetPos(), R_NEAR), ColorOf(ply))
     return ""
 end
 
 hook.Add("PlayerSay", "P11.ChatCore", function(ply, text)
+    -- аварийный режим: вообще ничего не роутим, всё движку
+    if cvPass:GetBool() then return end
+
+    Trace("ВХОД: " .. ply:Nick() .. " («" .. ply:SteamID() .. "»): «" .. string.sub(tostring(text or ""), 1, 60) .. "»")
     local ok, ret = xpcall(function() return ChatCore(ply, text) end, function(err)
         ErrorNoHalt("[POLUS-11 CHAT ERROR] " .. tostring(err) .. "\n")
     end)
     if not ok then
         print("[POLUS-11] ЧАТ: ошибка обработчика (выше), сообщение ушло движку")
-        return -- nil: движок покажет сам
+        return
     end
     return ret
 end)
@@ -186,34 +198,45 @@ end)
 net.Receive("P11_ChatMode", function(len, ply)
     if not IsValid(ply) then return end
     ply.P11ChatMode = (net.ReadUInt(2) == 0) and 0 or 1
+    Trace("смена режима: " .. ply:Nick() .. " → " .. ply.P11ChatMode)
 end)
 
 net.Receive("P11_ChatHello", function(len, ply)
     if not IsValid(ply) then return end
     ply.P11ChatHelloAt = CurTime()
-    ply.P11ChatClient = net.ReadUInt(4) or 0 -- мажор клиента
-    -- ack: мажор протокола сервера
+    ply.P11ChatClient = net.ReadUInt(4) or 0
     net.Start("P11_ChatHello")
         net.WriteUInt(MAJOR, 4)
         net.WriteBool(true)
     net.Send(ply)
+    Trace("hello от " .. ply:Nick() .. " (клиент чата v" .. (ply.P11ChatClient or 0) .. ")")
 end)
 
--- ============ ДИАГНОСТИКА ============
+-- ============ ДИАГНОСТИКА v7 ============
 concommand.Add("p11_chatdiag", function(ply)
     if IsValid(ply) and not P11FW.Config.Admin(ply) then return end
 
-    local out = { "== ЧАТ v5 «РЕЛЕ»: ДИАГНОСТИКА СЕРВЕРА ==" }
-    out[#out + 1] = "  модуль: загружен ✔ | протокол: v" .. MAJOR .. " | клиенты v6 «СТОК» докладывают режим 0"
+    local out = { "== ЧАТ v7 «ФИЛЬТР»: ДИАГНОСТИКА СЕРВЕРА ==" }
+    out[#out + 1] = "  модуль: загружен ✔ | протокол v" .. MAJOR
+        .. " | трейс: " .. tostring(cvTrace:GetBool())
+        .. " | аварийный passthrough: " .. tostring(cvPass:GetBool())
+
+    out[#out + 1] = "  -- обработчики PlayerSay (чужой чат-аддон виден здесь!):"
+    for name in pairs(hook.GetTable()["PlayerSay"] or {}) do
+        out[#out + 1] = "     • " .. tostring(name)
+    end
+
+    out[#out + 1] = "  -- игроки:"
     for _, p in ipairs(player.GetAll()) do
         local mode = p.P11ChatMode
-        out[#out + 1] = string.format("  %-22s режим=%s | клиент чата v%d | hello %s",
+        out[#out + 1] = string.format("     %-22s режим=%s | клиент v%d | hello %s",
             p:Nick(),
-            mode == 0 and "0/СВОЙ" or (mode == 1 and "1/ДВИЖОК" or "? (зеркало ВКЛ)"),
+            mode == 0 and "0/СЕТЬ" or (mode == 1 and "1/ЗЕРКАЛО" or "? (зеркало ВКЛ)"),
             p.P11ChatClient or 0,
             p.P11ChatHelloAt and (math.floor(CurTime() - p.P11ChatHelloAt) .. "с назад") or "НЕ БЫЛО")
     end
-    out[#out + 1] = "  тестовые пакеты IC/OOC/ME отправлены (смотри чат)."
+    out[#out + 1] = "  ниже летят 3 тестовых пакета — смотри [CHAT-TRACE] выше."
+    out[#out + 1] = "  если чат душится без нашего роутинга: p11_chat_passthrough 1 (чистый движок)."
 
     local who = IsValid(ply) and ply or nil
     ChatSend(POLUS11.ChatCh.IC,  "СИСТЕМА", "тест РЕЧИ (радиус 700)", who, Color(120, 255, 120))
@@ -224,4 +247,4 @@ concommand.Add("p11_chatdiag", function(ply)
     if IsValid(ply) then ply:PrintMessage(HUD_PRINTCONSOLE, txt) else print(txt) end
 end)
 
-print("[P11CHAT-SV] чат v5/v6 загружен: роутинг каналов + движковое зеркало тем, кто не поздоровался (клиенты v6 СТОК — штатный чат)")
+print("[P11CHAT-SV] чат v7 «ФИЛЬТР» загружен: трейс каждого сообщения в консоль (p11_chatdiag / p11_chat_trace / p11_chat_passthrough)")
