@@ -114,7 +114,8 @@ local sv = {
     "modules/p11_sv_chars.lua",      -- дело бойца: персонажи + сохранение (v4.3.0)
     "modules/p11_sv_models.lua",     -- выдача моделей: надеть/выдать (v4.4.0, с нуля)
     "modules/p11_sv_chat.lua",       -- чат: /ooc /looc /me /it /report + локальная речь (v4.5.0)
-    "modules/p11_sv_arrival.lua",    -- зона прибытия по фракциям + LVS-грузовик (v4.5.0)
+    "modules/p11_sv_spawncore.lua",  -- v4.8.7 «ТОЧКА»: ЯДРО СПАВНА — PlayerSelectSpawn, без гонки таймеров
+    "modules/p11_sv_arrival.lua",    -- зоны прибытия/точки спавна: хранилище + LVS-грузовик (v4.8.7)
     "modules/p11_sv_playtime.lua",   -- время игры → доступ к профам (v4.5.0; v4.8.0 — честные минуты)
     "modules/p11_sv_voice.lua",      -- 3D-голос + радио-эфир линком (v4.8.1 «ЭФИР»)
     "modules/p11_sv_reports.lua",    -- v4.8.2 «ДОКЛАД»: тикеты репортов (принять/тп/закрыть)

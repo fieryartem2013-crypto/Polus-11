@@ -52,12 +52,15 @@ function SWEP:Deploy()
     return true
 end
 
--- ЛКМ: раскрыть кейс (меню)
+-- ЛКМ: раскрыть кейс (меню) — v4.8.7: если уже открыто, СВОРАЧИВАЕТ
+-- (заявка «меню не закрывается»: тот же кейс = тоггл открыть/закрыть)
 function SWEP:PrimaryAttack()
     if not IsFirstTimePredicted() then return end
     self:SetNextPrimaryFire(CurTime() + 1.0)
     if CLIENT then
-        if P11 and P11.OpenDisguiseMenu then
+        if P11 and P11.ToggleDisguiseMenu then
+            P11.ToggleDisguiseMenu()
+        elseif P11 and P11.OpenDisguiseMenu then
             P11.OpenDisguiseMenu()
         end
     end
@@ -83,7 +86,10 @@ function SWEP:Reload()
     if CurTime() < ply.P11_CaseNextR then return end
     ply.P11_CaseNextR = CurTime() + 1.0
     if CLIENT then
-        if P11 and P11.OpenDisguiseMenu then
+        -- v4.8.7: R тоже тоггл (открытый кейс R сворачивает)
+        if P11 and P11.ToggleDisguiseMenu then
+            P11.ToggleDisguiseMenu()
+        elseif P11 and P11.OpenDisguiseMenu then
             P11.OpenDisguiseMenu()
         end
     end

@@ -1,31 +1,24 @@
 -- ============================================================
---  ПОЛЮС-11 — ЗОНА ПРИБЫТИЯ + ТРАНСПОРТ (server) v4.5.0 → v4.8.4
---  v4.8.4 «ВЫСАДКА»: точки ставятся ГДЕ СТОИШЬ (раньше — по прицелу с
---  открытым меню → «случайно и сломано»), КУБ-МАРКЕР места на 5 сек всем,
---  анти-застревание телепорта, смена профы → спавн профы/фракции/ОБЩИЙ.
---  v4.7.3: ЕДИНЫЙ резолвер спавна ArrivalFor (профа > фракция),
---  телепорт на точку СРАЗУ при смене должности, общий спавн больше
---  не драчуется с точками фракций, арестованных не двигаем.
---  «Система спавна через НПС-транспорт»: точка прибытия колонной —
---  сюда встаёт грузовик (LVS Soviet Pack, классы ниже) и сюда же
---  ИГРОКИ СПАВНЯТСЯ. Зону назначаешь КОНКРЕТНОЙ фракции:
---  РККА прибывают к своему капониру, наука — к санпропускнику,
---  misc (новобранцы) — к воротам станции. Нет зоны у фракции —
---  работает общая точка спавна из УТИЛИТ. Зона переживает рестарт.
---  Поставить: /menu → УТИЛИТЫ → «ЗОНА ПРИБЫТИЯ ФРАКЦИИ» +
---  «ГРУЗОВИК КОЛОННЫ». Кадровик-НПС ставится туда же отдельной
---  кнопкой — вот тебе и «спавн через НПС у транспорта».
---  В ТРАНСПОРТЕ (грузовик/любой транспорт) ХОЛОД НЕ КУСАЕТ —
---  см. p11_sv_cold.lua v4.5.0.
+--  ПОЛЮС-11 — ЗОНЫ ПРИБЫТИЯ + ТРАНСПОРТ (server) v4.8.7 «ТОЧКА»
+--  ХРАНЕНИЕ И РАССТАНОВКА ТОЧЕК СПАВНА: фракции, профы, грузовик
+--  колонны. Само РЕШЕНИЕ «куда спавнить» с v4.8.7 живёт в ЯДРЕ
+--  СПАВНА (p11_sv_spawncore.lua — PlayerSelectSpawn, без гонок
+--  таймеров). Этот модуль: JSON-хранилище точек + админ-API +
+--  куб-маркеры для глаз.
+--
+--  v4.8.7 «ТОЧКА»: РЕЗУЛЬТАТ РАЗБОРА «спавн не работает» —
+--  старые хуки P11.ArrivalSpawn (таймер 0.09) и телепорт при
+--  смене должности ПЕРЕЕХАЛИ в p11_sv_spawncore (единый путь
+--  PlayerSelectSpawn → страховка 0-тик → смена должности).
+--  POLUS11.SpawnMark / Arrivals / JobArrivals / ArrivalFor —
+--  ОСТАЮТСЯ (их читают ядро спавна, админ-меню и команды).
 -- ============================================================
 
 util.AddNetworkString("P11_ArrivalFX")
 util.AddNetworkString("P11_SpawnMark")
 
--- ============ v4.8.4: КУБ-МАРКЕР ТОЧКИ (всем клиентам) ============
--- заявка владельца: «чтобы спавн ставился виде кубиков на 5 сек,
--- чтобы было видно, где будет спавн». kind: 1 профа, 2 фракция,
--- 3 общий, 4 арест, 5 грузовик. dur — секунд на экране.
+-- ============ КУБ-МАРКЕР ТОЧКИ (всем клиентам) ============
+-- kind: 1 профа, 2 фракция, 3 общий, 4 арест, 5 грузовик.
 function POLUS11.SpawnMark(pos, ang, kind, label, dur)
     if not pos then return end
     net.Start("P11_SpawnMark")
@@ -42,7 +35,7 @@ local function ArFile()
 end
 
 POLUS11.Arrivals = POLUS11.Arrivals or {} -- facId -> { pos=Vector, ang=Angle }
-POLUS11.JobArrivals = POLUS11.JobArrivals or {} -- v4.6.1: jobId -> { pos=Vector, ang=Angle } (точка спавна ПРОФЫ)
+POLUS11.JobArrivals = POLUS11.JobArrivals or {} -- jobId -> { pos=Vector, ang=Angle }
 local TruckSave = nil -- { pos, ang, class }
 
 -- ============ КЛАССЫ ГРУЗОВИКА (LVS Soviet Pack) ============
@@ -157,9 +150,8 @@ function POLUS11.ArrivalSet(ply, facId)
     end
     if not ok then P11FW.Notify(ply, "Нет такой фракции: " .. tostring(facId)) return end
 
-    -- v4.8.4 «ВЫСАДКА»: точка — ГДЕ СТОИШЬ ТЫ. Раньше брали прицел
-    -- (GetEyeTrace): кнопка жмётся с ОТКРЫТЫМ меню — взгляд в случайную
-    -- сторону → точка улетала «случайно и сломано» в стену/за карту.
+    -- точка — ГДЕ СТОИШЬ ТЫ (прицел с открытым меню разбрасывал
+    -- точки случайно — вот откуда были «спавны в стене»)
     POLUS11.Arrivals[facId] = {
         pos = ply:GetPos(),
         ang = Angle(0, ply:EyeAngles().y, 0),
@@ -177,14 +169,12 @@ function POLUS11.ArrivalClear(ply, facId)
     P11FW.Notify(ply, "Зона прибытия фракции «" .. facId .. "» убрана.")
 end
 
--- ============ v4.6.1: СПАВН ПРОФЫ (jobId) ============
+-- ============ СПАВН ПРОФЫ (jobId) ============
 
 function POLUS11.ArrivalJobSet(ply, jobId)
     local job = P11FW.Jobs and P11FW.Jobs[jobId]
     if not job then P11FW.Notify(ply, "Нет такой должности: " .. tostring(jobId)) return end
 
-    -- v4.8.4 «ВЫСАДКА»: точка — ГДЕ СТОИШЬ (прицел с открытым меню
-    -- разбрасывал точки случайно — вот откуда «спавн сломан»)
     POLUS11.JobArrivals[jobId] = {
         pos = ply:GetPos(),
         ang = Angle(0, ply:EyeAngles().y, 0),
@@ -202,7 +192,7 @@ function POLUS11.ArrivalJobClear(ply, jobId)
     P11FW.Notify(ply, "Точка спавна профы «" .. tostring(jobId) .. "» убрана.")
 end
 
--- показать админу, какие точки уже расставлены
+-- показать админу, какие точки уже расставлены (печать + кубики)
 function POLUS11.ArrivalList(ply)
     local lines = { "=== СПАВНЫ СТАНЦИИ (ты стоишь → ставишь точку туда) ===" }
     local sp = P11FW.GetPoint and P11FW.GetPoint("spawn")
@@ -221,11 +211,10 @@ function POLUS11.ArrivalList(ply)
         local job = P11FW.Jobs and P11FW.Jobs[id]
         lines[#lines + 1] = "  • профа «" .. (job and job.name or id) .. "» (" .. id .. ")"
     end
-    lines[#lines + 1] = "приоритет: спавн профы > спавн фракции > общая точка > карта"
+    lines[#lines + 1] = "приоритет ядра «ТОЧКА СБОРА 2.0»: арест → профа → фракция → общий → карта"
     lines[#lines + 1] = "🧊 ВСЕ точки показаны кубиками на 8 сек — оглянись вокруг!"
     for _, l in ipairs(lines) do P11FW.Notify(ply, l) end
 
-    -- v4.8.4 «ВЫСАДКА»: и ЗРИМО показать каждую точку куб-маркером
     if POLUS11.SpawnMark then
         local sp = P11FW.GetPoint and P11FW.GetPoint("spawn")
         if sp then POLUS11.SpawnMark(sp.pos, sp.ang, 3, "ОБЩИЙ СПАВН ГАРНИЗОНА", 8) end
@@ -295,92 +284,16 @@ function POLUS11.ArrivalTruckRemove(ply)
     P11FW.Notify(ply, n > 0 and "Грузовик колонны убран (после рестарта не воскреснет)." or "Грузовика не было.")
 end
 
--- ============ СПАВН: ЕДИНАЯ ОЧЕРЕДЬ ТОЧЕК (v4.7.3) ============
--- приоритет: точка МОЕЙ ПРОФЫ > зона МОЕЙ фракции
--- (общий спавн-поинт и карта — запасные, их обслуживает fw_sv_setup)
-
--- единый резолвер: куда ЭТОГО игрока вести (nil = нет своих точек)
+-- ============ РЕЗОЛВЕР ДЛЯ СТАРЫХ ВЫЗОВОВ (совместимость) ============
+-- Ядро спавна v4.8.7 использует POLUS11.SpawnResolve — этот мост
+-- оставлен, чтобы старые модули/меню не упали: вернёт ТУ ЖЕ точку.
 function POLUS11.ArrivalFor(ply)
-    if not IsValid(ply) then return nil end
-    local jobId = P11FW.GetJobId and P11FW.GetJobId(ply)
-    local job = P11FW.GetJob and P11FW.GetJob(ply)
-    local fac = job and (job.faction or job.category)
-    return (jobId and POLUS11.JobArrivals[jobId]) or (fac and POLUS11.Arrivals[fac]) or nil
+    local r = POLUS11.SpawnResolve and POLUS11.SpawnResolve(ply)
+    if not r then return nil end
+    return { pos = r.pos, ang = r.ang }
 end
 
--- v4.8.4: АНТИ-ЗАСТРЕВАНИЕ. Если точка оказалась в стене/в пропе —
--- аккуратно поднимаем бойца вверх до свободного места (до ~96u).
--- Раньше «спавн сломан» выглядел так: телепорт есть, но ты в текстурах.
-local function SafeLand(ply)
-    if not (IsValid(ply) and ply:Alive()) then return end
-    local mins, maxs = ply:GetHull()
-    local start = ply:GetPos()
-    local tr = util.TraceHull({
-        start = start, endpos = start,
-        mins = mins, maxs = maxs,
-        filter = ply, mask = MASK_PLAYERSOLID,
-    })
-    if not tr.Hit then return end
-    for dz = 8, 96, 8 do
-        local p2 = start + Vector(0, 0, dz)
-        local tr2 = util.TraceHull({
-            start = p2, endpos = p2,
-            mins = mins, maxs = maxs,
-            filter = ply, mask = MASK_PLAYERSOLID,
-        })
-        if not tr2.Hit then
-            ply:SetPos(p2)
-            return
-        end
-    end
-end
-
--- встать на точку (с античит-пропуском телепорта)
-local function ArrivalApply(ply, a, why)
-    if not (IsValid(ply) and ply:Alive() and a) then return end
-    ply:SetPos(a.pos)
-    ply:SetEyeAngles(a.ang)
-    SafeLand(ply)
-    if POLUS11.ACMarkTeleport then POLUS11.ACMarkTeleport(ply) end
-end
-
--- арестованных/рабов спавн-системой не таскаем (их ведёт fw_sv_punish)
-local function PunishedSkip(ply)
-    return IsValid(ply) and (ply:GetNWString("P11FW_Punish", "") ~= "")
-end
-
-hook.Add("PlayerSpawn", "P11.ArrivalSpawn", function(ply)
-    timer.Simple(0.09, function()
-        if not IsValid(ply) or not ply:Alive() then return end
-        if PunishedSkip(ply) then return end
-        ArrivalApply(ply, POLUS11.ArrivalFor(ply))
-    end)
-end)
-
--- v4.7.3: ТЕЛЕПОРТ СРАЗУ ПРИ СМЕНЕ ДОЛЖНОСТИ (вкл/выкл — конфиг
--- JobTeleportOnChange в p11_sh_config). Багрепорт: «был поваром,
--- стал РККА — положение не меняется вообще».
-hook.Add("P11FW.JobChanged", "P11.ArrivalJobTP", function(ply, jobId, oldId)
-    if POLUS11.Config and POLUS11.Config.JobTeleportOnChange == false then return end
-    if not IsValid(ply) or not ply:Alive() then return end
-    if PunishedSkip(ply) then return end
-    timer.Simple(0.15, function()
-        if not IsValid(ply) or not ply:Alive() then return end
-        if P11FW.GetJobId(ply) ~= jobId then return end -- успел сменить ещё раз
-        if PunishedSkip(ply) then return end
-        local a = POLUS11.ArrivalFor(ply)
-        -- v4.8.4: нет точки профы/фракции — увести хотя бы на ОБЩИЙ
-        -- спавн (заявка: «при выборе профы ты не спавнишься на спавне»)
-        if not a and P11FW.GetPoint then a = P11FW.GetPoint("spawn") end
-        if not a then return end
-        ArrivalApply(ply, a)
-        ply:EmitSound("buttons/button15.wav", 60, 105)
-        local job = P11FW.Jobs[jobId]
-        POLUS11.Notify(ply, "📍 Ты прибыл на место службы: " .. (job and job.name or jobId) .. ".")
-    end)
-end)
-
--- кинематографическое «прибыл» при ПЕРВОМ заходе (если зона есть)
+-- ============ «КОЛОННА ПРИБЫЛА»: красивая заставка при входе ============
 hook.Add("PlayerInitialSpawn", "P11.ArrivalFXJoin", function(ply)
     timer.Simple(7, function()
         if not IsValid(ply) then return end
@@ -409,43 +322,25 @@ concommand.Add("p11_arrival", function(ply, cmd, args)
         POLUS11.ArrivalJobClear(ply, args[2])
     elseif sub == "list" or sub == "marks" then
         POLUS11.ArrivalList(ply) -- печатает и заодно показывает кубики
-    elseif sub == "untruck_legacy" then
-        POLUS11.ArrivalTruckRemove(ply)
     elseif args[1] and args[1] ~= "" then
         POLUS11.ArrivalSet(ply, args[1]) -- p11_arrival rkka
     else
-        local out = "p11_arrival <facId> — поставить зону прибытия здесь • p11_arrival truck/untruck — грузовик"
+        local out = "p11_arrival <facId> — поставить зону прибытия здесь • p11_arrival job/unjob <jobId> — точка профы • p11_arrival truck/untruck — грузовик • p11_arrival marks — показать ВСЕ точки кубиками"
         if IsValid(ply) then ply:PrintMessage(HUD_PRINTCONSOLE, out) else print(out) end
     end
 end)
 
--- ============ v4.7.3: диагностика очереди спавна ============
+-- p11_spawndiag: оставляем знакомую админам команду — теперь это
+-- тонкая обёртка над ЯДРОМ СПАВНА (оно и печатает разбор).
 concommand.Add("p11_spawndiag", function(ply)
     if IsValid(ply) and not P11FW.Config.Admin(ply) then return end
-    local out = { "== СПАВН СТАНЦИИ: ДИАГНОСТИКА v4.7.3 ==" }
-    local nf, nj = 0, 0
-    for _ in pairs(POLUS11.Arrivals or {}) do nf = nf + 1 end
-    for _ in pairs(POLUS11.JobArrivals or {}) do nj = nj + 1 end
-    out[#out + 1] = "  точек фракций: " .. nf .. " | точек проф: " .. nj
-    out[#out + 1] = "  общий спавн: " .. ((P11FW.GetPoint and P11FW.GetPoint("spawn")) and "ЕСТЬ (применяется ТОЛЬКО при отсутствии точек профы/фракции)" or "нет")
-    out[#out + 1] = "  телепорт при смене должности: "
-        .. ((POLUS11.Config and POLUS11.Config.JobTeleportOnChange ~= false) and "ВКЛ" or "ВЫКЛ (JobTeleportOnChange=false)")
-    out[#out + 1] = "  -- разбор по игрокам (куда станет при спавне):"
-    for _, p in ipairs(player.GetAll()) do
-        local jobId = P11FW.GetJobId and P11FW.GetJobId(p) or "?"
-        local job = P11FW.Jobs and P11FW.Jobs[jobId]
-        local fac = job and (job.faction or job.category) or "?"
-        local how = "карта/общая"
-        if POLUS11.JobArrivals[jobId] then how = "ТОЧКА ПРОФЫ (" .. jobId .. ")"
-        elseif POLUS11.Arrivals[fac] then how = "зона фракции (" .. fac .. ")"
-        elseif P11FW.GetPoint and P11FW.GetPoint("spawn") then how = "ОБЩИЙ спавн" end
-        local pun = p:GetNWString("P11FW_Punish", "")
-        out[#out + 1] = string.format("     %-20s %-28s → %s%s",
-            p:Nick(), job and job.name or jobId, how,
-            pun ~= "" and ("  [НАКАЗАН: ведёт пенальти-система]") or "")
-    end
+    -- полный разбор («куда заспавнится каждый») печатает ядро спавна
+    if POLUS11 and POLUS11.SpawnCoreDiag then POLUS11.SpawnCoreDiag(ply) end
+    local out = { "== СПАВН СТАНЦИИ (ядро «ТОЧКА СБОРА 2.0», v4.8.7) ==" }
+    out[#out + 1] = "  Свою будущую точку глазами: p11_wherespawn (куб-метка на 6 сек)"
+    out[#out + 1] = "  Все расставленные точки кубиками: p11_arrival marks"
     local txt = table.concat(out, "\n")
     if IsValid(ply) then ply:PrintMessage(HUD_PRINTCONSOLE, txt) else print(txt) end
 end)
 
-print("[POLUS-11] спавн v4.8.4 «ВЫСАДКА»: точка ГДЕ СТОИШЬ (не прицел), куб-маркер 5с, анти-застревание, смена профы → спавн профы > фракции > ОБЩИЙ спавн; p11_arrival marks / p11_spawndiag")
+print("[POLUS-11] зоны прибытия v4.8.7 «ТОЧКА»: хранилище точек/грузовик/куб-маркеры на месте; решение о спавне делает ЯДРО (p11_sv_spawncore) — без гонки таймеров; p11_arrival marks / p11_spawndiag")

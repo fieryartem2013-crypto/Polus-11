@@ -63,33 +63,13 @@ hook.Add("PostCleanupMap", "P11FW.PointsLoad2", function()
     timer.Simple(0.5, P11FW.LoadPoints)
 end)
 
--- спавн игроков в сохранённой точке (арестованных перебьёт система наказаний позже)
-hook.Add("PlayerSpawn", "P11FW.SpawnPoint", function(ply)
-    local sp = P11FW.GetPoint("spawn")
-    if not sp then return end
-    -- v4.7.3: общий спавн — только если у игрока НЕТ точки профы/фракции.
-    -- Раньше обе системы телепортировали (0.05 и 0.09) — чей таймер
-    -- заикнётся, того и спавн → игроки «зависали» на старой точке.
-    if POLUS11 and POLUS11.ArrivalFor and POLUS11.ArrivalFor(ply) then return end
-    timer.Simple(0.05, function()
-        if IsValid(ply) and ply:Alive() then
-            ply:SetPos(sp.pos)
-            ply:SetEyeAngles(sp.ang)
-            -- v4.8.4: не застрять, если точка оказалась в стене/пропе
-            local mins, maxs = ply:GetHull()
-            local tr = util.TraceHull({ start = sp.pos, endpos = sp.pos,
-                mins = mins, maxs = maxs, filter = ply, mask = MASK_PLAYERSOLID })
-            if tr.Hit then
-                for dz = 8, 96, 8 do
-                    local p2 = sp.pos + Vector(0, 0, dz)
-                    local tr2 = util.TraceHull({ start = p2, endpos = p2,
-                        mins = mins, maxs = maxs, filter = ply, mask = MASK_PLAYERSOLID })
-                    if not tr2.Hit then ply:SetPos(p2) break end
-                end
-            end
-        end
-    end)
-end)
+-- v4.8.7 «ТОЧКА»: спавн игроков ПЕРЕЕХАЛ в ядро спавна
+-- (p11_sv_spawncore.lua — GM:PlayerSelectSpawn, точка назначается
+-- движком ДО первого кадра). Старый таймерный перенос (0.05с),
+-- гонявшийся с системой прибытий (0.09с) — упразднён:
+-- именно их гонка и выглядела как «спавны не работают».
+-- Точки по-прежнему ставятся этим модулем (act 7/9, setspawn),
+-- ЧИТАЕТ их ядро спавна.
 
 -- ============ ДАННЫЕ ДЛЯ АДМИН-МЕНЮ ============
 
