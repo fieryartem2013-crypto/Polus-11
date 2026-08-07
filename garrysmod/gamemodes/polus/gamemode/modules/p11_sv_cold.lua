@@ -84,6 +84,11 @@ timer.Create("P11_ColdTick", 1, 0, function()
     local dmgPer    = cfg.ColdDamagePer   or COLD.DamagePer
     local dmgTick   = cfg.ColdDamageTick  or COLD.DamageTick
     local warn      = cfg.ColdWarn ~= false
+    -- v4.10.0 «ГАРАЖ» (заявка «персонаж БЫСТРО мёрзнет»): общий множитель
+    -- мороза, живой — p11_coldrate 0.5 (в два раза медленнее), 1 = как раньше
+    local rate      = tonumber(cfg.ColdRateMult) or 1
+    drainOut = drainOut * rate
+    drainStm = drainStm * rate
 
     local storm = GetGlobalBool("P11_Storm", false)
     local now   = CurTime()
@@ -166,4 +171,29 @@ hook.Add("PlayerDeath", "P11_ColdDeath", function(ply)
         POLUS11.Log(ply:Nick() .. " замёрз насмерть")
     end
     ply.P11_Froze = false
+end)
+
+-- ============ v4.10.0 «ГАРАЖ»: ЖИВАЯ НАСТРОЙКА МОРОЗА ============
+-- p11_coldrate <множитель> — множитель скорости замерзания (улица и буря).
+-- 1 = как раньше • 0.5 = вдвое мягче • 0 = мороза нет совсем.
+-- Хранится в конфиге живьём (переживает рестарт сервера в рамках процесса).
+concommand.Add("p11_coldrate", function(ply, _, args)
+    local cfg = POLUS11.Config or {}
+    local n = tonumber(args and args[1] or "")
+    if n == nil then
+        local cur = tonumber(cfg.ColdRateMult) or 1
+        local out = string.format(
+            "== МОРОЗ: множитель %.2f | улица %.2f тепла/с | буря %.2f тепла/с (p11_coldrate <0..2>)\n" ..
+            "  примеры: p11_coldrate 0.5 — вдвое мягче • p11_coldrate 1 — жёстко • p11_coldrate 0 — без мороза",
+            cur, (cfg.ColdDrainOut or 0.6) * cur, (cfg.ColdDrainStorm or 2.2) * cur)
+        if IsValid(ply) then ply:PrintMessage(HUD_PRINTCONSOLE, out) else print(out) end
+        return
+    end
+    n = math.Clamp(n, 0, 2)
+    cfg.ColdRateMult = n
+    local out = string.format("Мороз: множитель выставлен %.2f (улица %.2f/с, буря %.2f/с)",
+        n, (cfg.ColdDrainOut or 0.6) * n, (cfg.ColdDrainStorm or 2.2) * n)
+    print("[POLUS-11] " .. out)
+    if POLUS11.Log then POLUS11.Log(out .. (IsValid(ply) and (" — выставил " .. ply:Nick()) or "")) end
+    if IsValid(ply) then POLUS11.Notify(ply, "🌡 " .. out) end
 end)

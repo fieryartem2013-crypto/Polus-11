@@ -50,6 +50,13 @@ POLUS11.Items = {
     ammo_buck   = { name = "Картечь 12 калибра (x16)", price = 400, ammo = { type = "buckshot", n = 16 }, desc = "Двустволка МР-43 и помпы — короткий разговор." },
     ammo_dyn    = { name = "Боекомплект к оружию в руках", price = 600, dyn = true, desc = "УМНЫЙ: два магазина к ТОМУ стволу, что сейчас в руках — любой пак/ARC9, всегда в точку." },
     flamer   = { name = "Кустарный огнемёт", price = 11500, class = "weapon_polus11_flamethrower", desc = "Единственный надёжный аргумент против Нечто. (цена v4.9.1)" },
+    -- ---- МАТЕРИАЛЫ МАСТЕРСКОЙ (v4.10.0 «ГАРАЖ»): крафт — !крафт / 🎒 → 🛠 ----
+    scrap  = { name = "Металлолом",          price = 120, mat = true, desc = "Гнутый железный остов. Основа всех самоделок." },
+    cloth  = { name = "Брезент",             price = 90,  mat = true, desc = "Плотная ткань: бинты, фитили, рукавицы." },
+    spirit = { name = "Спирт технический",   price = 130, mat = true, desc = "Стерильность и горючее в одной бутыли." },
+    fuel   = { name = "Канистра солярки",    price = 180, mat = true, desc = "Полярная валюта №2 после патронов." },
+    parts  = { name = "Запчасти",            price = 220, mat = true, desc = "Шестерни, пружины, шприц-тюбики. Мелко — ценно." },
+    cons   = { name = "Тушёнка (банка)",     price = 100, mat = true, desc = "Вторая половинка пайка. Первая — ты сам." },
 }
 
 -- ============ ДАННЫЕ ИГРОКОВ ============
@@ -132,7 +139,7 @@ end
 function POLUS11.ShopBuy(ply, id)
     local it = POLUS11.Items[id]
     if not it then return end
-    if id ~= "ampoule" and not it.ent and not it.ammo and not it.dyn and not POLUS11.InvCanUse(it.class) then
+    if id ~= "ampoule" and not it.ent and not it.ammo and not it.dyn and not it.mat and not POLUS11.InvCanUse(it.class) then
         POLUS11.Notify(ply, "«" .. it.name .. "» сейчас нет на складе (нет пака оружия на сервере).")
         ply:EmitSound("buttons/button10.wav", 60, 90)
         return
@@ -196,6 +203,10 @@ function POLUS11.InvUse(ply, id)
         POLUS11.Notify(ply, "Выдал склад: «" .. it.name .. "» — патроны уже в подсумке.")
         ply:EmitSound("items/ammo_pickup.wav", 65, 105)
         POLUS11.InvSync(ply)
+        return
+    end
+    if it.mat == true then -- v4.10.0 «ГАРАЖ»: материал мастерской — руками не применяется
+        POLUS11.Notify(ply, "«" .. it.name .. "» — материал для кустарной мастерской: 🎒 инвентарь → 🛠 МАСТЕРСКАЯ (или чат !крафт).")
         return
     end
     if it.ent == true then -- v4.9.1 «ИГЛА»: предмет-ЭНТИТИ (инъектор «УКОЛ-С») — спавнится перед тобой
@@ -399,6 +410,7 @@ local PLACEABLE = {
     storage   = "polus_p11_storage",
     patrol    = "polus_p11_patrol", -- v4.1: посты патруля
     kitchen   = "polus_p11_kitchen", -- v4.2: полевая кухня повара
+    avtosalon = "polus11_avtosalon", -- v4.10.0 «ГАРАЖ»: торговец транспортом LVS
 }
 
 local function PlaceFile(role)
@@ -443,6 +455,7 @@ hook.Add("InitPostEntity", "P11.PlaceLoad", function()
         LoadPlaced("terminal")
         LoadPlaced("patrol")
         LoadPlaced("kitchen")
+        LoadPlaced("avtosalon") -- v4.10.0 «ГАРАЖ»
         if POLUS11.PatrolSyncAll then timer.Simple(2.5, function() POLUS11.PatrolSyncAll(nil) end) end
     end)
 end)
@@ -453,6 +466,7 @@ hook.Add("PostCleanupMap", "P11.PlaceLoad2", function()
         LoadPlaced("terminal")
         LoadPlaced("patrol")
         LoadPlaced("kitchen")
+        LoadPlaced("avtosalon") -- v4.10.0 «ГАРАЖ»
         if POLUS11.PatrolSyncAll then timer.Simple(1.5, function() POLUS11.PatrolSyncAll(nil) end) end
     end)
 end)

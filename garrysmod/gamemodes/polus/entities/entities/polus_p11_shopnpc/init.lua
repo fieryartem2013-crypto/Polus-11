@@ -53,6 +53,31 @@ function ENT:Initialize()
     local seq = self:LookupSequence("idle_subtle")
     if seq < 0 then seq = self:LookupSequence("idle") end
     if seq >= 0 then self:ResetSequence(seq) end
+
+    -- v4.10.0 «ГАРАЖ» (заявка «отсутствуют анимации у нпс»):
+    -- AutomaticFrameAdvance — движок САМ крутит стойку (T-pose исчезает),
+    -- + надзор: раз в полсекунды возвращаем стойку, если её сбило.
+    self.P11_IdleSeq = seq
+    self:SetCycle(math.Rand(0, 1))
+    self:SetPlaybackRate(1)
+    self.AutomaticFrameAdvance = true
+end
+
+function ENT:Think()
+    self.P11_NextGuard = self.P11_NextGuard or 0
+    if CurTime() >= self.P11_NextGuard then
+        self.P11_NextGuard = CurTime() + 0.5
+        if self.GetSequence and self.P11_IdleSeq ~= nil and self.P11_IdleSeq >= 0 then
+            local ok, cur = pcall(self.GetSequence, self)
+            if ok and cur ~= self.P11_IdleSeq then
+                self:ResetSequence(self.P11_IdleSeq)
+                self:SetPlaybackRate(1)
+                self.AutomaticFrameAdvance = true
+            end
+        end
+    end
+    self:NextThink(CurTime() + 0.5)
+    return true
 end
 
 function ENT:Use(activator)

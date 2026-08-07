@@ -122,6 +122,37 @@ local SEED_JOBS = {
         },
     },
     {
+        -- v4.10.0 «ГАРАЖ»: НОВАЯ должность — Лётчик РККА (заявка владельца,
+        -- модели из заявки: комбинезон m35jumpsuit + шинель m41coat).
+        -- ЕДИНСТВЕННЫЙ штатный допуск в небо: Як-2 в «ПОЛЮС-АВТО» продаётся ему.
+        id = "seed_rkka_letchik", time = 90, category = "rkka", order = 34,
+        name = "Лётчик РККА",
+        desc = "Связное крыло станции: небо, груз, разведка погоды. Только он поднимает самолёт Як-2 — небо доверяют профессионалам. 110 ХП / 60 брони.",
+        weapons = { { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" },
+        hp = 110, armor = 60, max = 2,
+        color = Color(140, 165, 200),
+        models = {
+            "models/hts/comradebear/pm0v3/player/rkka/armored/en/m35jumpsuit_1941_s1_04.mdl",
+            "models/hts/comradebear/pm0v3/player/rkka/armored/co/m41coat_1941_s1_05.mdl",
+        },
+    },
+    {
+        -- v4.10.0 «ГАРАЖ»: НОВАЯ должность — Водитель (Персонал),
+        -- заявка «Водитель (Пресонал)». Машины берутся у Гараж-мастера
+        -- «ПОЛЮС-АВТО»: грузовики/тягач/санитарка; небо — у лётчиков.
+        id = "seed_pers_voditel", time = 30, category = "personnel", order = 14,
+        name = "Водитель",
+        desc = "Колёса станции: колонны снабжения, санитарный разъезд, вывоз больных в бурю. Транспорт покупается в гараже «ПОЛЮС-АВТО» (грузовики, тягач, санитарка). 105 ХП.",
+        weapons = { "weapon_polus11_radio", "weapon_crowbar" },
+        hp = 105, armor = 0, max = 3,
+        color = Color(200, 170, 100),
+        models = {
+            "models/player/Group01/male_03.mdl",
+            "models/player/Group01/male_05.mdl",
+            "models/player/Group01/male_06.mdl",
+        },
+    },
+    {
         id = "seed_rkka_razvedchik", time = 60, category = "rkka", order = 34, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Разведчик РККА",
         desc = "Уходит в белую пустыню первым. Трёхлинейка бьёт точно и далеко — Нечто не любит одиночных выстрелов с вышки. 125 ХП / 115 брони. Штрафная рота — туда лучше не попадать.",

@@ -3,6 +3,22 @@ include("shared.lua")
 surface.CreateFont("P11.ShopNPC.Big",   { font = "Roboto", size = 34, weight = 800, extended = true })
 surface.CreateFont("P11.ShopNPC.Small", { font = "Roboto", size = 22, weight = 500, extended = true })
 
+-- v4.10.0 «ГАРАЖ»: страховка анимации на клиенте (заявка «нет анимаций у нпс»)
+function ENT:Initialize()
+    self:SetNextClientThink(CurTime())
+end
+
+function ENT:Think()
+    if self.GetSequence and self.GetPlaybackRate then
+        pcall(function()
+            if self:GetPlaybackRate() == 0 then self:SetPlaybackRate(1) end
+            self:FrameAdvance()
+        end)
+    end
+    self:SetNextClientThink(CurTime() + 0.05)
+    return true
+end
+
 function ENT:Draw()
     self:DrawModel()
     local me = LocalPlayer()

@@ -90,6 +90,11 @@ local function ThinkHead(self)
 end
 
 function ENT:Think()
+    -- v4.10.0 «ГАРАЖ»: страховка проигрывания стойки (заявка «нет анимаций у нпс»)
+    pcall(function()
+        if self.GetPlaybackRate and self:GetPlaybackRate() == 0 then self:SetPlaybackRate(1) end
+        if self.FrameAdvance then self:FrameAdvance() end
+    end)
     if not self.P11_ThinkDead then
         local ok, err = pcall(ThinkHead, self)
         if not ok then

@@ -43,6 +43,11 @@ local cl = {
     "modules/p11_cl_minigames2.lua",-- v4.9.1 «ИГЛА»: стрелка-ползунок — «КРОВЬ-2» и «УКОЛ-С» + окно вердикта
     "modules/p11_cl_chatsel.lua",   -- v4.9.2 «ПРИЁМ»: полоса выбора канала над BonChat (РЕЧЬ/OOC/РАЦИЯ/РЕПОРТ…)
     "modules/p11_sh_bonchatboot.lua", -- v4.8.6 «НАВОДКА»: готовый чат BonChat (MIT) — клиентская база
+    "modules/p11_cl_garage.lua",      -- v4.10.0 «ГАРАЖ»: витрина «ПОЛЮС-АВТО» (транспорт LVS)
+    "modules/p11_cl_craft.lua",       -- v4.10.0 «ГАРАЖ»: кустарная мастерская (крафт)
+    "modules/p11_cl_utility.lua",     -- v4.10.0 «ГАРАЖ»: утилиты выдачи ПОЛЮС-ФЛЮКСА (rank 4+)
+    "modules/p11_cl_poi.lua",         -- v4.10.0 «ГАРАЖ»: маяки «куда идти»
+    "modules/p11_cl_thingkit.lua",    -- v4.10.0 «ГАРАЖ»: пульт тела Нечто «ЛИЧИНА 3.0» (после cl_mutations!)
 }
 
 local loaded = 0

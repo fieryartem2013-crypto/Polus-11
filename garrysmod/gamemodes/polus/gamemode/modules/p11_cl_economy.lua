@@ -176,8 +176,25 @@ end
 function P11.OpenInventory()
     local f = EcoFrame("🎒 ИНВЕНТАРЬ — взятое отсюда ложится в руки", 620, 460)
     local sc = vgui.Create("DScrollPanel", f)
-    sc:SetPos(12, 62) sc:SetSize(596, 386)
+    sc:SetPos(12, 62) sc:SetSize(596, 344)
     sc:GetVBar():SetWide(5)
+
+    -- v4.10.0 «ГАРАЖ»: кнопка-вход в кустарную мастерскую (крафт)
+    local craftBtn = vgui.Create("DButton", f)
+    craftBtn:SetPos(12, 62 + 344 + 8)
+    craftBtn:SetSize(596, 34)
+    craftBtn:SetText("")
+    craftBtn.Paint = function(s, w, h)
+        draw.RoundedBox(8, 0, 0, w, h, s:IsHovered() and Color(46, 60, 66) or Color(30, 42, 48))
+        surface.SetDrawColor(120, 200, 220, 150)
+        surface.DrawOutlinedRect(0, 0, w, h, 1)
+        draw.SimpleText("🛠 МАСТЕРСКАЯ (крафт из материалов)  — также: !крафт / p11_craft",
+            "P11.Eco.Med", w / 2, h / 2, Color(150, 220, 235), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+    end
+    craftBtn.DoClick = function()
+        surface.PlaySound("buttons/button15.wav")
+        if P11.OpenCraft then P11.OpenCraft() end
+    end
 
     function f:Refill()
         sc:Clear()
@@ -329,7 +346,7 @@ end)
 
 function P11.OpenPlaceMenu()
     if not P11FW.Config.Admin(LocalPlayer()) then return end
-    local f = EcoFrame("📍 РАССТАВИТЬ ОБЪЕКТЫ — куда смотришь, туда и встанет", 420, 424)
+    local f = EcoFrame("📍 РАССТАВИТЬ ОБЪЕКТЫ — куда смотришь, туда и встанет", 420, 480)
     local roles = {
         { id = "generator", name = "⚡ Генератор",          desc = "старт с полной заправкой" },
         { id = "terminal",  name = "🖥 Сменный терминал",   desc = "допуск: профы с флагом терминала" },
@@ -337,6 +354,7 @@ function P11.OpenPlaceMenu()
         { id = "storage",   name = "🗄 Личный сейф",        desc = "общая точка доступа к сейфам" },
         { id = "patrol",    name = "🚩 Пост патруля",       desc = "точка обхода РККА (v4.1)" },
         { id = "kitchen",   name = "🍲 Полевая кухня",      desc = "плита повара: горячие пайки (v4.2)" },
+        { id = "avtosalon", name = "🚗 Гараж (ПОЛЮС-АВТО)", desc = "торговец транспортом LVS (v4.10.0)" },
     }
     for i, r in ipairs(roles) do
         local y = 64 + (i - 1) * 56
