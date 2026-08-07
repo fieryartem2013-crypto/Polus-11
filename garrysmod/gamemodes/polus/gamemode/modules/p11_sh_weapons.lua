@@ -45,6 +45,7 @@ POLUS11.WepFallback = {
     -- v4.8.5 «КРАСНЫЙ ОРЁЛ»: американская резидентура
     arc9_eft_m1911a1        = "weapon_pistol",  -- Colt M1911A1 (.45 ACP)
     arc9_eft_m870           = "weapon_shotgun", -- Remington 870 (помпа США)
+    arc9_eft_velociraptor   = "weapon_ar2",     -- v4.8.6: глушёный Velociraptor .300 BLK (исключение Центра)
 }
 
 -- боезапас для СТОКОВЫХ фолбэков (EFT-стволам не нужен — своя система)

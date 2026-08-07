@@ -23,7 +23,7 @@ local cl = {
     "modules/p11_cl_help.lua",     -- F1-справка новичка
     "modules/p11_cl_alerts.lua",   -- приказ-баннер / метель / розыск / распорядок
     "modules/p11_cl_view.lua",     -- F2 третье лицо / F3 курсор / голос-панели (v3.8)
-    "modules/p11_cl_chat.lua",     -- v8 «ПУЛЬТ»: свой чат ВЫШЕ/удобнее/ничего не теряет (v4.8.4)
+    "modules/p11_cl_chat.lua",     -- v9 «ЭФИР»: пульт вырезан, каналы — через ГОТОВЫЙ BonChat (v4.8.6)
     "modules/p11_cl_arrival.lua",  -- заставка прибытия колонны (v4.5.0)
     "modules/p11_cl_cmenu.lua",    -- C-меню: жесты / действия (v4.4.0 — реворк с нуля)
     "modules/p11_cl_models.lua",   -- браузер внешности (v4.4.0 — с нуля)
@@ -39,6 +39,7 @@ local cl = {
     "modules/p11_cl_reports.lua",   -- v4.8.2 «ДОКЛАД»: окно репортов (принять/тп/закрыть)
     "modules/p11_cl_spawnviz.lua",  -- v4.8.4 «ВЫСАДКА»: куб-маркеры точек спавна
     "modules/p11_cl_disguise.lua",  -- v4.8.5 «КРАСНЫЙ ОРЁЛ»: окно кейса маскировки «ЛЕГАТ»
+    "modules/p11_sh_bonchatboot.lua", -- v4.8.6 «НАВОДКА»: готовый чат BonChat (MIT) — клиентская база
 }
 
 local loaded = 0

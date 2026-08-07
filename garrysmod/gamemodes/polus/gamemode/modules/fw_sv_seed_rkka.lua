@@ -154,6 +154,29 @@ local SEED_JOBS = {
         },
     },
 
+    -- ================= МЕДСЁСТРЫ РККА (v4.8.6 «НАВОДКА», заявка владельца) =================
+    {
+        id = "seed_rkka_medsestra", time = 45, category = "rkka", order = 38,
+        name = "Медсестра РККА",
+        desc = "Военная медсестра гарнизона: перевязки, обморожения, забор крови на анализ (шприц в снаряге). Ни стыла, ни дрогнула. 90 ХП / 25 брони.",
+        weapons = { "weapon_polus11_syringe", "weapon_polus11_radio" }, hp = 90, armor = 25, max = 2,
+        color = Color(200, 150, 150),
+        models = {
+            "models/hts/comradebear/pm0v3/player/rkka/medical/en/m35_1941_s1_01f.mdl",
+            "models/hts/comradebear/pm0v3/player/rkka/medical/en/m35_1941_s1_02f.mdl",
+        },
+    },
+    {
+        id = "seed_rkka_medglav", time = 120, category = "rkka", order = 39,
+        name = "Главная Медсестра РККА",
+        desc = "Старший медик гарнизона: ведёт санчасть и медицинское дело каждого бойца. Доступ к терминалу, шприц, рация. Одно место. 95 ХП / 50 брони.",
+        weapons = { "weapon_polus11_syringe", "weapon_polus11_radio" }, hp = 95, armor = 50, max = 1, terminal = true,
+        color = Color(215, 140, 140),
+        models = {
+            "models/hts/comradebear/pm0v3/player/rkka/medical/nco/m35_1941_s1_04f.mdl",
+        },
+    },
+
     -- ================= ФРАКЦИЯ НКВД (v3.8.3) =================
     -- Модели: пока стоят комиссарские/штабные из пака pm0v3 — если найдёшь
     -- пак с «синими фуражками», смени пути тут или прямо в админке.
@@ -264,48 +287,95 @@ local SEED_JOBS = {
         models = { "Models/UIF/scientists/UIF_scientist_8.mdl" },
     },
 
-    -- ================= ФРАКЦИЯ ОТРЯД «КРАСНЫЙ ОРЁЛ» (v4.8.5) =================
+    -- ================= ФРАКЦИЯ ОТРЯД «КРАСНЫЙ ОРЁЛ» (v4.8.5 → v4.8.6) =================
     -- Шпионы ЦРУ с кейсом маскировки «ЛЕГАТ»: облик бойца РККА, липовые
     -- позывной/должность/документ. Оружие — АМЕРИКАНСКОЕ по аналитике 1982
-    -- (см. README): M1911A1 / Python .357 / Remington 870. Вайтлист у всех.
+    -- (см. README). v4.8.6: рота УСИЛЕНА (хп/броня), модели usarmy из пака
+    -- pm0v3, Velociraptor диверсанту (единственное исключение Центра).
+    -- Все В ВАЙТЛИСТЕ, кроме связного (без кейса — открытая вакансия).
     {
-        id = "seed_eagle_agent", time = 120, category = "eagle", order = 60, whitelist = true,
+        id = "seed_eagle_agent", time = 90, category = "eagle", order = 60, whitelist = true,
         name = "Агент «Красного Орла»",
-        desc = "Легат резидентуры: сбор данных, наблюдение, связь. Базовая легенда — внештатный техперсонал; кейс «ЛЕГАТ» одевает бойцом РККА с липовыми позывным, должностью и документом. Табельный M1911A1. 100 ХП / 25 брони.",
+        desc = "Легат резидентуры: сбор данных, наблюдение, связь. Базовая легенда — солдат армии США по документам обмена. Кейс «ЛЕГАТ» одевает бойцом РККА с липовыми позывным, должностью и документом. Табельный M1911A1. 110 ХП / 50 брони.",
         weapons = { "weapon_polus11_disguise", { "arc9_eft_m1911a1", "weapon_pistol" }, "weapon_polus11_radio" },
-        hp = 100, armor = 25, max = 3,
+        hp = 110, armor = 50, max = 3,
         color = Color(90, 130, 200),
         models = {
-            "models/player/Group03/male_01.mdl",
-            "models/player/Group03/male_02.mdl",
-            "models/player/Group03/male_04.mdl",
-            "models/player/Group03/female_01.mdl",
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/en/m41_s1_01.mdl",
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/en/m41_s1_02.mdl",
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/en/m41_s1_04.mdl",
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/en/m41_s1_05.mdl",
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/en/m41_s1_06.mdl",
         },
     },
     {
         id = "seed_eagle_saboteur", time = 240, category = "eagle", order = 61, whitelist = true,
         name = "Диверсант «Красного Орла»",
-        desc = "Силовое прикрытие резидентуры: взлом, поджоги, тихая ликвидация свидетелей. Помповик Remington 870 для узких коридоров, M1911A1, гранаты. Кейс «ЛЕГАТ» в снаряге. 110 ХП / 60 брони.",
-        weapons = { "weapon_polus11_disguise", { "arc9_eft_m1911a1", "weapon_pistol" }, { "arc9_eft_m870", "weapon_shotgun" }, "weapon_frag" },
-        hp = 110, armor = 60, max = 2,
+        desc = "Силовое прикрытие резидентуры: взлом, поджоги, тихая ликвидация свидетелей. ИСКЛЮЧЕНИЕ ЦЕНТРА: Velociraptor .300 BLK с интегральным глушителем (при наличии пака, иначе — помпа Rem 870). M1911A1, гранаты. Кейс «ЛЕГАТ» в снаряге. 125 ХП / 100 брони.",
+        weapons = { "weapon_polus11_disguise", { "arc9_eft_velociraptor", "arc9_eft_m870", "weapon_shotgun" }, { "arc9_eft_m1911a1", "weapon_pistol" }, "weapon_frag" },
+        hp = 125, armor = 100, max = 2,
         color = Color(80, 118, 190),
         models = {
-            "models/player/Group01/male_01.mdl",
-            "models/player/Group01/male_04.mdl",
-            "models/player/Group01/male_06.mdl",
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/en/m41_s1_02.mdl",
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/en/m41_s1_04.mdl",
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/en/m41_s1_05.mdl",
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/en/m41_s1_06.mdl",
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/en/m41_s1_01.mdl",
         },
     },
     {
-        id = "seed_eagle_rezident", time = 480, category = "eagle", order = 62, whitelist = true,
+        id = "seed_eagle_operator", time = 150, category = "eagle", order = 62, whitelist = true,
+        name = "Оператор «Красного Орла»",
+        desc = "Младший командный состав резидентуры: водитель, радист полевого звена, «решала». Кейс «ЛЕГАТ», M1911A1, помповик Rem 870. 110 ХП / 75 брони.",
+        weapons = { "weapon_polus11_disguise", { "arc9_eft_m1911a1", "weapon_pistol" }, { "arc9_eft_m870", "weapon_shotgun" }, "weapon_polus11_radio" },
+        hp = 110, armor = 75, max = 2,
+        color = Color(100, 142, 210),
+        models = {
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/co/m41_s1_01.mdl",
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/co/m41_s1_02.mdl",
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/co/m41_s1_04.mdl",
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/co/m41_s1_05.mdl",
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/co/m41_s1_06.mdl",
+        },
+    },
+    {
+        id = "seed_eagle_rezident", time = 360, category = "eagle", order = 63, whitelist = true,
         name = "Резидент «Красного Орла»",
-        desc = "Глава резидентуры. Отдаёт волю агентам, выносит итоговые решения Центра. Colt Python .357 — личный револьвер, кейс «ЛЕГАТ» и рация. Одно место. 100 ХП / 50 брони.",
+        desc = "Глава резидентуры. Отдаёт волю агентам, выносит итоговые решения Центра. Colt Python .357 — личный револьвер, кейс «ЛЕГАТ» и рация. Одно место. 110 ХП / 75 брони.",
         weapons = { "weapon_polus11_disguise", "weapon_357", "weapon_polus11_radio" },
-        hp = 100, armor = 50, max = 1,
+        hp = 110, armor = 75, max = 1,
         color = Color(120, 155, 225),
         models = {
-            "models/player/breen.mdl",
-            "models/player/Group03m/male_04.mdl",
-            "models/player/Group03m/male_05.mdl",
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/co/m41_s1_04.mdl",
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/co/m41_s1_05.mdl",
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/co/m41_s1_06.mdl",
+        },
+    },
+    {
+        id = "seed_eagle_komandir", time = 480, category = "eagle", order = 64, whitelist = true,
+        name = "Командир Отряда «Красный Орёл»",
+        desc = "Старший состав ЦРУ: полевое командование всей резидентурой в Арктике. Python .357, кейс «ЛЕГАТ», рация. Одно место. 130 ХП / 100 брони.",
+        weapons = { "weapon_polus11_disguise", "weapon_357", "weapon_polus11_radio" },
+        hp = 130, armor = 100, max = 1,
+        color = Color(105, 140, 215),
+        models = {
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/nco/m41_s1_01.mdl",
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/nco/m41_s1_02.mdl",
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/nco/m41_s1_04.mdl",
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/nco/m41_s1_05.mdl",
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/nco/m41_s1_06.mdl",
+        },
+    },
+    {
+        id = "seed_eagle_svyaznoi", time = 0, category = "eagle", order = 59, -- БЕЗ вайтлиста, БЕЗ кейса: заявка владельца «одна профа без кейса и без вайтлиста»
+        name = "Связной «Красного Орла»",
+        desc = "Единственная ОТКРЫТАЯ вакансия отряда: радист-шифровальщик под негласной легендой тыловика. Кейса нет — работает прямым текстом, без маскировки. M1911A1, рация с прослушкой эфира станции. 100 ХП / 25 брони.",
+        weapons = { { "arc9_eft_m1911a1", "weapon_pistol" }, "weapon_polus11_radio" },
+        hp = 100, armor = 25, max = 2,
+        color = Color(140, 165, 215),
+        models = {
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/en/m41_s1_04.mdl",
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/en/m41_s1_05.mdl",
         },
     },
 
@@ -580,6 +650,42 @@ local function SeedAll()
             P11FW.RegisterCustomJobs(P11FW.CustomJobs)
             P11FW.SyncCustomJobs()
             P11FW.Log("Сид v4.8.2: лидерам 1 место (limV482), науке выданы шприцы (sciV482)")
+        end
+    end
+
+    -- ---------- v4.8.6 «НАВОДКА»: УСИЛЕНИЕ ОРЛА + NKVD fem-модель ----------
+    -- Старые сейвы (профы из v4.8.5) доезжают до новых статов/моделей/
+    -- вооружения из SEED_JOBS; шефу НКВД и особисту (заму) — женский вариант.
+    do
+        local seedById = {}
+        for _, j in ipairs(SEED_JOBS) do seedById[j.id] = j end
+        local changed = false
+        for _, rec in ipairs(P11FW.CustomJobs or {}) do
+            local upd = seedById[rec.id]
+            if upd and (rec.id == "seed_eagle_agent" or rec.id == "seed_eagle_saboteur" or rec.id == "seed_eagle_rezident")
+            and not rec.eagleV486 then
+                rec.hp = upd.hp
+                rec.armor = upd.armor
+                rec.time = upd.time
+                rec.weapons = upd.weapons
+                rec.models = upd.models
+                rec.desc = upd.desc
+                rec.eagleV486 = true
+                changed = true
+            end
+            if (rec.id == "seed_nkvd_nachalnik" or rec.id == "seed_nkvd_osobist")
+            and not rec.femV486 then
+                rec.models = rec.models or {}
+                rec.models[#rec.models + 1] = "models/hts/comradebear/pm0v3/player/nkvd/border_guards/co/m35_1941_s1_02f.mdl" -- женская версия (заявка)
+                rec.femV486 = true
+                changed = true
+            end
+        end
+        if changed then
+            P11FW.SaveCustomJobs()
+            P11FW.RegisterCustomJobs(P11FW.CustomJobs)
+            P11FW.SyncCustomJobs()
+            P11FW.Log("Сид v4.8.6: Орёл усилен (хп/броня/модели usarmy/Velociraptor диверсанту, eagleV486), НКВД fem-модель шефу и заму (femV486)")
         end
     end
 
