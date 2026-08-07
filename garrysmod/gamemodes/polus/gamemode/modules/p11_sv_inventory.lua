@@ -311,8 +311,10 @@ concommand.Add("p11_shopdiag", function(ply)
     for _, e in ipairs(ents.FindByClass("polus_p11_shopnpc")) do
         if IsValid(e) then
             n = n + 1
+            local solid = IsValid(e:GetPhysicsObject()) or e:GetSolid() ~= SOLID_NONE
             out[#out + 1] = "  shopnpc #" .. n .. " @ " .. tostring(e:GetPos())
                 .. " | модель: " .. tostring(e:GetModel())
+                .. " | ТВЁРДОСТЬ: " .. (solid and "да ✔" or "НЕТ ⚠ (перепоставь объект)")
         end
     end
     if n == 0 then
@@ -328,7 +330,7 @@ concommand.Add("p11_shopdiag", function(ply)
     if IsValid(ply) then ply:PrintMessage(HUD_PRINTCONSOLE, txt) else print(txt) end
 end)
 
-print("[POLUS-11] ларёк v4.6.9: три пути (E / C-меню / /ларёк) + диагностика p11_shopdiag")
+print("[POLUS-11] ларёк v4.7.4: тело торговца самолечится (VPHYSICS→BBOX), три пути (E / C-меню / /ларёк), diag p11_shopdiag")
 
 -- ============ РАССТАНОВКА ОБЪЕКТОВ (админ 📍) ============
 

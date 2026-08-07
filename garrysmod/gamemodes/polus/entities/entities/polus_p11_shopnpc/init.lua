@@ -2,34 +2,54 @@ AddCSLuaFile("cl_init.lua")
 AddCSLuaFile("shared.lua")
 include("shared.lua")
 
+-- ============================================================
+--  ЛАРЁК СНАБЖЕНИЯ — серверная инициализация v4.7.4 (С НУЛЯ)
+--  ФИКС «не физичен, не реагирует на E»: убран SetHullType/
+--  SetHullSizeNormal ДО физики (на anim-энтити это глушило
+--  PhysicsInit на части машин), VPHYSICS — по образцу терминала,
+--  а если и он не встал (нет коллизии у модели на этом контенте) —
+--  САМОЛЕЧЕНИЕ: статичная BBOX-коробка. Твёрдое тело гарантировано.
+-- ============================================================
+
 function ENT:Initialize()
+    -- модель: человечек-снабженец → ящик (есть у всех) → error
     local models = {
         "models/player/eli.mdl",
         "models/player/barney.mdl",
         "models/player/kleiner.mdl",
+        "models/props_junk/wood_crate002a.mdl",
+        "models/error.mdl",
     }
-    local found = false
     for _, m in ipairs(models) do
-        if file.Exists(m, "GAME") then self:SetModel(m) found = true break end
-    end
-    if not found then
-        -- v4.6.9: без HL2-персонажей в контенте торговец раньше
-        -- оставался БЕЗ модели: невидим, без физики, E не работал.
-        -- Ставим хотя бы ящик (есть у всех) — Use и физика живут.
-        self:SetModel("models/props_junk/wood_crate002a.mdl")
+        if file.Exists(m, "GAME") then self:SetModel(m) break end
     end
 
-    self:SetHullType(HULL_HUMAN)
-    self:SetHullSizeNormal()
+    -- честный VPHYSICS по модели (паттерн рабочего терминала)
     self:SetMoveType(MOVETYPE_VPHYSICS)
     self:PhysicsInit(SOLID_VPHYSICS)
     self:SetSolid(SOLID_VPHYSICS)
     self:SetUseType(SIMPLE_USE)
 
     local phys = self:GetPhysicsObject()
-    if IsValid(phys) then phys:Wake() phys:EnableMotion(false) end
+    if IsValid(phys) then
+        phys:Wake()
+        phys:EnableMotion(false) -- прибит к месту, но физичен
+    else
+        -- v4.7.4 САМОЛЕЧЕНИЕ: физика по модели не встала → статик-коробка.
+        -- Энтити всё равно ТВЁРДОЕ, трейсы (+use) по нему работают.
+        self:PhysicsDestroy()
+        self:SetMoveType(MOVETYPE_NONE)
+        self:SetSolid(SOLID_BBOX)
+        local mins, maxs = self:OBBMins(), self:OBBMaxs()
+        if not mins or not maxs or (maxs.z - mins.z) < 8 then
+            mins, maxs = Vector(-16, -16, 0), Vector(16, 16, 72)
+        end
+        self:SetCollisionBounds(mins, maxs)
+    end
+
     util.DropToFloor(self)
 
+    -- беззвучная анимация покоя, если модель её поддерживает
     local seq = self:LookupSequence("idle_subtle")
     if seq < 0 then seq = self:LookupSequence("idle") end
     if seq >= 0 then self:ResetSequence(seq) end
@@ -44,7 +64,6 @@ function ENT:Use(activator)
     if POLUS11.OpenShopUI then
         POLUS11.OpenShopUI(activator, self)
     else
-        -- v4.6.9: складской модуль не загрузился — сказать, а не молчать
         activator:ChatPrint("[ПОЛЮС-11] Складской модуль не проснулся — смотри [POLUS][ERROR] в консоли сервера.")
     end
 end
