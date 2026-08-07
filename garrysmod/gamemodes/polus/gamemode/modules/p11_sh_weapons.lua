@@ -42,6 +42,9 @@ POLUS11.WepFallback = {
     arc9_eft_tt33           = "weapon_pistol",
     arc9_eft_aps            = "weapon_pistol",
     arc9_doi_k98            = "weapon_crossbow",
+    -- v4.8.5 «КРАСНЫЙ ОРЁЛ»: американская резидентура
+    arc9_eft_m1911a1        = "weapon_pistol",  -- Colt M1911A1 (.45 ACP)
+    arc9_eft_m870           = "weapon_shotgun", -- Remington 870 (помпа США)
 }
 
 -- боезапас для СТОКОВЫХ фолбэков (EFT-стволам не нужен — своя система)

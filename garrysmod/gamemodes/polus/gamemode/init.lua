@@ -48,6 +48,7 @@ local send = {
     "modules/p11_cl_offer.lua",     -- v4.8.1: особая вакансия — маркер над кадровиком + баннер
     "modules/p11_cl_reports.lua",   -- v4.8.2 «ДОКЛАД»: окно репортов (принять/тп/закрыть)
     "modules/p11_cl_spawnviz.lua",  -- v4.8.4 «ВЫСАДКА»: куб-маркеры точек спавна
+    "modules/p11_cl_disguise.lua",  -- v4.8.5 «КРАСНЫЙ ОРЁЛ»: окно кейса маскировки «ЛЕГАТ»
 }
 for _, f in ipairs(send) do
     AddCSLuaFile(f)
@@ -117,6 +118,7 @@ local sv = {
     "modules/p11_sv_voice.lua",      -- 3D-голос + радио-эфир линком (v4.8.1 «ЭФИР»)
     "modules/p11_sv_reports.lua",    -- v4.8.2 «ДОКЛАД»: тикеты репортов (принять/тп/закрыть)
     "modules/p11_sv_cmdlock.lua",    -- v4.8.2 «ДОКЛАД»: замок серверной консоли — только Глава (ранг 16)
+    "modules/p11_sv_disguise.lua",   -- v4.8.5 «КРАСНЫЙ ОРЁЛ»: маскировка «ЛЕГАТ» (сервер)
 }
 
 local function Safe(f)
