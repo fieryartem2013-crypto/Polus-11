@@ -18,6 +18,12 @@ surface.CreateFont("P11D.Small", { font = "Roboto", size = 14, weight = 400, ext
 
 P11D = P11D or { Frame = nil }
 
+-- v4.9.3 «ГРОШ» — ДИСКОРД-МАГАЗИН: кнопка покупки бросает игрока
+-- на ваш ДС (заявка: «при нажатии кидает на наш дс сервер»).
+-- ВСТАВЬ свой инвайт сюда (постоянная ссылка: Настройки сервера ДС →
+-- Приглашения → создать §{не истекает}): напр. https://discord.gg/AbCdEfG
+local DONATE_URL = "https://discord.gg/ВСТАВЬ_ИНВАЙТ"
+
 local C = {
     bg     = Color(10, 14, 20, 246),
     panel  = Color(20, 26, 36, 255),
@@ -35,7 +41,7 @@ local C = {
 -- витрина пакетов (плейсхолдер — кнопки бездействуют)
 local PACKS = {
     {
-        icon = "💎", name = "VIP", col = C.gold,
+        icon = "💎", name = "VIP", col = C.gold, price = "500 ₽",
         tag = "статус за поддержку",
         perks = {
             "секция 💎 VIP-СЛУЖБА в F4 (Следопыт-охотник, Ветеран Арктики, Военврач) — УЖЕ РАБОТАЕТ",
@@ -44,8 +50,8 @@ local PACKS = {
         },
     },
     {
-        icon = "👑", name = "VIP+", col = C.crown,
-        tag = "расширенный набор — скоро",
+        icon = "👑", name = "VIP+", col = C.crown, price = "900 ₽",
+        tag = "расширенный набор — идёт продажа",
         perks = {
             "всё из статуса VIP",
             "уникальная внешность и титул смены на выбор",
@@ -53,8 +59,8 @@ local PACKS = {
         },
     },
     {
-        icon = "🛡", name = "ПОКРОВИТЕЛЬ СТАНЦИИ", col = C.shield,
-        tag = "для меценатов — скоро",
+        icon = "🛡", name = "ПОКРОВИТЕЛЬ СТАНЦИИ", col = C.shield, price = "1500 ₽",
+        tag = "для меценатов — идёт продажа",
         perks = {
             "всё из VIP+",
             "имя на доске благодарностей у кают-компании (планируется)",
@@ -208,14 +214,19 @@ local function OpenDonate()
         btn:SetText("")
         btn.PackName = pack.name
         btn.PackCol = pack.col
+        btn.PackPrice = pack.price or "500 ₽"
         btn.Paint = function(s2, w, h)
-            draw.RoundedBox(8, 0, 0, w, h, Color(52, 58, 68))
+            local hov = s2:IsHovered()
+            local pc = s2.PackCol
+            draw.RoundedBox(8, 0, 0, w, h, hov and Color(pc.r, pc.g, pc.b, 200) or Color(52, 58, 68))
             draw.RoundedBoxEx(8, 0, 0, w, h / 2, Color(255, 255, 255, 5), true, true, false, false)
-            draw.SimpleText("СКОРО", "P11D.Big", w / 2, h / 2 - 2, s2.PackCol, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+            surface.SetDrawColor(pc.r, pc.g, pc.b, hov and 255 or 120)
+            surface.DrawOutlinedRect(0, 0, w, h, 1)
+            draw.SimpleText(s2.PackPrice .. " → ДИСКОРД", "P11D.Big", w / 2, h / 2 - 2,
+                hov and Color(14, 18, 24) or s2.PackCol, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
         end
         btn.DoClick = function(s2)
-            surface.PlaySound("buttons/button10.wav")
-            P11D.PingSoon(s2.PackName)
+            P11D.BuyInDiscord(s2.PackName, s2.PackPrice)
         end
     end
 
@@ -229,6 +240,7 @@ local function OpenDonate()
         surface.SetDrawColor(255, 225, 140, 35)
         surface.DrawRect(0, 0, w, 1)
         draw.SimpleText("ТАЛОН НАГРАДЫ", "P11D.Big", 14, 8, C.gold)
+        draw.SimpleText("цены пакетов: VIP 500₽ · VIP+ 900₽ · ПОКРОВИТЕЛЬ 1500₽ — клик по цене ведёт в ДС", "P11D.Small", w - 14, 12, C.dim, TEXT_ALIGN_RIGHT)
         draw.SimpleText("Талон — одноразовый код от команды станции (рассылка / дискорд). Код пишется ТОЧНО как выдан, большими буквами.",
             "P11D.Small", 14, 32, C.dim)
 
@@ -311,11 +323,26 @@ net.Receive("p11_promo_use", function()
     end
 end)
 
--- подтверждение клика по «СКОРО» (честный плейсхолдер)
-function P11D.PingSoon(packName)
+-- v4.9.3 «ГРОШ»: клик по пакету — в ДИСКОРД-магазин (покупка там,
+-- выдача VIP — хозяин руками p11_rank или мостом магазина p11_donorvip)
+function P11D.BuyInDiscord(packName, price)
+    surface.PlaySound("ui/buttonclick.wav")
+    if string.find(DONATE_URL, "ВСТАВЬ_ИНВАЙТ", 1, true) then
+        chat.AddText(Color(255, 120, 110), "[ПОДДЕРЖКА] ",
+            Color(225, 230, 240), "Хозяин сервера ещё не вставил инвайт ДС (константа DONATE_URL в p11_cl_donate.lua).")
+        return
+    end
+    P11D.PromoMsg = "Открываю ДИСКОРД-магазин: «" .. tostring(packName) .. "» (" .. tostring(price) .. ")…"
+    P11D.PromoOk = true
+    gui.OpenURL(DONATE_URL)
     chat.AddText(Color(235, 205, 100), "[ПОДДЕРЖКА] ",
-        Color(225, 230, 240), "Пакет «" .. tostring(packName) .. "» в разработке — ",
-        Color(150, 165, 185), "автопродажа появится после подключения донат-сервиса; VIP пока выдаёт Глава/Куратор, а талоны гасятся внизу окна.")
+        Color(225, 230, 240), "Открыл ДИСКОРД станции: там пакет «" .. tostring(packName) .. "» за " .. tostring(price)
+        .. " — после оплаты хозяин/магазин выдаст VIP (мост: p11_donorvip).")
+end
+
+-- совместимость: если старая кнопка «СКОРО» где-то осталась
+function P11D.PingSoon(packName)
+    P11D.BuyInDiscord(packName, "— цена в ДС —")
 end
 
 -- ============ КЛАВИША F6 ============

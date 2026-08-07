@@ -43,6 +43,12 @@ POLUS11.Items = {
     chemlight= { name = "Химсвет (пачка)",  price = 250,  class = "weapon_polus11_chemlight",desc = "Кидай и размечай путь в облаке спор. (цена v4.9.1)" },
     scalpel  = { name = "Скальпель",        price = 900,  class = "weapon_polus11_scalpel", desc = "Хирургический. И не только хирургический. (цена v4.9.1)" },
     ampoule  = { name = "Ампула «Анальгин-С»", price = 450, class = "p11_ampoule",          desc = "Расходка медика для процедурной инъекции (+25 ХП). В руки не даётся. (цена v4.9.1)" },
+    -- ---- ПАТРОНЫ всех видов (v4.9.3 «ГРОШ», заявка «в дарке можно покупать патроны») ----
+    ammo_pistol = { name = "Патроны пистолетные (x60)", price = 350, ammo = { type = "pistol", n = 60 }, desc = "К ПМ, TT-33 и любой пистолетной мелочи станции." },
+    ammo_smg    = { name = "Патроны пистолет-пулемётные (x90)", price = 450, ammo = { type = "smg1", n = 90 }, desc = "К АКС-74У, ППШ и прочим быстрым стволам." },
+    ammo_ar     = { name = "Патроны винтовочно-автоматные (x60)", price = 550, ammo = { type = "ar2", n = 60 }, desc = "К АК-74, РПД и винтовочным аргументам." },
+    ammo_buck   = { name = "Картечь 12 калибра (x16)", price = 400, ammo = { type = "buckshot", n = 16 }, desc = "Двустволка МР-43 и помпы — короткий разговор." },
+    ammo_dyn    = { name = "Боекомплект к оружию в руках", price = 600, dyn = true, desc = "УМНЫЙ: два магазина к ТОМУ стволу, что сейчас в руках — любой пак/ARC9, всегда в точку." },
     flamer   = { name = "Кустарный огнемёт", price = 11500, class = "weapon_polus11_flamethrower", desc = "Единственный надёжный аргумент против Нечто. (цена v4.9.1)" },
 }
 
@@ -126,7 +132,7 @@ end
 function POLUS11.ShopBuy(ply, id)
     local it = POLUS11.Items[id]
     if not it then return end
-    if id ~= "ampoule" and not it.ent and not POLUS11.InvCanUse(it.class) then
+    if id ~= "ampoule" and not it.ent and not it.ammo and not it.dyn and not POLUS11.InvCanUse(it.class) then
         POLUS11.Notify(ply, "«" .. it.name .. "» сейчас нет на складе (нет пака оружия на сервере).")
         ply:EmitSound("buttons/button10.wav", 60, 90)
         return
@@ -159,6 +165,37 @@ function POLUS11.InvUse(ply, id)
     end
     if id == "ampoule" then
         POLUS11.Notify(ply, "Ампула — расходка: шприц потратит её сам при процедурной инъекции.")
+        return
+    end
+    if it.dyn == true then -- v4.9.3 «ГРОШ»: умный боекомплект — два магазина к стволу в руках
+        local wep = ply:GetActiveWeapon()
+        local stype, smag = -1, 0
+        if IsValid(wep) then
+            stype = wep.GetPrimaryAmmoType and wep:GetPrimaryAmmoType() or -1
+            smag = wep.GetMaxClip1 and wep:GetMaxClip1() or 0
+        end
+        if not IsValid(wep) or (stype or -1) < 0 then
+            POLUS11.Notify(ply, "В руках не огнестрел — боекомплект не к чему. Возьми ствол и повтори.")
+            return
+        end
+        local n = math.max((smag or 0) > 0 and smag * 2 or 60, 60)
+        ply:GiveAmmo(n, stype, true)
+        data.items[id] = data.items[id] - 1
+        if data.items[id] <= 0 then data.items[id] = nil end
+        DebouncedSave()
+        POLUS11.Notify(ply, "Боекомплект к «" .. wep.GetPrintName and wep:GetPrintName() or wep:GetClass() .. "»: +" .. n .. " патронов (2 магазина).")
+        ply:EmitSound("items/ammo_pickup.wav", 65, 100)
+        POLUS11.InvSync(ply)
+        return
+    end
+    if it.ammo then -- v4.9.3 «ГРОШ»: патроны пачкой
+        ply:GiveAmmo(it.ammo.n, it.ammo.type, true)
+        data.items[id] = data.items[id] - 1
+        if data.items[id] <= 0 then data.items[id] = nil end
+        DebouncedSave()
+        POLUS11.Notify(ply, "Выдал склад: «" .. it.name .. "» — патроны уже в подсумке.")
+        ply:EmitSound("items/ammo_pickup.wav", 65, 105)
+        POLUS11.InvSync(ply)
         return
     end
     if it.ent == true then -- v4.9.1 «ИГЛА»: предмет-ЭНТИТИ (инъектор «УКОЛ-С») — спавнится перед тобой

@@ -162,6 +162,7 @@ local BANG_SERVER = {
     ["!буря"] = true, ["!storm"] = true, -- p11_sv_shift
     ["!обмен"] = true, ["!trade"] = true, -- p11_sv_trade
     ["!промо"] = true, ["!ПРОМО"] = true, ["!promo"] = true, -- p11_sv_promo v4.9.0 «ТАЛОН» (кириллица не lowercase'ится — оба регистра)
+    ["!вакансия"] = true, ["!ВАКАНСИЯ"] = true, ["!взять"] = true, ["!ВЗЯТЬ"] = true, ["!take"] = true, -- p11_sv_thingoffer v4.9.3 «ГРОШ»
 }
 local BANG_CLIENT = {
     ["!смена"] = true, ["!выбор"] = true, -- fw_cl_f4: открыть F4

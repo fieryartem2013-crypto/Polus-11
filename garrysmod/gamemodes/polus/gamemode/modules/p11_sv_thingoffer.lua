@@ -76,20 +76,37 @@ local function ThingOfferClose(reason)
     POLUS11.Log("Вакансия Нечто закрыта: " .. (reason or "истекла"))
 end
 
--- первый нажавший E по кадровику в окно — забирает вакансию
-hook.Add("PlayerUse", "P11_ThingOfferUse", function(ply, ent)
-    if not IsValid(ply) or not IsValid(ent) then return end
-    if ent:GetClass() ~= NPC_CLASS then return end
-    if not POLUS11.ThingOfferActive() then return end
-    if not ply:Alive() then return end
-    if ply:GetNWBool("P11_Infected", false) then return end -- уже носитель — просто пройдёт мимо
+-- v4.9.3 «ГРОШ»: ВЗЯТИЕ ВАКАНСИИ УНИФИЦИРОВАНО (жалоба «не могут
+-- брать Нечто даже при ивенте у кадровика»). Одна дверь (E по NPC)
+-- теперь — ЧЕТЫРЕ двери в ОДНУ функцию:
+--   1) E по кадровику (PlayerUse);
+--   2) KeyPress E навстречу кадровику (страховка, ТОНЕТ ли движковый Use);
+--   3) красная кнопка «ОСОБАЯ ВАКАНСИЯ» в F4 (net P11_VacancyTake —
+--      её видно ТОЛЬКО в окно вакансии — отвечает заявке «не видят в F4»);
+--   4) чат !вакансия / !взять + консоль p11_takeoffer (public).
+-- Отказ всегда ОЗВУЧЕН причиной (так «не берётся» сразу объяснимо).
+function POLUS11.ThingOfferTake(ply, via)
+    if not IsValid(ply) or not ply:IsPlayer() then return false end
+    if not ply:Alive() then
+        POLUS11.Notify(ply, "Мёртвому особые задания не полагаются.")
+        return false
+    end
+    if not POLUS11.ThingOfferActive() then
+        POLUS11.Notify(ply, "Особой вакансии сейчас НЕТ — жди красную плашку над кадровиком (или админскую p11_offer).")
+        return false
+    end
+    if ply:GetNWBool("P11_Infected", false) then
+        POLUS11.Notify(ply, "Ты уже носитель — вакансия не про тебя.")
+        return false
+    end
     if POLUS11.ActiveThingExists() then
         ThingOfferClose("кто-то уже проявился")
-        return
+        POLUS11.Notify(ply, "Проявившееся Нечто уже охотится — вакансии больше нет.")
+        return false
     end
 
     -- ===== ВЗЯЛИ ВАКАНСИЮ: тихое заражение с быстрой активацией =====
-    ThingOfferClose("вакансия занята")
+    ThingOfferClose("вакансия занята" .. (via and (" через " .. via) or ""))
     POLUS11.Infect(ply, "vacancy", true)
     ply.P11_Incubation = 2 -- активируется первым же тиком инкубации (~3 сек)
     ply.P11_InfectedAt = Now()
@@ -97,9 +114,47 @@ hook.Add("PlayerUse", "P11_ThingOfferUse", function(ply, ent)
     PrintMessage(HUD_PRINTTALK, "[КАДРЫ] Особая вакансия закрыта.")
     POLUS11.Notify(ply, "Кадровик отводит взгляд и шепчет: «Особое задание принято... "
         .. "храните молчание». Тебя колотит изнутри.")
-    POLUS11.Log(ply:Nick() .. " (" .. ply:SteamID() .. ") взял вакансию Нечто у кадровика")
+    POLUS11.Log(ply:Nick() .. " (" .. ply:SteamID() .. ") взял вакансию Нечто"
+        .. (via and (" [" .. via .. "]") or ""))
+    return true
+end
 
-    return false -- не открываем меню должностей в этот момент
+-- дверь 1: E по кадровику
+hook.Add("PlayerUse", "P11_ThingOfferUse", function(ply, ent)
+    if not IsValid(ply) or not IsValid(ent) then return end
+    if ent:GetClass() ~= NPC_CLASS then return end
+    if not POLUS11.ThingOfferActive() then return end
+    if POLUS11.ThingOfferTake(ply, "E по кадровику") then
+        return false -- меню должностей не открываем в этот момент
+    end
+end)
+
+-- дверь 2: KeyPress E навстречу кадровику (если движковый Use где-то тонет)
+hook.Add("KeyPress", "P11_ThingOfferKey", function(ply, key)
+    if key ~= IN_USE then return end
+    if not POLUS11.ThingOfferActive() then return end
+    local tr = ply:GetEyeTrace()
+    if not (tr and IsValid(tr.Entity) and tr.Entity:GetClass() == NPC_CLASS
+        and tr.HitPos:DistToSqr(ply:GetPos()) < 200 * 200) then return end
+    POLUS11.ThingOfferTake(ply, "KeyPress у кадровика")
+end)
+
+-- дверь 3: кнопка в F4 (клиент показывает её только в окно вакансии)
+util.AddNetworkString("P11_VacancyTake")
+net.Receive("P11_VacancyTake", function(_, ply)
+    POLUS11.ThingOfferTake(ply, "кнопка F4")
+end)
+
+-- дверь 4: чат + консоль
+hook.Add("PlayerSay", "P11_ThingOfferChat", function(ply, text)
+    local t = string.lower(string.Trim(tostring(text or "")))
+    if t == "!вакансия" or t == "!взять" or t == "!take" then
+        POLUS11.ThingOfferTake(ply, "чат")
+        return ""
+    end
+end)
+concommand.Add("p11_takeoffer", function(ply)
+    if IsValid(ply) then POLUS11.ThingOfferTake(ply, "консоль") end
 end)
 
 -- планировщик: окно появляется раз в gapMin..gapMax сек, пустое — закрывается само

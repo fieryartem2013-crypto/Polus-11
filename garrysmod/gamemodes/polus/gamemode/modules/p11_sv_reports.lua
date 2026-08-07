@@ -95,6 +95,10 @@ local function Toast(ply, text, snd)
         net.WriteString(text)
         net.WriteBool(snd and true or false)
     net.Send(ply)
+    -- v4.9.3 «ГРОШ»: двойная страховка видимости — chat.AddText под
+    -- BonChat может утопать в дефолтной панели, а серверный ChatPrint
+    -- BonChat показывает ЖЕЛЕЗНО (тип «none» в его роутере миски).
+    ply:ChatPrint("[РЕПОРТЫ] " .. text)
 end
 
 local function ToastAdmins(text, snd)
@@ -149,6 +153,11 @@ function POLUS11.RepAdd(ply, text)
     ToastAdmins("Новый репорт #" .. r.id .. " от " .. r.name
         .. ": «" .. string.sub(text, 1, 60) .. "» — окно: /репорты", true)
     if P11FW.ModLog then P11FW.ModLog("report", ply, nil, "#" .. r.id .. " " .. text) end
+    -- v4.9.3 «ГРОШ»: громкая подпись серверного лога — репорт никогда
+    -- теперь не «исчезает молча»: каждый созданный тикет виден в консоли.
+    print("[POLUS-11] РЕПОРТ #" .. r.id .. " от " .. r.name .. " («" .. r.sid .. "»): " .. text)
+    -- и сам отправитель получает ГРОМКОЕ подтверждение (также серверным ChatPrint)
+    Toast(ply, "Твой репорт #" .. r.id .. " создан — админы видят его в окне /репорты.", true)
     PushAll()
     return true, r
 end
