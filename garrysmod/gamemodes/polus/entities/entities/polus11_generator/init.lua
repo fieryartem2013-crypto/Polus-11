@@ -1,6 +1,13 @@
 AddCSLuaFile("cl_init.lua")
 include("shared.lua")
 
+-- v4.9.1 «ИГЛА»: ЗАЯВКА ВЛАДЕЛЬЦА «вырежи ивент авария энергоснабжения».
+-- Случайные поломки по износу и само-СГОРАНИЕ от перегрева убраны:
+-- энергия зависит ТОЛЬКО от топлива (бочки) — ресурс остался, рандомные
+-- блэкауты больше не гасят станцию. Админская ручная «Авария 2 мин»
+-- (пульт, act 4) сохранена. Вернуть старое поведение: GEN_AUTOCRASH = true.
+local GEN_AUTOCRASH = false
+
 function ENT:Initialize()
     -- v3.7: новая модель + цепочка фолбэков (если пака lt_c нет на сервере)
     local models = {
@@ -103,8 +110,8 @@ function ENT:Think()
             local wear = math.min(100, self:GetWear() + wearRate)
             self:SetWear(wear)
 
-            -- новая ПОЛОМКА по износу
-            if CurTime() >= (self.NextFaultRoll or 0) then
+            -- новая ПОЛОМКА по износу (v4.9.1: авто-авария ВЫРЕЗАНА — только если GEN_AUTOCRASH)
+            if GEN_AUTOCRASH and CurTime() >= (self.NextFaultRoll or 0) then
                 self.NextFaultRoll = CurTime() + 12
                 if fault == "" and wear > 50 then
                     local chance = (wear - 50) / 50 * 0.30
@@ -122,8 +129,8 @@ function ENT:Think()
                 end
             end
 
-            -- ПЕРЕГРЕВ, доведённый до 100% — АВАРИЯ
-            if fault == "overheat" and wear >= 100 then
+            -- ПЕРЕГРЕВ, доведённый до 100% — АВАРИЯ (v4.9.1: вырезано; только GEN_AUTOCRASH=true)
+            if GEN_AUTOCRASH and fault == "overheat" and wear >= 100 then
                 self:SetDamaged(true)
                 if self.SoundLoop then self.SoundLoop:Stop() end
                 local ed = EffectData()
@@ -386,3 +393,5 @@ function ENT:OnTakeDamage(dmg)
         POLUS11.Log("Генератор уничтожен огнём!")
     end
 end
+
+print("[POLUS-11] генератор v4.9.1 «ИГЛА»: авто-АВАРИЯ энергосистемы ВЫРЕЗАНА (заявка владельца); топливо/ремонт остались, рандомных блэкаутов больше нет")

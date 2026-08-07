@@ -62,6 +62,34 @@ function POLUS11.IsEngineer(ply)
     return false
 end
 
+-- ============ v4.9.1 «ИГЛА»: ДОЛЖНОСТНЫЕ РОЛИ ============
+
+--- Вся НАУЧНАЯ фракция (category «science» любой должности).
+--- Учёный/лаборант/био-химик/ведущий/менеджер/создатель — все «свои» в лабе.
+function POLUS11.IsScienceFaction(ply)
+    if not IsValid(ply) then return false end
+    if P11FW and P11FW.GetJob then
+        local j = P11FW.GetJob(ply) -- таблица должности P11FW.Jobs[jobId]
+        if j and j.category == "science" then return true end
+    end
+    return POLUS11.IsScientist(ply) -- старый путь по имени состава (не мешает)
+end
+
+--- Медсостав: медик (базовая), медсестра и главная медсестра РККА.
+local MEDIC_JOBS = {
+    medic = true,
+    seed_rkka_medsestra = true,
+    seed_rkka_medglav = true,
+}
+
+function POLUS11.IsMedic(ply)
+    if not IsValid(ply) then return false end
+    if P11FW and P11FW.GetJobId then
+        if MEDIC_JOBS[P11FW.GetJobId(ply) or ""] then return true end
+    end
+    return false
+end
+
 -- ============ МОДЕЛИ ДЛЯ НЕЧТО ============
 -- Модель «жуткой» формы при трансформации (по классам)
 

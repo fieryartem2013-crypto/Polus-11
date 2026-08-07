@@ -49,8 +49,14 @@ function SWEP:PrimaryAttack()
 
     if CLIENT then return end
 
-    if not POLUS11.IsScientist(ply) then
-        POLUS11.Notify(ply, "Забор крови делают только учёные!")
+    -- v4.9.1 «ИГЛА»: забор крови — ВСЯ научная фракция (медсоставу шприц — только для лечения, ПКМ)
+    local canDraw = POLUS11.IsScienceFaction and POLUS11.IsScienceFaction(ply)
+    if not canDraw then
+        if POLUS11.IsMedic and POLUS11.IsMedic(ply) then
+            POLUS11.Notify(ply, "Забор крови — работа науки. Ваш шприц — для лечения: ПКМ в упор по раненому.")
+        else
+            POLUS11.Notify(ply, "Забор крови делают только учёные!")
+        end
         return
     end
 
@@ -109,10 +115,11 @@ function SWEP:SecondaryAttack()
 
     if CLIENT then return end
 
-    local isMedic = (P11FW and P11FW.GetJobId and P11FW.GetJobId(ply) == "medic")
-        or (POLUS11.IsScientist and POLUS11.IsScientist(ply))
+    -- v4.9.1 «ИГЛА»: лечение ПКМ — медсостав (включая МЕДСЁСТЕР) + вся наука
+    local isMedic = (POLUS11.IsMedic and POLUS11.IsMedic(ply))
+        or (POLUS11.IsScienceFaction and POLUS11.IsScienceFaction(ply))
     if not isMedic then
-        POLUS11.Notify(ply, "Обработка ран — работа медика.")
+        POLUS11.Notify(ply, "Обработка ран — работа медика и науки.")
         return
     end
 

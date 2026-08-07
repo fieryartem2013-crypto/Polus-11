@@ -107,6 +107,21 @@ local SEED_JOBS = {
         },
     },
     {
+        -- v4.9.1 «ИГЛА»: НОВАЯ должность — пулемётчик с ручным РПД (заявка владельца)
+        id = "seed_rkka_pulemetchik", time = 90, category = "rkka", order = 33,
+        name = "Пулемётчик РККА",
+        desc = "Огневая точка гарнизона: ручной пулемёт РПД с диском на 75 патронов. Пока РПД говорит — Нечто не подходит. Два места. 130 ХП / 110 брони.",
+        weapons = { "weapon_polus11_rpd", "weapon_polus11_radio" }, hp = 130, armor = 110, max = 2,
+        color = Color(150, 130, 75),
+        models = {
+            "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m43_s1_02.mdl",
+            "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m43_s1_03.mdl",
+            "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m43_s1_04.mdl",
+            "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m43_s1_05.mdl",
+            "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m43_s1_06.mdl",
+        },
+    },
+    {
         id = "seed_rkka_razvedchik", time = 60, category = "rkka", order = 34, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Разведчик РККА",
         desc = "Уходит в белую пустыню первым. Трёхлинейка бьёт точно и далеко — Нечто не любит одиночных выстрелов с вышки. 125 ХП / 115 брони. Штрафная рота — туда лучше не попадать.",
@@ -118,6 +133,27 @@ local SEED_JOBS = {
             "models/hts/comradebear/pm0v3/player/rkka/infantry/shtrafniki/m35_1941_s1_04.mdl",
             "models/hts/comradebear/pm0v3/player/rkka/infantry/shtrafniki/m35_1941_s1_05.mdl",
             "models/hts/comradebear/pm0v3/player/rkka/infantry/shtrafniki/m35_1941_s1_06.mdl",
+        },
+    },
+    {
+        id = "seed_rkka_medsestra", time = 45, category = "rkka", order = 36, -- v4.9.1 «ИГЛА»: медсёстры подняты ВЫШЕ генералов (были 38/39 под командой); последними идут генералы
+        name = "Медсестра РККА",
+        desc = "Военная медсестра гарнизона: перевязки, обморожения, латание раненых (полевой медкейс + шприц в снаряге). Ни стыла, ни дрогнула. 90 ХП / 25 брони.",
+        weapons = { "weapon_polus11_medkit", "weapon_polus11_syringe", "weapon_polus11_radio" }, hp = 90, armor = 25, max = 2,
+        color = Color(200, 150, 150),
+        models = {
+            "models/hts/comradebear/pm0v3/player/rkka/medical/en/m35_1941_s1_01f.mdl",
+            "models/hts/comradebear/pm0v3/player/rkka/medical/en/m35_1941_s1_02f.mdl",
+        },
+    },
+    {
+        id = "seed_rkka_medglav", time = 120, category = "rkka", order = 37, -- v4.9.1 «ИГЛА»: была 39 под генералами — поднята выше в списке
+        name = "Главная Медсестра РККА",
+        desc = "Старший медик гарнизона: ведёт санчасть и медицинское дело каждого бойца. Доступ к терминалу, медкейс, шприц, рация. Одно место. 95 ХП / 50 брони.",
+        weapons = { "weapon_polus11_medkit", "weapon_polus11_syringe", "weapon_polus11_radio" }, hp = 95, armor = 50, max = 1, terminal = true,
+        color = Color(215, 140, 140),
+        models = {
+            "models/hts/comradebear/pm0v3/player/rkka/medical/nco/m35_1941_s1_04f.mdl",
         },
     },
     {
@@ -134,7 +170,7 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_rkka_general", time = 300, category = "rkka", order = 36, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
+        id = "seed_rkka_general", time = 300, category = "rkka", order = 38, -- v4.9.1 «ИГЛА»: генералы — САМЫЕ ПОСЛЕДНИЕ в блоке РККА (был 36); допуск v4.6.6
         name = "Генерал РККА",
         desc = "Командующий всем военным контингентом станции из генеральского штаба. Трёхлинейка и полная власть. Одно место. 125 ХП / 125 брони.",
         weapons = { { "arc9_eft_mosin_sniper", "arc9_eft_mosin_infantry", "weapon_crossbow" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 125, armor = 125, max = 1, terminal = true, command = true, -- v4.8.2: лимит 1
@@ -144,7 +180,7 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_rkka_generalpeh", time = 300, category = "rkka", order = 37, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
+        id = "seed_rkka_generalpeh", time = 300, category = "rkka", order = 39, -- v4.9.1 «ИГЛА»: генералы — САМЫЕ ПОСЛЕДНИЕ в блоке РККА (был 37); допуск v4.6.6
         name = "Генерал РККА (Пехота)",
         desc = "Комбат пехотного звена: ближе к окопам, чем к штабу. Двустволка MR-43 для личной самообороны. Одно место. 100 ХП / 100 брони.",
         weapons = { { "arc9_eft_mr43", "weapon_shotgun" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 100, armor = 100, max = 1, terminal = true, -- v4.8.2: лимит 1
@@ -154,28 +190,7 @@ local SEED_JOBS = {
         },
     },
 
-    -- ================= МЕДСЁСТРЫ РККА (v4.8.6 «НАВОДКА», заявка владельца) =================
-    {
-        id = "seed_rkka_medsestra", time = 45, category = "rkka", order = 38,
-        name = "Медсестра РККА",
-        desc = "Военная медсестра гарнизона: перевязки, обморожения, латание раненых (полевой медкейс в снаряге). Ни стыла, ни дрогнула. 90 ХП / 25 брони.",
-        weapons = { "weapon_polus11_medkit", "weapon_polus11_radio" }, hp = 90, armor = 25, max = 2, -- v4.8.8: медикам — ванильный медкейс (шприц снят)
-        color = Color(200, 150, 150),
-        models = {
-            "models/hts/comradebear/pm0v3/player/rkka/medical/en/m35_1941_s1_01f.mdl",
-            "models/hts/comradebear/pm0v3/player/rkka/medical/en/m35_1941_s1_02f.mdl",
-        },
-    },
-    {
-        id = "seed_rkka_medglav", time = 120, category = "rkka", order = 39,
-        name = "Главная Медсестра РККА",
-        desc = "Старший медик гарнизона: ведёт санчасть и медицинское дело каждого бойца. Доступ к терминалу, полевой медкейс, рация. Одно место. 95 ХП / 50 брони.",
-        weapons = { "weapon_polus11_medkit", "weapon_polus11_radio" }, hp = 95, armor = 50, max = 1, terminal = true, -- v4.8.8: медикам — ванильный медкейс
-        color = Color(215, 140, 140),
-        models = {
-            "models/hts/comradebear/pm0v3/player/rkka/medical/nco/m35_1941_s1_04f.mdl",
-        },
-    },
+    -- Медсёстры РККА перенесены вверх блока (order 36/37), генералы стали последними (38/39) — v4.9.1 «ИГЛА»
 
     -- ================= ФРАКЦИЯ НКВД (v3.8.3) =================
     -- Модели: пока стоят комиссарские/штабные из пака pm0v3 — если найдёшь
@@ -242,15 +257,15 @@ local SEED_JOBS = {
         id = "seed_sci_laborant", time = 0, category = "science", order = 40, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Лаборант (ЦНИИ)",
         desc = "Младший научный состав исследовательского блока. Мытьё пробирок, подносы, журналы опытов. 100 ХП / 100 брони.",
-        weapons = {}, hp = 100, armor = 100, max = 4, -- v4.8.8 «ЛИЧИНА»: шприц снят — тест крови делает «Учёный»
+        weapons = { "weapon_polus11_syringe" }, hp = 100, armor = 100, max = 4, -- v4.9.1 «ИГЛА»: шприц возвращён — им пользуется ВСЯ научная фракция (заявка)
         color = Color(165, 205, 250),
         models = { "Models/UIF/scientists/UIF_scientist_7.mdl" },
     },
     {
         id = "seed_sci_ucheniy", time = 30, category = "science", order = 41, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Учёный",
-        desc = "Штатный исследователь комплекса. ЕДИНСТВЕННЫЙ на станции держатель шприца теста крови: забор и лабораторный стол — его руки. 100 ХП / 100 брони.",
-        weapons = { "weapon_polus11_syringe" }, hp = 100, armor = 100, max = 3, -- v4.8.8 «ЛИЧИНА»: шприц теста крови выдаётся ТОЛЬКО этой должности (заявка владельца)
+        desc = "Штатный исследователь комплекса. Шприц теста крови — рабочий инструмент всей науки; забор и стол «КРОВЬ-2» — его руки. 100 ХП / 100 брони.",
+        weapons = { "weapon_polus11_syringe" }, hp = 100, armor = 100, max = 3, -- v4.9.1 «ИГЛА»: шприц — вся научная фракция (была монополия «Учёного»)
         color = Color(170, 210, 255),
         models = { "Models/UIF/scientists/UIF_scientist_7.mdl" },
     },
@@ -258,7 +273,7 @@ local SEED_JOBS = {
         id = "seed_sci_biohim", time = 60, category = "science", order = 42, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Био-химик",
         desc = "Специалист по биохимическому анализу тканей. К его холодильнику с образцами лучше не подходить без перчаток. 100 ХП / 100 брони.",
-        weapons = {}, hp = 100, armor = 100, max = 2, -- v4.8.8 «ЛИЧИНА»: шприц снят
+        weapons = { "weapon_polus11_syringe" }, hp = 100, armor = 100, max = 2, -- v4.9.1 «ИГЛА»: шприц возвращён — вся научная фракция
         color = Color(145, 225, 210),
         models = { "Models/UIF/scientists/UIF_scientist_7.mdl" },
     },
@@ -266,7 +281,7 @@ local SEED_JOBS = {
         id = "seed_sci_vedushiy", time = 90, category = "science", order = 43, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Ведущий Учёный",
         desc = "Руководит экспериментами лично. Подписывает заключения по биологическим угрозам. 100 ХП / 100 брони.",
-        weapons = {}, hp = 100, armor = 100, max = 2, terminal = true, -- v4.8.8 «ЛИЧИНА»: шприц снят
+        weapons = { "weapon_polus11_syringe" }, hp = 100, armor = 100, max = 2, terminal = true, -- v4.9.1 «ИГЛА»: шприц возвращён — вся научная фракция
         color = Color(130, 200, 245),
         models = { "Models/UIF/scientists/UIF_scientist_7.mdl" },
     },
@@ -274,7 +289,7 @@ local SEED_JOBS = {
         id = "seed_sci_menedzher", time = 120, category = "science", order = 44, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Менеджер Научного Отдела",
         desc = "Отвечает за сметы, графики и допуски научного блока. Знает, кого и за что пускают в лаборатории. Одно место. 100 ХП / 100 брони.",
-        weapons = {}, hp = 100, armor = 100, max = 1, terminal = true, -- v4.8.8 «ЛИЧИНА»: шприц снят
+        weapons = { "weapon_polus11_syringe" }, hp = 100, armor = 100, max = 1, terminal = true, -- v4.9.1 «ИГЛА»: шприц возвращён — вся научная фракция
         color = Color(120, 190, 240),
         models = { "Models/UIF/scientists/UIF_scientist_7.mdl" },
     },
@@ -282,7 +297,7 @@ local SEED_JOBS = {
         id = "seed_sci_sozdatel", time = 180, category = "science", order = 45, -- допуск v4.6.6; v4.8.8 «ЛИЧИНА»: category/order/ВАЙТЛИСТ были СЪЕДЕНЫ комментарием (профы стояли ОТКРЫТЫ) — восстановлены
         name = "Создатель Научного Комплекса",
         desc = "Легенда «Полюс-11»: главный конструктор научного блока. Имеет допуск во ВСЕ отсеки, включая те, о которых нет в документах. Одно место. 100 ХП / 100 брони.",
-        weapons = {}, hp = 100, armor = 100, max = 1, terminal = true, command = true, -- v4.8.8 «ЛИЧИНА»: шприц снят
+        weapons = { "weapon_polus11_syringe" }, hp = 100, armor = 100, max = 1, terminal = true, command = true, -- v4.9.1 «ИГЛА»: шприц возвращён — вся научная фракция
         color = Color(105, 180, 235),
         models = { "Models/UIF/scientists/UIF_scientist_8.mdl" },
     },
@@ -737,6 +752,44 @@ local function SeedAll()
                 P11FW.SetJob(pl, P11FW.Config.DefaultJob, nil, true)
             end
         end
+
+    -- ---------- v4.9.1 «ИГЛА» МИГРАЦИЯ: порядок РККА + шприцы науке и медикам ----------
+    -- Заявка владельца: медсёстры выше, генералы — ПОСЛЕДНИЕ; вся научная
+    -- фракция носит/пользует шприц; медсёстрам вернуть шприц рядом с медкейсом.
+    do
+        local ORD = {
+            seed_rkka_medsestra = 36, seed_rkka_medglav = 37,
+            seed_rkka_general = 38, seed_rkka_generalpeh = 39,
+        }
+        local SYR = {
+            seed_sci_laborant = true, seed_sci_ucheniy = true,
+            seed_sci_biohim = true, seed_sci_vedushiy = true,
+            seed_sci_menedzher = true, seed_sci_sozdatel = true,
+            seed_rkka_medsestra = true, seed_rkka_medglav = true,
+        }
+        local changed = false
+        for _, rec in ipairs(P11FW.CustomJobs or {}) do
+            if rec and rec.id and not rec.iglaV491 then
+                if ORD[rec.id] then rec.order = ORD[rec.id] end
+                if SYR[rec.id] then
+                    rec.weapons = istable(rec.weapons) and rec.weapons or {}
+                    local has = false
+                    for _, w in ipairs(rec.weapons) do
+                        if w == "weapon_polus11_syringe" then has = true break end
+                    end
+                    if not has then rec.weapons[#rec.weapons + 1] = "weapon_polus11_syringe" end
+                end
+                rec.iglaV491 = true
+                changed = true
+            end
+        end
+        if changed then
+            P11FW.SaveCustomJobs()
+            P11FW.RegisterCustomJobs(P11FW.CustomJobs)
+            P11FW.SyncCustomJobs()
+            P11FW.Log("Сид v4.9.1 «ИГЛА»: порядок РККА (медсёстры выше, генералы последние, iglaV491); шприцы — вся наука + медсёстры")
+        end
+    end
 
         if changed then
             P11FW.SaveCustomJobs()

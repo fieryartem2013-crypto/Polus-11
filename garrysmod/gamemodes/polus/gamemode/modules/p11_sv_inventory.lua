@@ -27,20 +27,23 @@ local FILE = "polus11/inventory.json"
 
 POLUS11.Items = {
     -- ---- оружие из EFT/DOI (подбор владельца) ----
-    aks74u   = { name = "АКС-74У",          price = 4000, class = "arc9_eft_aks74u",        desc = "Короткий караулер. Штат ствол постовых РККА." },
-    aks74    = { name = "АК-74",            price = 5000, class = "arc9_eft_aks74",         desc = "Полноразмерный армейский автомат." },
-    ppsh41   = { name = "ППШ-41",           price = 6500, class = "arc9_eft_ppsh41",        desc = "«Папаша» штурмовика, косит в упор.", },
-    mosin    = { name = "Винтовка Мосина",  price = 5500, class = "arc9_eft_mosin_infantry",desc = "Разведывательная трёхлинейка, бьёт далеко." },
-    mr43     = { name = "МР-43 (двухств.)", price = 3500, class = "arc9_eft_mr43",          desc = "Двустволка: две причины не подходить." },
-    k98      = { name = "Mauser Kar98k",    price = 5000, class = "arc9_doi_k98",           desc = "Офицерский карабин особого отделa." },
+    aks74u   = { name = "АКС-74У",          price = 6000, class = "arc9_eft_aks74u",        desc = "Короткий караулер. Штат ствол постовых РККА. (цена v4.9.1)" },
+    aks74    = { name = "АК-74",            price = 7500, class = "arc9_eft_aks74",         desc = "Полноразмерный армейский автомат. (цена v4.9.1)" },
+    ppsh41   = { name = "ППШ-41",           price = 9500, class = "arc9_eft_ppsh41",        desc = "«Папаша» штурмовика, косит в упор. (цена v4.9.1)" },
+    mosin    = { name = "Винтовка Мосина",  price = 8000, class = "arc9_eft_mosin_infantry",desc = "Разведывательная трёхлинейка, бьёт далеко. (цена v4.9.1)" },
+    mr43     = { name = "МР-43 (двухств.)", price = 5000, class = "arc9_eft_mr43",          desc = "Двустволка: две причины не подходить. (цена v4.9.1)" },
+    k98      = { name = "Mauser Kar98k",    price = 7500, class = "arc9_doi_k98",           desc = "Офицерский карабин особого отделa. (цена v4.9.1)" },
+    rpd      = { name = "РПД (ручной пулемёт)", price = 12500, class = "weapon_polus11_rpd", desc = "v4.9.1 «ИГЛА»: диск на 75 патронов. Пока РПД говорит — Нечто не подходит. Скриптовый, паков не просит." },
     -- ---- станционный скарб ----
-    radio    = { name = "Рация",            price = 1200, class = "weapon_polus11_radio",   desc = "Эфир фракций: /r — текст, R — канал." },
-    ration   = { name = "Горячий паёк",     price = 250,  class = "weapon_polus11_ration",  desc = "Греет изнутри (+тепло, +немного ХП)." },
-    syringe  = { name = "Полевой шприц",    price = 800,  class = "weapon_polus11_syringe", desc = "Забор крови / экстренная обработка." },
-    chemlight= { name = "Химсвет (пачка)",  price = 150,  class = "weapon_polus11_chemlight",desc = "Кидай и размечай путь в облаке спор." },
-    scalpel  = { name = "Скальпель",        price = 600,  class = "weapon_polus11_scalpel", desc = "Хирургический. И не только хирургический." },
-    ampoule  = { name = "Ампула «Анальгин-С»", price = 300, class = "p11_ampoule",          desc = "Расходка медика для процедурной инъекции (+25 ХП). В руки не даётся." },
-    flamer   = { name = "Кустарный огнемёт",price = 7500, class = "weapon_polus11_flamethrower", desc = "Единственный надёжный аргумент против Нечто." },
+    radio    = { name = "Рация",            price = 1800, class = "weapon_polus11_radio",   desc = "Эфир фракций: /r — текст, R — канал. (цена v4.9.1)" },
+    ration   = { name = "Горячий паёк",     price = 400,  class = "weapon_polus11_ration",  desc = "Греет изнутри (+тепло, +немного ХП). (цена v4.9.1)" },
+    syringe  = { name = "Полевой шприц",    price = 1200, class = "weapon_polus11_syringe", desc = "Забор крови (наука) / обработка ран (медики, ПКМ). (цена v4.9.1)" },
+    medkit   = { name = "Полевой медкейс",  price = 1600, class = "weapon_polus11_medkit",  desc = "v4.9.1 «ИГЛА»: ванильный надёжный — ЛКМ +12 ХП, ПКМ +8. На ранах и обморожениях." },
+    ukol     = { name = "Инъектор «УКОЛ-С»", price = 950, class = "polus11_ukol", ent = true, desc = "v4.9.1 «ИГЛА»: энтити-инъектор, 2 заряда — E: мини-игра лечения (+8/+25/+40 ХП по точности)." },
+    chemlight= { name = "Химсвет (пачка)",  price = 250,  class = "weapon_polus11_chemlight",desc = "Кидай и размечай путь в облаке спор. (цена v4.9.1)" },
+    scalpel  = { name = "Скальпель",        price = 900,  class = "weapon_polus11_scalpel", desc = "Хирургический. И не только хирургический. (цена v4.9.1)" },
+    ampoule  = { name = "Ампула «Анальгин-С»", price = 450, class = "p11_ampoule",          desc = "Расходка медика для процедурной инъекции (+25 ХП). В руки не даётся. (цена v4.9.1)" },
+    flamer   = { name = "Кустарный огнемёт", price = 11500, class = "weapon_polus11_flamethrower", desc = "Единственный надёжный аргумент против Нечто. (цена v4.9.1)" },
 }
 
 -- ============ ДАННЫЕ ИГРОКОВ ============
@@ -123,7 +126,7 @@ end
 function POLUS11.ShopBuy(ply, id)
     local it = POLUS11.Items[id]
     if not it then return end
-    if id ~= "ampoule" and not POLUS11.InvCanUse(it.class) then
+    if id ~= "ampoule" and not it.ent and not POLUS11.InvCanUse(it.class) then
         POLUS11.Notify(ply, "«" .. it.name .. "» сейчас нет на складе (нет пака оружия на сервере).")
         ply:EmitSound("buttons/button10.wav", 60, 90)
         return
@@ -156,6 +159,23 @@ function POLUS11.InvUse(ply, id)
     end
     if id == "ampoule" then
         POLUS11.Notify(ply, "Ампула — расходка: шприц потратит её сам при процедурной инъекции.")
+        return
+    end
+    if it.ent == true then -- v4.9.1 «ИГЛА»: предмет-ЭНТИТИ (инъектор «УКОЛ-С») — спавнится перед тобой
+        local e = ents.Create(it.class)
+        if not IsValid(e) then
+            POLUS11.Notify(ply, "Склад ошибся упаковкой — «" .. it.name .. "» не собрался. Скажи Главе.")
+            return
+        end
+        e:SetPos(ply:GetPos() + ply:GetForward() * 45 + Vector(0, 0, 12))
+        e:Spawn()
+        e:Activate()
+        data.items[id] = data.items[id] - 1
+        if data.items[id] <= 0 then data.items[id] = nil end
+        DebouncedSave()
+        POLUS11.Notify(ply, "«" .. it.name .. "» — на полу перед тобой (E — применить).")
+        ply:EmitSound("buttons/button9.wav", 55, 110)
+        POLUS11.InvSync(ply)
         return
     end
     if not POLUS11.InvCanUse(it.class) then
