@@ -147,9 +147,17 @@ end)
 
 -- дверь 4: чат + консоль
 hook.Add("PlayerSay", "P11_ThingOfferChat", function(ply, text)
-    local t = string.lower(string.Trim(tostring(text or "")))
+    local raw = string.Trim(tostring(text or ""))
+    local t = string.lower(raw)
     if t == "!вакансия" or t == "!взять" or t == "!take" then
         POLUS11.ThingOfferTake(ply, "чат")
+        return ""
+    end
+    -- v4.15.2 «НАБОР»: чат-запуск ивента (ранг 4+): !ивент [стоп/статус] / !event [off/status]
+    local w1 = string.match(t, "^(%S+)") or ""
+    if w1 == "!ивент" or w1 == "!ИВЕНТ" or w1 == "!event" then
+        local w2 = string.match(t, "^%S+%s+(%S+)") or ""
+        EventSwitch(ply, w2)
         return ""
     end
 end)
@@ -197,6 +205,61 @@ concommand.Add("p11_offerdiag", function(ply)
     local txt = table.concat(out, "\n")
     if IsValid(ply) then ply:PrintMessage(HUD_PRINTCONSOLE, txt) else print(txt) end
 end)
+
+-- v4.15.2 «НАБОР» (заявка: «сделай команду по активации ивента с нечто
+-- и кадровиком»): ЯВНАЯ команда запуска/отмены ивента. Одна дверь для
+-- консоли и чата. Гейт: Administrator (4)+ (замок консоли Главы 16 — снаружи).
+local function EventSwitch(ply, arg)
+    if IsValid(ply) and not P11FW.Config.Admin(ply) then
+        POLUS11.Notify(ply, "Только администрация (ранг 4+) управляет ивентом Нечто.")
+        return false
+    end
+    arg = string.lower(string.Trim(tostring(arg or "")))
+    local active = POLUS11.ThingOfferActive()
+    local wantOpen  = (arg == "" and not active) or arg == "on" or arg == "open" or arg == "start"
+        or arg == "1" or arg == "открыть" or arg == "старт" or arg == "да"
+    local wantClose = arg == "off" or arg == "close" or arg == "stop" or arg == "0"
+        or arg == "закрыть" or arg == "стоп" or arg == "нет"
+    local wantStatus = arg == "status" or arg == "статус" or arg == "инфо"
+
+    if wantStatus then
+        local left = math.ceil(GetGlobalFloat("P11_ThingOfferUntil", 0) - CurTime())
+        local msg = "ИВЕНТ НЕЧТО: " .. (active and ("ОТКРЫТ (окно ещё ~" .. left .. " сек)")
+            or ("закрыт; плановая волна — раз в " .. (POLUS11.Config.ThingOfferGapMin or 900) ..
+                "–" .. (POLUS11.Config.ThingOfferGapMax or 1800) .. " сек"))
+        if IsValid(ply) then ply:PrintMessage(HUD_PRINTCONSOLE, msg) ply:ChatPrint(msg) else print(msg) end
+        return true
+    end
+
+    if wantClose or (arg == "" and active) then
+        if not active then
+            local msg = "ИВЕНТ НЕЧТО сейчас и так закрыт — отменять нечего."
+            if IsValid(ply) then ply:ChatPrint(msg) else print(msg) end
+            return true
+        end
+        ThingOfferClose("отменено ивент-командой")
+        PrintMessage(HUD_PRINTTALK, "[КАДРЫ] Особая вакансия ОТОЗВАНА администрацией.")
+        POLUS11.Log("ИВЕНТ НЕЧТО отменён вручную (" .. (IsValid(ply) and ply:Nick() or "RCON") .. ")")
+        return true
+    end
+
+    if active then
+        local left = math.ceil(GetGlobalFloat("P11_ThingOfferUntil", 0) - CurTime())
+        local msg = "ИВЕНТ НЕЧТО уже открыт (окно ещё ~" .. left .. " сек) — «стоп» отзовёт."
+        if IsValid(ply) then ply:ChatPrint(msg) else print(msg) end
+        return true
+    end
+    SetGlobalFloat("P11_ThingOfferUntil", 0) -- сброс флага планировщика
+    POLUS11.ThingOfferOpen(true)
+    POLUS11.Log("ИВЕНТ НЕЧТО запущен вручную (" .. (IsValid(ply) and ply:Nick() or "RCON") .. ")")
+    return true
+end
+POLUS11.ThingEventSwitch = EventSwitch
+
+-- явная ивент-команда: p11_thingevent [on/off/status]
+concommand.Add("p11_thingevent", function(ply, cmd, args)
+    EventSwitch(ply, args and args[1] or "")
+end, nil, "Ивент Нечто у кадровика: p11_thingevent on|off|status (без аргумента — переключить)")
 
 -- админская форс-вакансия (для ивентов): p11_offer
 concommand.Add("p11_offer", function(ply)

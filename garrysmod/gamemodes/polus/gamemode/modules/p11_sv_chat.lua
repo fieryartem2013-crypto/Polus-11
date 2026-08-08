@@ -166,6 +166,7 @@ local BANG_SERVER = {
     ["!обмен"] = true, ["!trade"] = true, -- p11_sv_trade
     ["!промо"] = true, ["!ПРОМО"] = true, ["!promo"] = true, -- p11_sv_promo v4.9.0 «ТАЛОН» (кириллица не lowercase'ится — оба регистра)
     ["!вакансия"] = true, ["!ВАКАНСИЯ"] = true, ["!взять"] = true, ["!ВЗЯТЬ"] = true, ["!take"] = true, -- p11_sv_thingoffer v4.9.3 «ГРОШ»
+    ["!ивент"] = true, ["!ИВЕНТ"] = true, ["!event"] = true, -- p11_sv_thingoffer v4.15.2 «НАБОР»: запуск/отмена ивента Нечто (ранг 4+)
     ["!крафт"] = true, ["!craft"] = true, ["!мастерская"] = true, ["!сборка"] = true, -- p11_sv_craft v4.10.0 «ГАРАЖ»
     ["!гараж"] = true, ["!garage"] = true, ["!авто"] = true, ["!машина"] = true, -- p11_sv_garage v4.10.0 «ГАРАЖ»
 }
