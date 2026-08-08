@@ -80,18 +80,29 @@ end
 local THING_HP = 400
 POLUS11.ThingHPValue = THING_HP
 
+-- v4.13.2 «КРЕПЬ» (заявка «свеп нечто автоматом даёт 400 хп, а то нечто
+-- как картонка»): живое значение тела нечто с клампом 100–5000; меняется
+-- без рестарта командой p11_thinghp <n>.
+local function ThingHPNow()
+    local v = tonumber(POLUS11.ThingHPValue) or THING_HP
+    if v < 100 then return 100 end
+    if v > 5000 then return 5000 end
+    return math.floor(v)
+end
+
 local function ThingHPPutOn(ply)
     if ply.P11_ThingHPSaved then return end -- плоть уже уплотнена
     local oldMax = ply:GetMaxHealth()
     if oldMax <= 0 then oldMax = 100 end
-    if oldMax >= THING_HP then
+    local hpNow = ThingHPNow()
+    if oldMax >= hpNow then
         -- максимум уже раздут (хвост брута/старой жизни): эталон — ХП профы
         oldMax = JobHP(ply)
-        if oldMax >= THING_HP then oldMax = 100 end
+        if oldMax >= hpNow then oldMax = 100 end
     end
     ply.P11_ThingHPSaved = oldMax
-    ply:SetMaxHealth(THING_HP)
-    ply:SetHealth(THING_HP) -- «автоматом даёт 400 ХП»: оброс — сразу полный
+    ply:SetMaxHealth(hpNow)
+    ply:SetHealth(hpNow) -- «автоматом даёт 400 ХП»: оброс — сразу полный
 end
 POLUS11.ThingHPPutOn = ThingHPPutOn
 
@@ -107,14 +118,24 @@ end
 POLUS11.ThingHPTakeOff = ThingHPTakeOff
 
 timer.Create("P11.ThingRootHP", 1, 0, function()
+    local hpNow = ThingHPNow()
     for _, ply in ipairs(player.GetAll()) do
         if IsValid(ply) and ply:Alive() then
             local boosted = (ply.P11_ThingHPSaved ~= nil)
-            if IsActiveThing(ply) and HasAnyClaw(ply) then
+            -- v4.13.2: СВЕП АВТОМАТОМ ДАЁТ ХП — достаточно самих когтей
+            -- (флаг активности больше не дверь: ивент-форма/выдача тоже живучи)
+            if HasAnyClaw(ply) then
                 if not boosted then
                     ThingHPPutOn(ply)
-                    RNotify(ply, "Плоть уплотнилась — тело нечто: " .. THING_HP .. " ХП.")
-                    RLog("тело нечто (" .. THING_HP .. " ХП) надето: " .. ply:Nick())
+                    RNotify(ply, "Плоть уплотнилась — тело нечто: " .. hpNow .. " ХП.")
+                    RLog("тело нечто (" .. hpNow .. " ХП) надето: " .. ply:Nick())
+                elseif ply:GetMaxHealth() ~= hpNow then
+                    -- внешний сброс / крутилка p11_thinghp — перевыставить
+                    local s = ply.P11_ThingHPSaved
+                    ply.P11_ThingHPSaved = nil
+                    ply:SetMaxHealth(s > 0 and s or 100)
+                    ThingHPPutOn(ply)
+                    RLog("тело нечто перевыставлено: " .. ply:Nick() .. " -> " .. hpNow .. " ХП")
                 end
             elseif boosted then
                 ThingHPTakeOff(ply)
@@ -122,6 +143,25 @@ timer.Create("P11.ThingRootHP", 1, 0, function()
             end
         end
     end
+end)
+
+-- живой тюнер тела нечто без рестарта: p11_thinghp / p11_thinghp 600
+concommand.Add("p11_thinghp", function(ply, cmd, args)
+    if IsValid(ply)
+    and not (P11FW.Config.Admin(ply) or (P11FW.GetRankLevel(ply) >= 16)) then
+        return
+    end
+    local v = tonumber(args and args[1] or "")
+    if not v then
+        local msg = "[ТУША] тело нечто сейчас: " .. ThingHPNow() .. " ХП (сток 400; 100-5000)"
+        if IsValid(ply) then ply:ChatPrint(msg) else print(msg) end
+        return
+    end
+    POLUS11.ThingHPValue = math.floor(v)
+    RLog("тело нечто перенастроено: " .. ThingHPNow() .. " ХП"
+        .. (IsValid(ply) and (" (" .. ply:Nick() .. ")") or ""))
+    local msg = "[ТУША] тело нечто = " .. ThingHPNow() .. " ХП — носители перевыставлены следующим тиком."
+    if IsValid(ply) then ply:ChatPrint(msg) else print(msg) end
 end)
 
 -- ============ ОБЁРТКИ ЯДРА (без накопления при auto-refresh) ============
@@ -309,6 +349,6 @@ concommand.Add("p11_thingroot", function(ply, cmd, args)
     if IsValid(ply) then ply:PrintMessage(HUD_PRINTCONSOLE, txt) else print(txt) end
 end)
 
-print("[POLUS-11] НЕЧТО «КОРЕНЬ» v4.13.1 «ТУША»: заражение НЕУБИВАЕМО до рестарта — смерть/смена профы переподтверждаются из снимка; "
+print("[POLUS-11] НЕЧТО «КОРЕНЬ» v4.13.2 «КРЕПЬ»: заражение НЕУБИВАЕМО до рестарта — смерть/смена профы переподтверждаются из снимка; "
     .. "личина переживает смену профы (P11_LastIdentity); чат/рация зовут тварь украденным именем; "
-    .. "СВЕП НЕЧТО АВТОМАТОМ ДАЁТ " .. THING_HP .. " ХП (когти есть и тварь активна — плоть уплотнена); диагностика p11_thingroot")
+    .. "СВЕП НЕЧТО АВТОМАТОМ ДАЁТ " .. ThingHPNow() .. " ХП (достаточно самих когтей; тюнер p11_thinghp); диагностика p11_thingroot")
