@@ -56,8 +56,6 @@ local POI = {
     polus11_lootarm    = { lbl = "🪖 АРМ. КОНТЕЙНЕР", col = Color(190, 225, 170), ready = true },
     polus11_hearth     = { lbl = "🔥 УГЛИ",           col = Color(255, 170, 90) },
     polus11_cappoint   = { lbl = "🚩 ТОЧКА ЗАХВАТА",   col = Color(235, 140, 90) },
-    polus11_seccam     = { lbl = "📷 ГЛАЗ",            col = Color(150, 190, 255) },
-    polus11_dspterm    = { lbl = "🖥 ТЕРМИНАЛ ДИСПЕТЧЕРА", col = Color(160, 195, 255) },
 }
 
 -- gps-состояние (общее с меню): цель наводки
