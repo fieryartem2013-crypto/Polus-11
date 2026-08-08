@@ -19,14 +19,16 @@
 --         3 RPLY + string (ответ-строка в чат пульта)
 --         4 DOORS         (синх списка дверей: u16 n, далее n ×
 --                          {string имя, bool locked, bool open})
+--        10 ENERGY (u8)    (v4.20.0 «ПОСТ»: синк батареи пульта ⚡)
 --    C→S  1 EXIT          (попросился выйти)
---         2 HP    + u16 entidx цели           (+25 ХП, кд 30с)
---         3 ARMOR + u16 entidx цели           (+50 брони, кд 30с)
---         4 WEAPON+ u16 entidx цели + u8 idx  (ствол каталога, кд 60с)
---         5 MARK  + u16 entidx цели           (маяк 60с орлам, кд 25с)
---         6 SIGNAL                            (эфир всем орлам, кд 20с)
---         7 DLOCK + u16 idx двери             (блок/разблок)
---         8 DOPEN + u16 idx двери             (открыть/закрыть)
+--         2 HP    + u16 entidx цели           (+25 ХП — 50⚡)
+--         3 ARMOR + u16 entidx цели           (+50 брони — 60⚡)
+--         4 WEAPON+ u16 entidx цели + u8 idx  (ствол каталога — 15..80⚡)
+--         5 MARK  + u16 entidx цели           (маяк 60с орлам — 20⚡)
+--         6 SIGNAL                            (эфир всем орлам — 10⚡)
+--         7 DLOCK + u16 idx двери             (блок/разблок, бесплатно)
+--         8 DOPEN + u16 idx двери             (открыть/закрыть, бесплатно)
+--         9 READY                             (пульт клиента жив — v4.19.2)
 -- ============================================================
 
 util.AddNetworkString("P11_Dsp")
@@ -39,19 +41,23 @@ local DOOR_CLASSES = {
     func_door_rotating = true,
 }
 
--- Арсенал Центра (ARC9 EFT; фолбэки на HL2-сток — как в сидах орлов)
+-- Арсенал Центра (ARC9 EFT; фолбэки на HL2-сток — как в сидах орлов).
+-- v4.20.0 «ПОСТ»: цены в ⚡ энергии пульта — по эталону владельца
+-- (кадры видео: действия 1–9 с подписями стоимости, батарея садится).
+-- Индексы 1..7 — зеркалятся клиентом (действия 3..9 на цифрах).
 local CATALOG = {
-    { name = "MP5A3",   entry = { "arc9_eft_mp5", "weapon_smg1" } },
-    { name = "UMP-45",  entry = { "arc9_eft_ump45", "arc9_eft_ump", "weapon_smg1" } },
-    { name = "M4A1",    entry = { "arc9_eft_m4a1", "weapon_ar2" } },
-    { name = "M1A",     entry = { "arc9_eft_m1a", "weapon_ar2" } },
-    { name = "SA-58",   entry = { "arc9_eft_sa58", "weapon_ar2" } },
-    { name = "M700",    entry = { "arc9_eft_m700", "weapon_crossbow" } },
-    { name = "Rem 870", entry = { "arc9_eft_m870", "weapon_shotgun" } },
-    { name = "M1911A1", entry = { "arc9_eft_m1911a1", "weapon_pistol" } },
+    { name = "M1911A1", cost = 15, entry = { "arc9_eft_m1911a1", "weapon_pistol" } },
+    { name = "MP5A3",   cost = 20, entry = { "arc9_eft_mp5", "weapon_smg1" } },
+    { name = "UMP-45",  cost = 25, entry = { "arc9_eft_ump45", "arc9_eft_ump", "weapon_smg1" } },
+    { name = "Rem 870", cost = 35, entry = { "arc9_eft_m870", "weapon_shotgun" } },
+    { name = "M4A1",    cost = 45, entry = { "arc9_eft_m4a1", "weapon_ar2" } },
+    { name = "M1A",     cost = 55, entry = { "arc9_eft_m1a", "weapon_ar2" } },
+    { name = "M700",    cost = 80, entry = { "arc9_eft_m700", "weapon_crossbow" } },
 }
 
-local CD = { hp = 30, armor = 30, weapon = 60, mark = 25, signal = 20, door = 0.8 }
+-- стоимость действий пульта в ⚡ энергии (батарея на сеанс — max 100,
+-- копится +2⚡/сек у работающего диспетчера)
+local COST = { hp = 50, armor = 60, mark = 20, signal = 10 }
 
 -- ============ ДОПУСК ============
 
@@ -123,9 +129,37 @@ local function SendDoors(ply)
     net.Send(ply)
 end
 
+local Sessions -- сеансы пульта (наполняется ниже, до первого вызова)
+
+-- ============ ЭНЕРГИЯ ПУЛЬТА (v4.20.0 «ПОСТ») ============
+-- op 10 (S→C): синк батареи (u8: 0..100)
+
+local function SendEnergy(ply)
+    local s = Sessions and Sessions[ply]
+    if not s then return end
+    net.Start(NET)
+        net.WriteUInt(10, 4)
+        net.WriteUInt(math.floor(s.energy or 100), 8)
+    net.Send(ply)
+end
+
+-- списать стоимость действия (false = мало энергии, клиент услышит)
+local function Spend(ply, cost)
+    local s = Sessions[ply]
+    if not s then return false end
+    if (s.energy or 0) < cost then
+        Reply(ply, "Энергии пульта мало (" .. math.floor(s.energy or 0) .. "⚡ < "
+            .. cost .. "⚡) — жди подзарядки.")
+        return false
+    end
+    s.energy = s.energy - cost
+    SendEnergy(ply)
+    return true
+end
+
 -- ============ СЕССИИ ============
 
-local Sessions = {} -- [ply] = { term = ent, cds = {} }
+Sessions = {} -- [ply] = { term = ent, cds = {}, energy = 0..100 }
 
 function POLUS11.DispatchClose(ply, why)
     if not IsValid(ply) then return end
@@ -165,13 +199,15 @@ function POLUS11.DispatchUse(ply, term)
         return
     end
 
-    Sessions[ply] = { term = term, cds = {}, since = CurTime(), ready = false } -- v4.19.2: READY-рукопожатие
+    Sessions[ply] = { term = term, cds = {}, since = CurTime(), ready = false,
+                      energy = 100 } -- v4.20.0 «ПОСТ»: батарея пульта 100⚡
     ply:Freeze(true)
 
     net.Start(NET)
         net.WriteUInt(1, 4) -- OPEN
     net.Send(ply)
     SendDoors(ply)
+    SendEnergy(ply) -- v4.20.0: сразу батарея 100⚡
 
     if POLUS11.Notify then
         POLUS11.Notify(ply, "Сеанс «ГЛАЗА» открыт: [A/D] — переключение, [SPACE] — камеры/люди, [E] — выход.")
@@ -184,6 +220,15 @@ end
 -- надзор за сеансами: терминал снесли / отошёл / умер / допуск снят
 timer.Create("P11.DspWatchdog", 1, 0, function()
     for ply, s in pairs(Sessions) do
+        -- v4.20.0 «ПОСТ»: батарея пульта копится сама (+2⚡/сек до 100)
+        if IsValid(ply) and ply:Alive() and s.ready and (s.energy or 100) < 100 then
+            s.energy = math.min(100, s.energy + 2)
+            local fl = math.floor(s.energy)
+            if fl ~= (s.LastEnergySent or -1) then
+                s.LastEnergySent = fl
+                SendEnergy(ply)
+            end
+        end
         if not (IsValid(ply) and ply:Alive()) then
             POLUS11.DispatchDrop(ply)
         elseif not s.ready and (s.since or 0) > 0 and CurTime() > s.since + 3 then
@@ -237,17 +282,9 @@ local function TargetOf(idx)
     return nil
 end
 
-local function CDok(ply, kind)
-    local s = Sessions[ply]
-    if not s then return false end
-    s.cds[kind] = s.cds[kind] or 0
-    if CurTime() < s.cds[kind] then
-        Reply(ply, "ГЛАЗ: канал перезаряжается ещё " .. math.ceil(s.cds[kind] - CurTime()) .. " сек.")
-        return false
-    end
-    s.cds[kind] = CurTime() + (CD[kind] or 1)
-    return true
-end
+-- v4.20.0 «ПОСТ»: старые секундные кд выдач заменены БАТАРЕЕЙ ⚡
+-- (Spend выше): подлечить 50⚡, броня 60⚡, стволы 15–80⚡, маяк 20⚡,
+-- сигнал 10⚡ — как в эталоне владельца (цифры 1–9, цены справа).
 
 local function LogLine(ply, txt)
     if P11FW and P11FW.Log then
@@ -279,37 +316,37 @@ net.Receive(NET, function(len, ply)
         return
     end
 
-    if op == 2 then -- медпомощь +25 ХП
+    if op == 2 then -- медпомощь +25 ХП (действие 1, цена 50⚡)
         local t = TargetOf(net.ReadUInt(16))
         if not t then Reply(ply, "Цели нет в эфире.") return end
-        if not CDok(ply, "hp") then return end
+        if not Spend(ply, COST.hp) then return end
         local mx = t.GetMaxHealth and t:GetMaxHealth() or 100
         t:SetHealth(math.min(mx, t:Health() + 25))
         if POLUS11.Notify then POLUS11.Notify(t, "📡 ЦЕНТР: полевая медпомощь — +25 ХП.") end
         Reply(ply, "ЦЕНТР → «" .. t:Nick() .. "»: +25 ХП.")
         LogLine(ply, "медпомощь (+25 ХП) для " .. t:Nick())
 
-    elseif op == 3 then -- бронежилет +50
+    elseif op == 3 then -- бронежилет +50 (действие 2, цена 60⚡)
         local t = TargetOf(net.ReadUInt(16))
         if not t then Reply(ply, "Цели нет в эфире.") return end
-        if not CDok(ply, "armor") then return end
+        if not Spend(ply, COST.armor) then return end
         t:SetArmor(math.min(255, t:Armor() + 50))
         if POLUS11.Notify then POLUS11.Notify(t, "📡 ЦЕНТР: бронежилет доставлен — +50.") end
         Reply(ply, "ЦЕНТР → «" .. t:Nick() .. "»: +50 брони.")
         LogLine(ply, "бронежилет (+50) для " .. t:Nick())
 
-    elseif op == 4 then -- ствол из каталога Центра
+    elseif op == 4 then -- ствол из каталога Центра (действия 3..9, цена из CATALOG)
         local t  = TargetOf(net.ReadUInt(16))
         local wi = tonumber(net.ReadUInt(8)) or 0
         local item = CATALOG[wi]
         if not t then Reply(ply, "Цели нет в эфире.") return end
         if not item then Reply(ply, "Позиции нет в каталоге.") return end
-        if not CDok(ply, "weapon") then return end
         local cls = POLUS11.ResolveWeaponClass and POLUS11.ResolveWeaponClass(item.entry) or nil
         if not cls then
             Reply(ply, "«" .. item.name .. "» недоступна: нет пака EFT и стокового ствола.")
             return
         end
+        if not Spend(ply, item.cost or 30) then return end
         local w = t:Give(cls)
         if IsValid(w) and w.GetPrimaryAmmoType then
             local am = w:GetPrimaryAmmoType()
@@ -319,16 +356,16 @@ net.Receive(NET, function(len, ply)
         Reply(ply, "ЦЕНТР → «" .. t:Nick() .. "»: «" .. item.name .. "» (" .. cls .. ").")
         LogLine(ply, "выдача «" .. item.name .. "» (" .. tostring(cls) .. ") для " .. t:Nick())
 
-    elseif op == 5 then -- маяк цели: 60 сек видят все орлы
+    elseif op == 5 then -- маяк цели: 60 сек видят все орлы (20⚡)
         local t = TargetOf(net.ReadUInt(16))
         if not t then Reply(ply, "Цели нет в эфире.") return end
-        if not CDok(ply, "mark") then return end
+        if not Spend(ply, COST.mark) then return end
         t:SetNWFloat("P11_DspMark", CurTime() + 60)
         Reply(ply, "Маяк на «" .. t:Nick() .. "»: 60 сек — в поле зрения всех орлов.")
         LogLine(ply, "маяк цели на " .. t:Nick())
 
-    elseif op == 6 then -- сигнал в эфир всем орлам
-        if not CDok(ply, "signal") then return end
+    elseif op == 6 then -- сигнал в эфир всем орлам (10⚡)
+        if not Spend(ply, COST.signal) then return end
         local msg = "📡 ЦЕНТР (диспетчер «" .. ply:Nick() .. "»): проверка связи — держать курс."
         for _, p in ipairs(player.GetAll()) do
             if IsValid(p) and IsEagle(p) then p:ChatPrint(msg) end
@@ -336,9 +373,8 @@ net.Receive(NET, function(len, ply)
         Reply(ply, "Сигнал ушёл всем орлам в эфире.")
         LogLine(ply, "сигнал орлам")
 
-    elseif op == 7 then -- дверь: блок / разблок
+    elseif op == 7 then -- дверь: блок / разблок (без цены, санити 0.25с общий)
         local i = tonumber(net.ReadUInt(16)) or 0
-        if not CDok(ply, "door") then return end
         local d = Doors()[i]
         if not IsValid(d) then Reply(ply, "Дверь больше не существует.") return end
         local st = DoorState[d] or {}
@@ -359,7 +395,6 @@ net.Receive(NET, function(len, ply)
 
     elseif op == 8 then -- дверь: открыть / закрыть
         local i = tonumber(net.ReadUInt(16)) or 0
-        if not CDok(ply, "door") then return end
         local d = Doors()[i]
         if not IsValid(d) then Reply(ply, "Дверь больше не существует.") return end
         local st = DoorState[d] or {}
@@ -403,4 +438,4 @@ concommand.Add("p11_dspxit", function(ply)
     end
 end)
 
-print("[POLUS-11] «ГЛАЗ»: диспетчер-камеры Красных Орлов v4.19.2 «ШЛЮЗ»")
+print("[POLUS-11] «ГЛАЗ»: диспетчер-камеры Красных Орлов v4.20.0 «ПОСТ»")
