@@ -218,6 +218,7 @@ function P11FW.OpenAdminMenu(forceTab)
         { id = "mod",       name = "МОДЕРАЦИЯ", perm = "warn", badge = "!" },
         { id = "acts",      name = "ДЕЙСТВИЯ",  minLevel = 4 },
         { id = "flux",      name = "💠 ПОТОК",  minLevel = 4 }, -- v4.14.2: КАЗНА — выдача трёх валют (ПФ/₽/⏱)
+        { id = "ann",       name = "ОПОВЕЩЕНИЕ", minLevel = 4 }, -- v4.18.0 «РЕПРОДУКТОР»: плашка всей станции
         { id = "jobs",      name = "ДОЛЖНОСТИ", minLevel = 14 },
         { id = "factions",  name = "ФРАКЦИИ",   minLevel = 14 },
         { id = "utils",     name = "УТИЛИТЫ",   minLevel = 14 },
@@ -1828,6 +1829,77 @@ function P11FW.OpenAdminMenu(forceTab)
     --  ВКЛАДКА: 💠 ПОТОК — выдача донат-валюты «ПОЛЮС-ФЛЮКС» (v4.14.1)
     --  Заявка владельца: «а где вкладка для выдачи донат валюты».
     -- ==================================================
+    do
+        -- ==== ВКЛАДКА «ОПОВЕЩЕНИЕ» (v4.18.0 «РЕПРОДУКТОР») ====
+        local p = NewTab("ann")
+        local ACc = Color(255, 205, 110) -- янтарь репродуктора
+
+        local title = vgui.Create("DLabel", p)
+        title:SetPos(16, 12) title:SetSize(824, 26)
+        title:SetFont("P11FW.Big") title:SetTextColor(ACc)
+        title:SetText("ОПОВЕЩЕНИЕ СТАНЦИИ — плашка у всех наверху экрана")
+
+        local sub = vgui.Create("DLabel", p)
+        sub:SetPos(16, 40) sub:SetSize(824, 34)
+        sub:SetFont("P11FW.Small") sub:SetTextColor(AC.dim)
+        sub:SetText("Ранг Administrator (4)+. До 220 знаков, висит 14 секунд у ВСЕХ игроков + дубль в чат. Каждый запуск пишется в журнал (кто/что).")
+
+        local entry = vgui.Create("DTextEntry", p)
+        entry:SetPos(16, 84) entry:SetSize(824, 150)
+        entry:SetMultiline(true)
+        entry:SetFont("P11FW.Text")
+        entry:SetPlaceholderText("Пиши текст оповещения… Пример: «Общее построение на плацу через 5 минут. Отсутствующие — по нарядам.»")
+        entry:SetUpdateOnType(true)
+
+        local cnt = vgui.Create("DLabel", p)
+        cnt:SetPos(16, 242) cnt:SetSize(824, 20)
+        cnt:SetFont("P11FW.Small") cnt:SetTextColor(AC.dim)
+        cnt:SetText("0 / 220 знаков")
+        entry.OnTextChanged = function(s2)
+            local t = s2:GetText() or ""
+            local n = #t
+            if n > 220 then
+                s2:SetText(string.sub(t, 1, 220))
+                s2:SetCaretPos(220)
+                n = 220
+            end
+            cnt:SetText(n .. " / 220 знаков")
+        end
+
+        local send = vgui.Create("DButton", p)
+        send:SetPos(16, 272) send:SetSize(824, 56) send:SetText("")
+        send.Paint = function(s2, w, h)
+            local t = string.Trim(entry:GetText() or "")
+            local ok = t ~= ""
+            draw.RoundedBox(8, 0, 0, w, h,
+                ok and (s2:IsHovered() and Color(54, 46, 20) or Color(40, 34, 15)) or Color(22, 24, 28))
+            surface.SetDrawColor(ok and ACc or AC.dim)
+            surface.DrawOutlinedRect(0, 0, w, h, 1)
+            draw.SimpleText(ok and "ЗАПУСТИТЬ ОПОВЕЩЕНИЕ ВСЕЙ СТАНЦИИ" or "строка пустая — пиши текст сверху",
+                "P11FW.Text", w / 2, h / 2,
+                ok and Color(255, 222, 140) or AC.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        end
+        send.DoClick = function()
+            local t = string.Trim(entry:GetText() or "")
+            if t == "" then
+                surface.PlaySound("buttons/button10.wav")
+                chat.AddText(ACc, "[РЕПРОДУКТОР] ", Color(235, 230, 215), "Текст пуст — плашке нечего сказать.")
+                return
+            end
+            net.Start("P11_Announce")
+                net.WriteString(t)
+            net.SendToServer()
+            surface.PlaySound("buttons/button17.wav")
+            entry:SetText("")
+            cnt:SetText("0 / 220 знаков")
+        end
+
+        local hint = vgui.Create("DLabel", p)
+        hint:SetPos(16, 338) hint:SetSize(824, 40)
+        hint:SetFont("P11FW.Small") hint:SetTextColor(AC.dim)
+        hint:SetText("Консольный канал той же трубы (для Главы, замок 16): p11_announce <текст>  •  сам себя оповещение тоже покажет — так задумано: сразу виден итоговый вид плашки.")
+    end
+
     do
         local p = NewTab("flux")
         local FC = Color(130, 220, 235) -- цвет потока

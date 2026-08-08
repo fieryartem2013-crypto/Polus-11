@@ -210,3 +210,86 @@ hook.Add("HUDPaint", "P11.FrostVignette", function()
         surface.DrawRect(cx, cy, 2, 2)
     end
 end)
+
+-- ============================================================
+--  v4.18.0 «РЕПРОДУКТОР» — ПЛАШКА ОПОВЕЩЕНИЯ СТАНЦИИ
+--  (заявка: «появляется плашка у всех наверху и там пишется текст,
+--  который напишешь, и отдельная вкладка»). Сервер: P11_Announce.
+--  Плашка живёт 14 сек с гаснущим хвостом + дубль в чат-историю.
+-- ============================================================
+
+local ANN = { text = nil, by = "", at = 0, till = 0 }
+
+local function AnnWrap(txt, font, maxW)
+    surface.SetFont(font)
+    local lines, cur = {}, ""
+    for w in string.gmatch(txt, "%S+") do
+        local try = (cur == "") and w or (cur .. " " .. w)
+        if surface.GetTextSize(try) <= maxW then
+            cur = try
+        else
+            if cur ~= "" then lines[#lines + 1] = cur end
+            cur = w
+        end
+        if #lines >= 3 then break end
+    end
+    if cur ~= "" and #lines < 3 then
+        lines[#lines + 1] = cur
+    end
+    return lines
+end
+
+net.Receive("P11_Announce", function()
+    local txt = string.sub(tostring(net.ReadString() or ""), 1, 220)
+    local by  = string.sub(tostring(net.ReadString() or "Администратор"), 1, 40)
+    ANN.text, ANN.by, ANN.at, ANN.till = txt, by, CurTime(), CurTime() + 14
+    surface.PlaySound("buttons/button17.wav")
+    -- дубль в чат: плашка гаснет через 14 сек, история остаётся
+    chat.AddText(Color(255, 205, 110), "[ОПОВЕЩЕНИЕ] ", Color(238, 242, 248), txt,
+        Color(150, 165, 180), " — " .. by)
+end)
+
+hook.Add("HUDPaint", "P11.AnnBanner", function()
+    if not ANN.text then return end
+    if CurTime() > ANN.till then ANN.text = nil return end
+
+    local alpha = 255
+    local left = ANN.till - CurTime()
+    if left < 1 then alpha = math.max(0, math.floor(255 * left)) end
+    -- лёгкий подъём в первые полсекунды
+    if CurTime() - ANN.at < 0.4 then
+        alpha = math.floor(alpha * (CurTime() - ANN.at) / 0.4)
+    end
+
+    local maxW = math.floor(ScrW() * 0.72)
+    local lines = AnnWrap(ANN.text, "P11.Alerts.Order", maxW)
+    surface.SetFont("P11.Alerts.Order")
+    local lw = 0
+    for _, l in ipairs(lines) do
+        local tw = surface.GetTextSize(l)
+        if tw > lw then lw = tw end
+    end
+
+    local w = math.min(lw + 72, ScrW() - 40)
+    local h = 46 + #lines * 27 + 26
+    local x = ScrW() / 2 - w / 2
+    local y = 128 -- ниже приказа/распорядка, над прицельной зоной
+
+    draw.RoundedBox(8, x, y, w, h, Color(14, 18, 26, math.floor(alpha * 0.94)))
+    surface.SetDrawColor(255, 205, 110, math.floor(alpha * 0.9))
+    surface.DrawOutlinedRect(x, y, w, h, 2)
+
+    draw.SimpleText("О П О В Е Щ Е Н И Е   С Т А Н Ц И И", "P11.Alerts.Small",
+        x + w / 2, y + 14, Color(255, 205, 110, alpha), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+
+    local ty = y + 40
+    for _, l in ipairs(lines) do
+        draw.SimpleTextOutlined(l, "P11.Alerts.Order", x + w / 2, ty + 12,
+            Color(240, 245, 250, alpha), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER,
+            1, Color(0, 0, 0, math.floor(alpha * 0.8)))
+        ty = ty + 27
+    end
+    draw.SimpleText("— " .. ANN.by, "P11.Alerts.Small", x + w / 2, ty + 10,
+        Color(150, 165, 180, alpha), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+end)
+

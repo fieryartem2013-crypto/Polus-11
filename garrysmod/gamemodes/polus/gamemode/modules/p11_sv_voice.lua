@@ -20,12 +20,21 @@
 --  намеренно возвращает nil — решение всегда за ЭТИМ хуком.
 -- ============================================================
 
+-- v4.18.0 «РЕПРОДУКТОР» (заявка «чат весь сервер слышно — уменьши радиус»):
+-- радиус местной речи уменьшен до 750u и вынесен в живой конвар
+-- p11_voiceradius (0 = по конфигу) — крутится без рестарта.
+local cvRad = CreateConVar("p11_voiceradius", "750", FCVAR_ARCHIVE,
+    "POLUS-11: радиус местной голосовой речи (юн), 0 = по конфигу")
+
 local function VC()
     local c = POLUS11.Config or {}
+    local h = cvRad:GetInt()
+    if h <= 0 then h = tonumber(c.VoiceHearRadius) or 750 end
     return {
-        hear = tonumber(c.VoiceHearRadius) or 950,
+        hear = h,
         full = tonumber(c.VoiceFullRadius) or 340,
         use3d = c.Voice3D ~= false,
+        allr = h * 3, -- «Общий» канал теперь полевой эфир (×3 местной речи)
     }
 end
 
@@ -41,13 +50,27 @@ local function RadioLinked(listener, talker)
     end
     local lch = listener:GetNWString("P11_RadioCh", "all")
     local tch = talker:GetNWString("P11_RadioCh", "all")
-    if lch == "all" or tch == "all" or lch == tch then
-        return true
-    end
-    -- проявившееся Нечто с рацией слышит весь эфир
+    -- проявившееся Нечто с рацией слышит весь эфир (как и раньше)
     if listener:GetNWBool("P11_Infected", false)
         and listener:GetNWBool("P11_InfActive", false) then
         return true
+    end
+    -- v4.18.0 «РЕПРОДУКТОР» (заявка «3D чат не работает — на всю карту
+    -- слышно»): КОРЕНЬ БЫЛ ЗДЕСЬ. «Общий» канал самолинковал ВЕСЬ сервер
+    -- в стерео (все профы носят рацию на «Общем») — отсюда «говоришь в
+    -- одном конце карты, слышно в другом как из-за плеча». Теперь:
+    --   • совпавшие ЯВНЫЕ каналы (не «all») — эфир на всю карту (суть
+    --     полевой рации: «Командный», «Наука» и т.д.);
+    --   • «Общий»+«Общий» — только ПОЛЕВОЙ эфир в пределах allr (×3
+    --     местной речи, по умолчанию 2250u): пост рядом слышит, другой
+    --     конец карты — нет;
+    --   • «Общий» ↔ явный канал в эфире НЕ встречаются.
+    if lch ~= "all" and tch ~= "all" and lch == tch then
+        return true
+    end
+    if lch == "all" and tch == "all" then
+        local rr = VC().allr
+        return listener:GetPos():DistToSqr(talker:GetPos()) <= rr * rr
     end
     return false
 end
@@ -95,9 +118,9 @@ concommand.Add("p11_voiceradio", function(ply)
     end
     POLUS11.Notify(ply, "📻 РАЦИЯ: у тебя " .. (has and "ЕСТЬ" or "НЕТ в снаряге — в эфир не выйдешь (возьми в ларьке/у командира)")
         .. " • канал: «" .. tostring(ch == "all" and "Общий" or ch) .. "»"
-        .. (ch == "all" and " (слышит каждый носитель рации)" or ""))
+        .. (ch == "all" and " (полевой эфир в пределах " .. VC().allr .. "u — дальше тишина)" or ""))
     POLUS11.Notify(ply, "📻 ЭФИР СЕЙЧАС: тебя в рации слышит живых: " .. linked .. ". Местная речь голосом — до "
         .. tostring(VC().hear) .. "u. Буря " .. (GetGlobalBool("P11_Storm", false) and "ИДЁТ — эфир глушится!" or "ясная — эфир работает."))
 end)
 
-print("[POLUS-11] 3D-голос v4.9.2 «ПРИЁМ»: местная речь до " .. VC().hear .. "u (затухание), рация — эфирным линком; самодиагностика p11_voiceradio")
+print("[POLUS-11] 3D-голос v4.18.0 «РЕПРОДУКТОР»: местная речь до " .. VC().hear .. "u (p11_voiceradius), «Общий» канал — полевой эфир до " .. VC().allr .. "u, явные каналы — на всю карту; самодиагностика p11_voiceradio")
