@@ -1,5 +1,5 @@
 -- ============================================================
---  ПОЛЮС-11 — «ГЛАЗ»: ПУЛЬТ ДИСПЕТЧЕРА (client) v4.20.1 «КЛАВИША»
+--  ПОЛЮС-11 — «ГЛАЗ»: ПУЛЬТ ДИСПЕТЧЕРА (client) v4.20.2 «БРОНЯ»
 --  Полный реворк по эталону владельца (кадры видео URF-полиции):
 --   • статик-шум при каждом переключении
 --   • крестовина W/A/S/D с именами каналов («Нет камеры» за краем)
@@ -62,6 +62,23 @@ local function IrisKeyCode()
     local kc = input.GetKeyCode(IrisKeyName())
     if not kc or kc < 0 then return KEY_G end
     return kc
+end
+
+local function Short(t, n)
+    t = tostring(t or "")
+    if #t <= n then return t end
+    return string.sub(t, 1, n - 1) .. "…"
+end
+
+-- v4.20.2 «БРОНЯ»: общий глушитель для pcall-обёрток хуков —
+-- ошибка печатается раз в 5 сек, хук НЕ умирает молча
+local lastGuiErr = 0
+local function GuiFail(tag, err)
+    if CurTime() < lastGuiErr then return end
+    lastGuiErr = CurTime() + 5
+    print("[ГЛАЗ][" .. tag .. "] " .. tostring(err))
+    chat.AddText(Color(255, 120, 110), "[ГЛАЗ] ошибка " .. tag .. " — модуль жив, пришли строку из консоли:",
+        Color(255, 255, 255), " " .. Short(tostring(err), 140))
 end
 
 surface.CreateFont("P11.Dsp.Title", { font = "Roboto", size = 19, weight = 800, extended = true })
@@ -133,11 +150,6 @@ local function DrawShield(x, y, s, col)
     })
 end
 
-local function Short(t, n)
-    t = tostring(t or "")
-    if #t <= n then return t end
-    return string.sub(t, 1, n - 1) .. "…"
-end
 
 -- ============ СПИСКИ ============
 
@@ -309,16 +321,14 @@ function D.Step(d)
     else
         D.sel = math.Clamp(D.sel + d, 1, n) -- НЕ wrap: за краем слот «Нет камеры»
     end
-    if D.sel ~= old or n <= 0 then
-        D.Zap()
-        if D.RebuildPanel and D.cursor then D.RebuildPanel() end
-    end
+    D.Zap() -- v4.20.2 «БРОНЯ»: шипит и у края — нажатие ВСЕГДА видно/слышно
+    if D.sel ~= old and D.RebuildPanel and D.cursor then D.RebuildPanel() end
 end
 
 -- ============ КЛАВА (железный контур чата) ============
 
 local nextKey = 0
-hook.Add("PlayerButtonDown", "P11.DspKeys", function(ply, key)
+local function DspKeysBody(ply, key)
     if not D.active then return end
     if ply ~= LocalPlayer() then return end
     if CurTime() < nextKey then return end
@@ -360,6 +370,23 @@ hook.Add("PlayerButtonDown", "P11.DspKeys", function(ply, key)
             DoAction(n)
         end
     end
+end
+
+hook.Add("PlayerButtonDown", "P11.DspKeys", function(ply, key)
+    local ok, err = pcall(DspKeysBody, ply, key)
+    if not ok then GuiFail("клава", err) end
+end)
+
+-- v4.20.2 «БРОНЯ»: ESC закрывает СЕАНС, а не меню игры — раньше нажатие
+-- глоталось движком ещё до PlayerButtonDown («на эскейп нельзя выйти»)
+hook.Add("OnPauseMenuShow", "P11.DspEsc", function()
+    if not D.active then return end
+    if CurTime() < nextKey then return false end -- антидребезг
+    nextKey = CurTime() + 0.5
+    if cvDbg:GetBool() then print("[ГЛАЗ→] выход: ESC (меню игры накрыто)") end
+    Send0(1)
+    D.Close()
+    return false -- меню не открываем: сначала — выход из пульта
 end)
 
 -- ============ САЙД-ПУЛЬТ (по средней кнопке; по умолчанию скрыт) ============
@@ -559,8 +586,10 @@ function D.Open()
     D.energy = 100 -- до первого op10; сервер шлёт сразу после OPEN
     if P11 and P11.ThirdPerson ~= nil then P11.ThirdPerson = false end -- вид пульта важнее F2
     D.BuildPanel()
+    D.since = CurTime() -- v4.20.2: первые 10 сек подсказка про среднюю кнопку мигает
     D.Zap() -- вход в эфир — со статик-шумом (эталон)
     surface.PlaySound("ambient/energy/zap9.wav")
+    chat.AddText(Color(150, 190, 255), "[ГЛАЗ] A/D — переключение • SPACE — камеры/люди • цифры 1–9 — действия • G — бинокль • СРЕДНЯЯ КНОПКА МЫШИ — курсор и пульт дверей • E/ESC — выход")
 end
 
 function D.Close()
@@ -584,7 +613,7 @@ end)
 
 -- ============ ВИД (камеры / 3-е лицо; бинокль = fov 28) ============
 
-hook.Add("CalcView", "P11.DspView", function(ply, pos, ang, fov)
+local function DspViewBody(ply, pos, ang, fov)
     if not D.active then return end
     if D.mode == "cam" then
         local c = SelEntity()
@@ -617,6 +646,12 @@ hook.Add("CalcView", "P11.DspView", function(ply, pos, ang, fov)
             }
         end
     end
+end
+
+hook.Add("CalcView", "P11.DspView", function(ply, pos, ang, fov)
+    local ok, v = pcall(DspViewBody, ply, pos, ang, fov)
+    if ok then return v end
+    GuiFail("вид", v)
 end)
 
 hook.Add("PreDrawViewModel", "P11.DspNoVM", function()
@@ -641,7 +676,7 @@ end
 
 local staticSeed = 0
 
-hook.Add("HUDPaint", "P11.DspHUD", function()
+local function DspHUDBody()
     local me = LocalPlayer()
 
     if D.active then
@@ -829,10 +864,14 @@ hook.Add("HUDPaint", "P11.DspHUD", function()
         draw.RoundedBox(4, cx + 30, by, 130, 34, Color(200, 45, 38, 225))
         draw.SimpleText("ВЫЙТИ  [E]", "P11.Dsp.Mid", cx + 95, by + 17,
             Color(255, 255, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-        -- подсказка курсора
+        -- подсказка курсора (первые 10 сек сеанса — пульсом, чтобы не проморгали)
+        local hintA = 210
+        if (D.since or 0) > 0 and CurTime() - D.since < 10 then
+            hintA = 110 + math.abs(math.sin(CurTime() * 6)) * 145
+        end
         draw.SimpleText("[средняя кнопка] — " .. (D.cursor and "скрыть" or "показать") .. " курсор / пульт дверей",
             "P11.Dsp.Small", cx + 240, by + 17,
-            Color(190, 205, 225, 210), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+            Color(190, 205, 225, hintA), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
     end
 
     -- 📍 маяк цели: горит у орлов (и у админа) поверх любой маскировки.
@@ -859,6 +898,11 @@ hook.Add("HUDPaint", "P11.DspHUD", function()
             end
         end
     end
+end
+
+hook.Add("HUDPaint", "P11.DspHUD", function()
+    local ok, err = pcall(DspHUDBody)
+    if not ok then GuiFail("кадр", err) end
 end)
 
 -- HUD-датчик сеанса (p11_dspdebug 1): видно, жив ли пульт и что шлём
@@ -876,4 +920,4 @@ hook.Add("HUDPaint", "P11.DspDebug", function()
         Color(140, 255, 160), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 end)
 
-print("[POLUS-11] «ГЛАЗ»: пульт диспетчера v4.20.1 «КЛАВИША» OK")
+print("[POLUS-11] «ГЛАЗ»: пульт диспетчера v4.20.2 «БРОНЯ» OK")
