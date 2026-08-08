@@ -137,22 +137,11 @@ function POLUS11.InvCanUse(class)
     return isstring(class) and weapons.Get(class) ~= nil
 end
 
--- v4.11.0 «КУЗНЯ» (заявка владельца: «при покупке на всех профах будет
--- выдаваться оружие, которое было куплено — исключение Нечто»):
--- купленный СТВОЛ кладётся СРАЗУ В РУКИ любой профессии. Единственное
--- исключение — активная Тварь: лапы не для ружей, ей покупка уходит
--- на склад по-старому (личина достанет из инвентаря сама).
-local GIVE_ON_BUY = {
-    aks74u = true, aks74 = true, ppsh41 = true, mosin = true,
-    mr43 = true, k98 = true, rpd = true, flamer = true, scalpel = true,
-}
-
--- активная Тварь (та самая, у которой когти) — по сетевому контракту ЛИЧИНЫ 3.0
-local function IsActiveThing(ply)
-    return IsValid(ply)
-        and ply:GetNWBool("P11_Infected", false)
-        and ply:GetNWBool("P11_InfActive", false)
-end
+-- v4.16.0 «ЗАХВАТ» (заявка владельца: «верни то, что оружие даётся
+-- в инвентарь, а не в руки сразу»): ветка GIVE_ON_BUY «купил — сразу
+-- в руки» (v4.11.0 «КУЗНЯ») ВЫРЕЗАНА вместе с нечто-исключением.
+-- Вся закупка — опять в инвентарь: достать в руки — 🎒 C-меню →
+-- ИСПОЛЬЗОВАТЬ, сдать обратно — кнопка «⬇ В БАГАЖ» (укладка v4.14.4).
 
 -- купить (зовёт ларёк)
 function POLUS11.ShopBuy(ply, id)
@@ -170,34 +159,11 @@ function POLUS11.ShopBuy(ply, id)
         ply:EmitSound("buttons/button10.wav", 60, 90)
         return
     end
-    -- v4.11.0 «КУЗНЯ»: купленный ствол — СРАЗУ В РУКИ (все профы без разбора;
-    -- активная Тварь — исключение: ей на склад, когти важнее ружья)
-    if GIVE_ON_BUY[id] and it.class then
-        if IsActiveThing(ply) then
-            -- общий путь ниже (в инвентарь)
-        elseif ply:HasWeapon(it.class) then
-            POLUS11.Notify(ply, "Такой ствол уже в руках — дубликат ушёл на склад (🎒 в C-меню).")
-            -- общий путь ниже (в инвентарь дубликатом)
-        else
-            ply:Give(it.class)
-            local w = ply:GetWeapon(it.class)
-            if IsValid(w) then
-                ply:SelectWeapon(it.class)
-                DebouncedSave()
-                POLUS11.Notify(ply, "«" .. it.name .. "» — сразу в руки. Патроны — там же, в ларьке.")
-                ply:ChatPrint("[ЛАРЁК] Выдал: «" .. it.name .. "» — уже в руках. Не забудь патроны.")
-                ply:EmitSound("items/ammo_pickup.wav", 60, 90)
-                POLUS11.InvSync(ply)
-                POLUS11.Log(ply:Nick() .. " купил " .. it.name .. " за " .. price .. "₽ (сразу в руки)")
-                return
-            end
-            -- дать не вышло (чудом) — упадёт в инвентарь общим путём
-        end
-    end
+    -- v4.16.0 «ЗАХВАТ»: всё уходит в инвентарь (как до «КУЗНИ»)
     local data = InvOf(ply)
     data.items[id] = (data.items[id] or 0) + 1
     DebouncedSave()
-    POLUS11.Notify(ply, "«" .. it.name .. "» — в твоём инвентаре (🎒 в C-меню).")
+    POLUS11.Notify(ply, "«" .. it.name .. "» — в твоём инвентаре, в руки НЕ даётся (🎒 C-меню → ИСПОЛЬЗОВАТЬ — достать, «⬇ В БАГАЖ» — сдать обратно).")
     ply:EmitSound("buttons/button15.wav", 60, 105)
     POLUS11.InvSync(ply)
     POLUS11.Log(ply:Nick() .. " купил " .. it.name .. " за " .. it.price .. "₽")
@@ -506,6 +472,7 @@ local PLACEABLE = {
     food      = "polus11_lootfood",   -- v4.15.0 «УГЛИ»: продовольственный ящик (лут, восполняется)
     arm       = "polus11_lootarm",    -- v4.15.0 «УГЛИ»: армейский контейнер (лут, восполняется)
     hearth    = "polus11_hearth",     -- v4.15.0 «УГЛИ»: буржуйка — топливо из 🎒 → жар греет станцию
+    flag      = "polus11_cappoint",   -- v4.16.0 «ЗАХВАТ»: точка захвата РККА ↔ Орёл (шкала/оклад)
 }
 
 local function PlaceFile(role)

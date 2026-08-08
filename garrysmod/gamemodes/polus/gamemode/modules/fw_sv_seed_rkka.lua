@@ -343,8 +343,8 @@ local SEED_JOBS = {
     {
         id = "seed_eagle_agent", time = 90, category = "eagle", order = 60, whitelist = true,
         name = "Агент «Красного Орла»",
-        desc = "Легат резидентуры: сбор данных, наблюдение, связь. Базовая легенда — солдат армии США по документам обмена. Кейс «ЛЕГАТ» одевает бойцом РККА с липовыми позывным, должностью и документом. Табельный M1911A1. 110 ХП / 50 брони.",
-        weapons = { "weapon_polus11_disguise", { "arc9_eft_m1911a1", "weapon_pistol" }, "weapon_polus11_radio" },
+        desc = "Легат резидентуры: сбор данных, наблюдение, связь. Базовая легенда — солдат армии США по документам обмена. Кейс «ЛЕГАТ» одевает бойцом РККА с липовыми позывным, должностью и документом. MP5A3 под пальто + табельный M1911A1 (v4.16.0). 110 ХП / 50 брони.",
+        weapons = { "weapon_polus11_disguise", { "arc9_eft_mp5", "weapon_smg1" }, { "arc9_eft_m1911a1", "weapon_pistol" }, "weapon_polus11_radio" },
         hp = 110, armor = 50, max = 3,
         color = Color(90, 130, 200),
         models = {
@@ -358,8 +358,8 @@ local SEED_JOBS = {
     {
         id = "seed_eagle_saboteur", time = 240, category = "eagle", order = 61, whitelist = true,
         name = "Диверсант «Красного Орла»",
-        desc = "Силовое прикрытие резидентуры: взлом, поджоги, тихая ликвидация свидетелей. ИСКЛЮЧЕНИЕ ЦЕНТРА: Velociraptor .300 BLK с интегральным глушителем (при наличии пака, иначе — помпа Rem 870). M1911A1, гранаты. Кейс «ЛЕГАТ» в снаряге. 125 ХП / 100 брони.",
-        weapons = { "weapon_polus11_disguise", { "arc9_eft_velociraptor", "arc9_eft_m870", "weapon_shotgun" }, { "arc9_eft_m1911a1", "weapon_pistol" }, "weapon_frag" },
+        desc = "Силовое прикрытие резидентуры: взлом, поджоги, тихая ликвидация свидетелей. ИСКЛЮЧЕНИЕ ЦЕНТРА: Velociraptor .300 BLK с интегральным глушителем (при наличии пака, иначе — помпа Rem 870). M1911A1, гранаты, снайперская M700 (v4.16.0). Кейс «ЛЕГАТ» в снаряге. 125 ХП / 100 брони.",
+        weapons = { "weapon_polus11_disguise", { "arc9_eft_velociraptor", "arc9_eft_m870", "weapon_shotgun" }, { "arc9_eft_m700", "weapon_crossbow" }, { "arc9_eft_m1911a1", "weapon_pistol" }, "weapon_frag" },
         hp = 125, armor = 100, max = 2,
         color = Color(80, 118, 190),
         models = {
@@ -373,8 +373,8 @@ local SEED_JOBS = {
     {
         id = "seed_eagle_operator", time = 150, category = "eagle", order = 62, whitelist = true,
         name = "Оператор «Красного Орла»",
-        desc = "Младший командный состав резидентуры: водитель, радист полевого звена, «решала». Кейс «ЛЕГАТ», M1911A1, помповик Rem 870. 110 ХП / 75 брони.",
-        weapons = { "weapon_polus11_disguise", { "arc9_eft_m1911a1", "weapon_pistol" }, { "arc9_eft_m870", "weapon_shotgun" }, "weapon_polus11_radio" },
+        desc = "Младший командный состав резидентуры: водитель, радист полевого звена, «решала». Карабин M4 (v4.16.0), помповик Rem 870, M1911A1, кейс «ЛЕГАТ». 110 ХП / 75 брони.",
+        weapons = { "weapon_polus11_disguise", { "arc9_eft_m4a1", "weapon_ar2" }, { "arc9_eft_m1911a1", "weapon_pistol" }, { "arc9_eft_m870", "weapon_shotgun" }, "weapon_polus11_radio" },
         hp = 110, armor = 75, max = 2,
         color = Color(100, 142, 210),
         models = {
@@ -388,8 +388,8 @@ local SEED_JOBS = {
     {
         id = "seed_eagle_rezident", time = 360, category = "eagle", order = 63, whitelist = true,
         name = "Резидент «Красного Орла»",
-        desc = "Глава резидентуры. Отдаёт волю агентам, выносит итоговые решения Центра. Colt Python .357 — личный револьвер, кейс «ЛЕГАТ» и рация. Одно место. 110 ХП / 75 брони.",
-        weapons = { "weapon_polus11_disguise", "weapon_357", "weapon_polus11_radio" },
+        desc = "Глава резидентуры. Отдаёт волю агентам, выносит итоговые решения Центра. SA-58 OSW и Colt Python .357 — личная пара (v4.16.0), кейс «ЛЕГАТ» и рация. Одно место. 110 ХП / 75 брони.",
+        weapons = { "weapon_polus11_disguise", { "arc9_eft_sa58", "arc9_eft_m1a", "weapon_ar2" }, "weapon_357", "weapon_polus11_radio" },
         hp = 110, armor = 75, max = 1,
         color = Color(120, 155, 225),
         models = {
@@ -401,8 +401,8 @@ local SEED_JOBS = {
     {
         id = "seed_eagle_komandir", time = 480, category = "eagle", order = 64, whitelist = true,
         name = "Командир Отряда «Красный Орёл»",
-        desc = "Старший состав ЦРУ: полевое командование всей резидентурой в Арктике. Python .357, кейс «ЛЕГАТ», рация. Одно место. 130 ХП / 100 брони.",
-        weapons = { "weapon_polus11_disguise", "weapon_357", "weapon_polus11_radio" },
+        desc = "Старший состав ЦРУ: полевое командование всей резидентурой в Арктике. M1A SOCOM (v4.16.0), Python .357, кейс «ЛЕГАТ», рация. Одно место. 130 ХП / 100 брони.",
+        weapons = { "weapon_polus11_disguise", { "arc9_eft_m1a", "arc9_eft_m4a1", "weapon_ar2" }, "weapon_357", "weapon_polus11_radio" },
         hp = 130, armor = 100, max = 1,
         color = Color(105, 140, 215),
         models = {
@@ -416,8 +416,8 @@ local SEED_JOBS = {
     {
         id = "seed_eagle_svyaznoi", time = 0, category = "eagle", order = 59, -- БЕЗ вайтлиста, БЕЗ кейса: заявка владельца «одна профа без кейса и без вайтлиста»
         name = "Связной «Красного Орла»",
-        desc = "Единственная ОТКРЫТАЯ вакансия отряда: радист-шифровальщик под негласной легендой тыловика. Кейса нет — работает прямым текстом, без маскировки. M1911A1, рация с прослушкой эфира станции. 100 ХП / 25 брони.",
-        weapons = { { "arc9_eft_m1911a1", "weapon_pistol" }, "weapon_polus11_radio" },
+        desc = "Единственная ОТКРЫТАЯ вакансия отряда: радист-шифровальщик под негласной легендой тыловика. Кейса нет — работает прямым текстом, без маскировки. UMP-45 и M1911A1 (v4.16.0), рация с прослушкой эфира станции. 100 ХП / 25 брони.",
+        weapons = { { "arc9_eft_ump45", "arc9_eft_ump", "weapon_smg1" }, { "arc9_eft_m1911a1", "weapon_pistol" }, "weapon_polus11_radio" },
         hp = 100, armor = 25, max = 2,
         color = Color(140, 165, 215),
         models = {
@@ -722,6 +722,33 @@ local function SeedAll()
             P11FW.RegisterCustomJobs(P11FW.CustomJobs)
             P11FW.SyncCustomJobs()
             P11FW.Log("Сид v4.8.6: Орёл усилен (хп/броня/модели usarmy/Velociraptor диверсанту, eagleV486), НКВД fem-модель шефу и заму (femV486)")
+        end
+    end
+
+    -- ---------- v4.16.0 «ЗАХВАТ»: ОРЁЛ ПОЛУЧАЕТ ДЛИННЫЕ СТВОЛЫ ----------
+    -- Заявка владельца: «дай больше вооружения американцам, чтобы воевать
+    -- могли». Живой штат доезжает из SEED_JOBS одноразово (флаг eagleV416):
+    -- MP5 агенту, UMP связному, M4 оператору, SA-58 резиденту, M1A
+    -- командиру, M700 диверсанту. Кандидаты с фолбэками как раньше —
+    -- пака нет: тихо возьмётся HL2-сток, профы не ломаются.
+    do
+        local seedById = {}
+        for _, j in ipairs(SEED_JOBS) do seedById[j.id] = j end
+        local changed = false
+        for _, rec in ipairs(P11FW.CustomJobs or {}) do
+            local upd = seedById[rec.id]
+            if upd and string.StartWith(tostring(rec.id), "seed_eagle_") and not rec.eagleV416 then
+                rec.weapons = upd.weapons
+                rec.desc = upd.desc
+                rec.eagleV416 = true
+                changed = true
+            end
+        end
+        if changed then
+            P11FW.SaveCustomJobs()
+            P11FW.RegisterCustomJobs(P11FW.CustomJobs)
+            P11FW.SyncCustomJobs()
+            P11FW.Log("Сид v4.16.0 «ЗАХВАТ»: Орёл перевооружён — MP5/UMP/M4/SA-58/M1A/M700 в строй (eagleV416)")
         end
     end
 

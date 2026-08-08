@@ -55,6 +55,7 @@ local POI = {
     polus11_lootfood   = { lbl = "🥫 ПРОД. ЯЩИК",    col = Color(235, 215, 140), ready = true },
     polus11_lootarm    = { lbl = "🪖 АРМ. КОНТЕЙНЕР", col = Color(190, 225, 170), ready = true },
     polus11_hearth     = { lbl = "🔥 УГЛИ",           col = Color(255, 170, 90) },
+    polus11_cappoint   = { lbl = "🚩 ТОЧКА ЗАХВАТА",   col = Color(235, 140, 90) },
 }
 
 -- gps-состояние (общее с меню): цель наводки

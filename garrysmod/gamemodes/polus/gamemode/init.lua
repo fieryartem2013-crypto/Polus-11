@@ -60,6 +60,7 @@ local send = {
     "modules/p11_cl_thingkit.lua",    -- v4.10.0 «ГАРАЖ»: пульт тела Нечто «ЛИЧИНА 3.0» (заменяет меню мутаций)
     "modules/p11_cl_pchat.lua",       -- v4.14.2 «КАЗНА»: ПОЧИНКА — «СВЯЗЬ» теперь РЕАЛЬНО уезжает клиентам (была пропущена в send-листе!)
     "modules/p11_cl_kazna.lua",       -- v4.14.2 «КАЗНА»: окно-ростер казны (💠 ПФ/₽/⏱)
+    "modules/p11_cl_capture.lua",     -- v4.16.0 «ЗАХВАТ»: HUD точки РККА↔Орёл (владелец/шкала/бой)
 }
 for _, f in ipairs(send) do
     AddCSLuaFile(f)
