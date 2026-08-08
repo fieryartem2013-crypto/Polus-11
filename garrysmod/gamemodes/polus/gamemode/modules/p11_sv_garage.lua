@@ -197,6 +197,8 @@ function POLUS11.GarageBuy(ply, id)
     end
 
     if price > 0 then
+        -- v4.14.5 «ТИШИНА»: перед «нет денег» — авто-лечение кошелька из сейва
+        if POLUS11.MoneyResync then POLUS11.MoneyResync(ply) end
         if not POLUS11.TakeMoney(ply, price, "гараж: " .. it.name) then
             POLUS11.Notify(ply, "Не хватает " .. (price - POLUS11.GetMoney(ply)) ..
                 "₽. Цена: " .. price .. "₽, у тебя: " .. POLUS11.GetMoney(ply) .. "₽.")

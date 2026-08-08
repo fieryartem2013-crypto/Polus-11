@@ -99,6 +99,8 @@ end
 
 function POLUS11.InvSync(ply)
     if not IsValid(ply) then return end
+    -- v4.14.5 «ТИШИНА»: синк инвентаря заодно чинит клиентский кошелёк
+    ply:SetNWInt("P11_Money", POLUS11.GetMoney(ply))
     local data = InvOf(ply)
     -- каталог шлём тоже (цены могут правиться без рестарта)
     local cat = {}

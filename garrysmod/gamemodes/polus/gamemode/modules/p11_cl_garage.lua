@@ -39,7 +39,9 @@ local function OpenGarageWindow()
     CloseGarage()
 
     local me = LocalPlayer()
-    local money = IsValid(me) and me:GetNWInt("P11_Money", 0) or 0
+    -- v4.14.5 «ТИШИНА»: показываем то же, что HUD-чип (max двух каналов денег)
+    local money = IsValid(me)
+        and math.max((P11.Eco and tonumber(P11.Eco.money)) or 0, me:GetNWInt("P11_Money", 0)) or 0
 
     local W, H = 680, 170 + 96 * math.max(1, #P11G.Cat)
     if H > ScrH() - 80 then H = ScrH() - 80 end

@@ -87,6 +87,31 @@ end
 
 -- ============ ЖИЗНЕННЫЙ ЦИКЛ ============
 
+-- v4.14.5 «ТИШИНА»: авто-лечение кошелька (заявка «у автоторговца пишет
+-- нет денег, хотя меню показывает 30к; после ларька показались»).
+-- Если в сейве на диске БОЛЬШЕ, чем в памяти (гонка загрузки/перезапись),
+-- дотягиваем из сейва; попутно всегда чиним клиентский NWInt. Зовём
+-- перед крупными покупками (гараж) и на каждом инвентарь-синке.
+function POLUS11.MoneyResync(ply)
+    if not IsValid(ply) then return 0 end
+    local mem = tonumber(POLUS11.Wallet[ply:SteamID()])
+    if mem == nil then return POLUS11.GetMoney(ply) end
+    local disk = nil
+    if file.Exists(FILE, "DATA") then
+        local ok, tbl = pcall(util.JSONToTable, file.Read(FILE, "DATA") or "")
+        if ok and istable(tbl) then disk = tonumber(tbl[ply:SteamID()]) end
+    end
+    if disk and disk > mem then
+        POLUS11.Wallet[ply:SteamID()] = disk
+        ply:SetNWInt("P11_Money", disk)
+        local msg = "кошелёк дотянут из сейва: " .. mem .. "₽ -> " .. disk .. "₽ (" .. ply:Nick() .. ")"
+        if POLUS11.Log then POLUS11.Log("ЭКОНОМИКА: " .. msg) else print("[POLUS-11] " .. msg) end
+        return disk
+    end
+    ply:SetNWInt("P11_Money", mem) -- попутно лечим клиентское отображение
+    return mem
+end
+
 hook.Add("PlayerInitialSpawn", "P11.WalletJoin", function(ply)
     timer.Simple(3, function()
         if IsValid(ply) then ply:SetNWInt("P11_Money", POLUS11.GetMoney(ply)) end
