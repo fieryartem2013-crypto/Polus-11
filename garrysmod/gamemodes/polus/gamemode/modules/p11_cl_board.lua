@@ -234,7 +234,11 @@ local function DrawRow(d, x, y, W)
     local marks = ""
     if not d.alive then marks = marks .. " †" end
     if d.muted then marks = marks .. " 🔇" end
-    if P11B.amAdmin and d.disguised then marks = marks .. "  (наст.: " .. d.real .. ")" end
+    -- v4.18.1 «ГРИМ» (заявка с фото «(наст.: …) в табе»): суффикс настоящего
+    -- ника при маскировке ВЫРЕЗАН из табло — легенда «ЛЕГАТ»/«ОБСЛУГА»/
+    -- личина больше не палится прямо в TAB ни у кого. Шпионское зеркало
+    -- осталось только в консольном p11_spies (Глава, ранг 16) — по запросу,
+    -- а не на всеобщем обозрении.
     if P11B.amAdmin and d.infected then marks = marks .. " ☣" end
     if marks ~= "" then
         draw.SimpleText(marks, "P11B.Tiny", nx + wN + 6, cy, Color(150, 160, 175, 190), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
