@@ -143,7 +143,21 @@ function objMessage.AppendEntity(self, ent)
   if ent == NULL then
     self:AppendArg(msgArgTypes.TEXT, "NULL")
   elseif ent:IsPlayer() then
-    self:AppendArg(msgArgTypes.PLAYER, { name = ent:Nick(), color = hook.Run("GetTeamColor", ent), steamID = ent:SteamID() })
+    -- ПОЛЮС-11 «КОРЕНЬ» v4.13.0: ПОЛНАЯ МАСКИРОВКА — тварь в чужой
+    -- шкуре и в ЧАТЕ зовётся украденным позывным, цветом чужой
+    -- должности; ссылка на стим-профиль прячется (не спалить тварь).
+    local name, color, steamID = ent:Nick(), hook.Run("GetTeamColor", ent), ent:SteamID()
+    local fake = ent.GetNWString and ent:GetNWString("P11_FakeNick", "") or ""
+    if fake ~= "" then
+      name = fake
+      steamID = nil
+      local fj = tonumber(ent:GetNWInt("P11_FakeJob", 0)) or 0
+      if fj > 0 and team.GetName(fj) and team.GetName(fj) ~= "" then
+        local fc = team.GetColor(fj)
+        if fc then color = fc end
+      end
+    end
+    self:AppendArg(msgArgTypes.PLAYER, { name = name, color = color, steamID = steamID })
   else
     self:AppendArg(msgArgTypes.TEXT, ent:GetClass())
   end

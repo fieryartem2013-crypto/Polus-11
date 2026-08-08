@@ -108,6 +108,9 @@ hook.Add("PlayerSay", "P11_RadioSay", function(ply, text)
 
     local garble = storm and POLUS11.Config.RadioStormGarble or POLUS11.Config.RadioGarble
 
+    -- v4.13.0 «КОРЕНЬ»: эфир подписан ЛИЧИНОЙ (полная маскировка в эфире)
+    local airName = (POLUS11.DisplayName and POLUS11.DisplayName(ply)) or ply:Nick()
+
     for _, recv in ipairs(player.GetAll()) do
         if recv ~= ply and POLUS11.HasRadio(recv) then
             local rch = recv:GetNWString("P11_RadioCh", "all") -- v4.8.1
@@ -122,16 +125,19 @@ hook.Add("PlayerSay", "P11_RadioSay", function(ply, text)
                     finalMsg = Garble(msg, garble)
                 end
 
-                recv:ChatPrint("[Рация:" .. chName .. "] " .. ply:Nick() .. ": " .. finalMsg)
+                recv:ChatPrint("[Рация:" .. chName .. "] " .. airName .. ": " .. finalMsg)
                 recv:SendLua([[surface.PlaySound("buttons/combine_button" .. math.random(1,3) .. ".wav")]])
             end
         end
     end
 
-    -- отправитель слышит себя
-    ply:ChatPrint("[Рация:" .. chName .. "] " .. ply:Nick() .. ": " .. msg)
+    -- отправитель слышит себя (тоже под личиной — иначе сам себя спалит)
+    ply:ChatPrint("[Рация:" .. chName .. "] " .. airName .. ": " .. msg)
 
-    POLUS11.Log("РАЦИЯ [" .. chName .. "] " .. ply:Nick() .. ": " .. msg)
+    -- лог сервера — ЧЕСТНЫЙ: настоящее имя + маска, если вылез в эфир чужим
+    POLUS11.Log("РАЦИЯ [" .. chName .. "] " .. ply:Nick()
+        .. ((airName ~= ply:Nick()) and (" (в эфире как «" .. airName .. "»)") or "")
+        .. ": " .. msg)
     if POLUS11.TaskEvent then POLUS11.TaskEvent(ply, "radio") end -- задача охраны
     return ""
 end)
