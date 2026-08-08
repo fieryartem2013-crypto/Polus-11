@@ -458,7 +458,12 @@ function CH.Build()
 
     function entry:OnEnter() CH.Submit() end
     function entry:OnKeyCodeTyped(code)
-        if code == KEY_ESCAPE then
+        if code == KEY_ENTER then
+            -- v4.15.4 «ОБХОД»: Enter-дубль (заявка «при нажатии Enter не
+            -- отправляется сообщение») — если OnEnter не дозвонился, шлёт он
+            CH.Submit()
+            return true
+        elseif code == KEY_ESCAPE then
             CH.Close()
             gui.HideGameUI()
             return true
@@ -597,7 +602,9 @@ function CH.Open()
     CH.Entry:SetKeyboardInputEnabled(true)
     f:MakePopup()
     f:MoveToFront()
-    gui.EnableScreenClicker(true) -- страховь курсора (попап его и так даст)
+    -- v4.15.4 «ОБХОД»: EnableScreenClicker УБРАН НАГЛУХО — он выключает
+    -- клавиатуру у фокусных дерма-полей (именно он убивал печать и Enter).
+    -- Курсор даёт MakePopup, ему помощь не нужна.
     surface.PlaySound("UI/buttonclickrelease.wav")
     -- v4.15.0 «УГЛИ»: фокус строго СЛЕДУЮЩИМ тиком — в тот же тик поле ещё
     -- «не нарисовалось» и фокус молча слетал (отсюда «не могу писать»)
@@ -622,7 +629,7 @@ function CH.Close()
         CH.Frame:SetKeyboardInputEnabled(false)
         CH.Frame:KillFocus()
     end
-    gui.EnableScreenClicker(false) -- v4.15.3: парно к страховке в Open
+
     if IsValid(LocalPlayer()) then LocalPlayer().bonchatIsTyping = false end
 end
 
@@ -631,6 +638,8 @@ function CH.Submit()
     local txt = string.Trim(IsValid(CH.Entry) and (CH.Entry:GetText() or "") or "")
     if txt ~= "" then
         local full = string.sub(m.pfx .. txt, 1, 300)
+        CH._lastSubmit = m.id .. ": " .. txt -- v4.15.4: указатель в датчике
+        print("[СВЯЗЬ→] " .. full) -- честный след в клиентской консоли
         RunConsoleCommand("say", full)
         CH.Hist[#CH.Hist + 1] = txt
         while #CH.Hist > 40 do table.remove(CH.Hist, 1) end
@@ -685,7 +694,7 @@ timer.Simple(1, function()
             print("[P11CHAT-СВЯЗЬ] свой чат старший — BonChat усыплён (вернуть: p11_ownchat 0)")
         end
     end
-    print("[P11CHAT-СВЯЗЬ] v4.15.3 «КУРСОР» OK — ЖЕЛЕЗНЫЙ ввод: клик по чату = фокус поля, клик по полосе = канал (ручной хит-тест), ESC×2 контура, чат шире; выкл: p11_ownchat 0")
+    print("[P11CHAT-СВЯЗЬ] v4.15.4 «ОБХОД» OK — кликер-яд убран наглухо (Enter/печать воскресли), Enter дублируется вторым контуром, хит-тест каналов, датчик p11_pchatdebug 1, канал с консоли p11_chmode; выкл чата: p11_ownchat 0")
 end)
 
 -- переключение рубильника на лету
@@ -702,6 +711,42 @@ cvars.AddChangeCallback("p11_ownchat", function(_, _, newV)
     end
 end, "P11CHAT.Toggle")
 
+-- v4.15.4 «ОБХОД»: датчик живого состояния поля (самодиагностика)
+local cvDbg = CreateClientConVar("p11_pchatdebug", "0", true, false,
+    "1 = датчик состояния СВЯЗИ поверх чата (фокус/мышь/ввод)")
+hook.Add("HUDPaint", "P11CHAT.Debug", function()
+    if not cvDbg:GetBool() then return end
+    local f = CH.Frame
+    local foc = vgui.GetKeyboardFocus()
+    local focName = IsValid(foc) and (foc.ClassName or "?") or "нет"
+    local l1 = "СВЯЗЬ-debug: окно=" .. (IsValid(f) and "живо" or "НЕТ")
+        .. " open=" .. tostring(CH.Open_)
+        .. " | фокус=" .. focName
+    local l2 = "мышь: рамка=" .. tostring(IsValid(f) and f:HasMouseInputEnabled())
+        .. " поле=" .. tostring(IsValid(CH.Entry) and CH.Entry:HasMouseInputEnabled())
+        .. " | канал=" .. tostring(CH.Cur)
+        .. " | submit=" .. tostring(CH._lastSubmit or "—")
+    draw.SimpleText(l1, "P11CHAT.Tiny", 16, 90, Color(255, 214, 110))
+    draw.SimpleText(l2, "P11CHAT.Tiny", 16, 108, Color(160, 210, 255))
+end)
+
+-- запасной выбор канала с консоли: p11_chmode ooc | 2 | и т.д.
+concommand.Add("p11_chmode", function(_, _, args)
+    local a2 = string.lower(tostring(args and args[1] or ""))
+    if a2 == "" then
+        local names = {}
+        for i2, m in ipairs(MODES) do names[#names + 1] = i2 .. "=" .. m.id .. "(" .. m.lbl .. ")" end
+        print("[СВЯЗЬ] канал сейчас: " .. tostring(CH.Cur) .. " | варианты: " .. table.concat(names, " "))
+        return
+    end
+    local idx = tonumber(a2)
+    if idx and MODES[idx] then CH.SetMode(MODES[idx].id, true) return end
+    for _, m in ipairs(MODES) do
+        if m.id == a2 or string.lower(m.lbl) == a2 then CH.SetMode(m.id, true) return end
+    end
+    print("[СВЯЗЬ] нет такого канала: " .. a2)
+end, nil, "СВЯЗЬ: выбрать канал чата без мыши (p11_chmode ooc / radio / 1..9)")
+
 concommand.Add("p11_pchat", function()
     print("[P11CHAT-СВЯЗЬ] статус: включён=" .. tostring(cvOn:GetBool())
         .. " | окно=" .. (IsValid(CH.Frame) and "ЖИВО" or "НЕТ")
@@ -709,4 +754,4 @@ concommand.Add("p11_pchat", function()
     if cvOn:GetBool() then CH.Open() end
 end, nil, "Свой чат «СВЯЗЬ»: статус + открыть окно (p11_ownchat 1/0 — вкл/выкл)")
 
-print("[P11CHAT-СВЯЗЬ] модуль чата v4.15.3 «КУРСОР» загружен (окно соберётся через сек)")
+print("[P11CHAT-СВЯЗЬ] модуль чата v4.15.4 «ОБХОД» загружен (окно соберётся через сек)")
