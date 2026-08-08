@@ -9,7 +9,7 @@
 --  кнопка в C-меню или F4.
 -- ============================================================
 
-surface.CreateFont("P11FW.Adm.Tab", { font = "Roboto", size = 15, weight = 700, extended = true }) -- v4.6.1: 9 вкладок — чуть компактнее
+surface.CreateFont("P11FW.Adm.Tab", { font = "Roboto", size = 14, weight = 700, extended = true }) -- v4.14.1: 10 вкладок — ещё компактнее
 
 local AC = {
     -- v4.2: единый фирменный фундамент P11UI (акцент админки — красный, как положено)
@@ -217,6 +217,7 @@ function P11FW.OpenAdminMenu(forceTab)
         { id = "players",   name = "ИГРОКИ",    minLevel = (P11FW.Config and P11FW.Config.RankManageLevel) or 10 },
         { id = "mod",       name = "МОДЕРАЦИЯ", perm = "warn", badge = "!" },
         { id = "acts",      name = "ДЕЙСТВИЯ",  minLevel = 4 },
+        { id = "flux",      name = "💠 ПОТОК",  minLevel = 4 }, -- v4.14.1: выдача донат-валюты (заявка «где вкладка»)
         { id = "jobs",      name = "ДОЛЖНОСТИ", minLevel = 14 },
         { id = "factions",  name = "ФРАКЦИИ",   minLevel = 14 },
         { id = "utils",     name = "УТИЛИТЫ",   minLevel = 14 },
@@ -238,8 +239,8 @@ function P11FW.OpenAdminMenu(forceTab)
     surface.SetFont("P11FW.Adm.Tab")
     for i, t in ipairs(tabs) do
         local tb = vgui.Create("DButton", f)
-        tb:SetPos(12 + (i - 1) * 96, 58) -- v4.6.1: 9 вкладок
-        tb:SetSize(92, 32)
+        tb:SetPos(12 + (i - 1) * 86, 58) -- v4.14.1: 10 вкладок («💠 ПОТОК» приехала)
+        tb:SetSize(82, 32)
         tb:SetText("")
         tb.TabId = t.id
         tb.Paint = function(s, w, h)
@@ -1821,6 +1822,95 @@ function P11FW.OpenAdminMenu(forceTab)
         -- на входе данных могло не быть — запросим свежий синк
         net.Start("P11FW_WL_REQ") net.SendToServer()
         f:RefreshWhitelistTab()
+    end
+
+    -- ==================================================
+    --  ВКЛАДКА: 💠 ПОТОК — выдача донат-валюты «ПОЛЮС-ФЛЮКС» (v4.14.1)
+    --  Заявка владельца: «а где вкладка для выдачи донат валюты».
+    -- ==================================================
+    do
+        local p = NewTab("flux")
+        local FC = Color(130, 220, 235) -- цвет потока
+        local FGOLD = Color(235, 205, 100)
+
+        local title = vgui.Create("DLabel", p)
+        title:SetPos(16, 12) title:SetSize(824, 26)
+        title:SetFont("P11FW.Big") title:SetTextColor(FC)
+        title:SetText("💠 ВЫДАЧА ДОНАТ-ВАЛЮТЫ «ПОЛЮС-ФЛЮКС» (ПФ)")
+
+        local sub = vgui.Create("DLabel", p)
+        sub:SetPos(16, 40) sub:SetSize(824, 34)
+        sub:SetFont("P11FW.Small") sub:SetTextColor(AC.dim)
+        sub:SetText("Доступ с ранга Administrator (4)+. Каждая операция журналируется станцией (кто/кому/сколько).")
+
+        -- ==== ОНЛАЙН: утилит-меню ростера ====
+        local big = vgui.Create("DButton", p)
+        big:SetPos(16, 82) big:SetSize(824, 58) big:SetText("")
+        big.Paint = function(s, w, h)
+            draw.RoundedBox(8, 0, 0, w, h, s:IsHovered() and Color(36, 60, 74) or Color(26, 44, 56))
+            surface.SetDrawColor(FC)
+            surface.DrawOutlinedRect(0, 0, w, h, 1)
+            draw.SimpleText("🛠 ОТКРЫТЬ УТИЛИТ-МЕНЮ ВЫДАЧИ — все бойцы онлайн: +100 / +500 / −100 / своя сумма",
+                "P11FW.Text", w / 2, h / 2, Color(185, 238, 248), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        end
+        big.DoClick = function()
+            surface.PlaySound("buttons/button15.wav")
+            RunConsoleCommand("p11_utils")
+        end
+
+        -- ==== ОФФЛАЙН/МАГАЗИН: выдача по SteamID64 ====
+        local offT = vgui.Create("DLabel", p)
+        offT:SetPos(16, 158) offT:SetSize(824, 20)
+        offT:SetFont("P11FW.Text") offT:SetTextColor(FC)
+        offT:SetText("ВЫДАТЬ ПО SteamID64 (ушёл со станции — дождётся входа; эта же команда нужна магазину CraftedStore/EasyDonate):")
+
+        local sid = vgui.Create("DTextEntry", p)
+        sid:SetPos(16, 182) sid:SetSize(300, 30)
+        sid:SetFont("P11FW.Text")
+        sid:SetPlaceholderText("SteamID64 бойца (76561198…)")
+
+        local amt = vgui.Create("DTextEntry", p)
+        amt:SetPos(324, 182) amt:SetSize(140, 30)
+        amt:SetFont("P11FW.Text")
+        amt:SetPlaceholderText("Сумма (100)")
+
+        local give = vgui.Create("DButton", p)
+        give:SetPos(472, 182) give:SetSize(180, 30) give:SetText("")
+        give.Paint = function(s, w, h)
+            draw.RoundedBox(6, 0, 0, w, h, s:IsHovered() and Color(50, 70, 40) or Color(36, 52, 30))
+            surface.SetDrawColor(150, 230, 150)
+            surface.DrawOutlinedRect(0, 0, w, h, 1)
+            draw.SimpleText("ВЫДАТЬ ПФ", "P11FW.Text", w / 2, h / 2 - 1,
+                Color(195, 240, 190), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        end
+        give.DoClick = function()
+            local id = string.Trim(sid:GetText() or "")
+            local n = tonumber(amt:GetText() or "") or 0
+            if #id < 10 or n == 0 then
+                surface.PlaySound("buttons/button10.wav")
+                chat.AddText(FGOLD, "[ПОТОК] Нужны SteamID64 (76561198…) и ненулевая сумма.")
+                return
+            end
+            RunConsoleCommand("p11_fluxgive", id, tostring(math.floor(n)))
+            surface.PlaySound("buttons/button15.wav")
+            chat.AddText(FC, "[ПОТОК] Команда ушла: p11_fluxgive " .. id .. " " .. math.floor(n) ..
+                " (Глава ранга 16 — замок консоли).")
+        end
+
+        -- ==== СПРАВКА ====
+        local info = vgui.Create("DLabel", p)
+        info:SetPos(16, 226) info:SetSize(824, 220)
+        info:SetFont("P11FW.Small") info:SetTextColor(AC.dim)
+        info:SetAutoWrapVertical(true)
+        info:SetText(table.concat({
+            "Где что лежит:",
+            "  • Баланс ФЛЮКСА тех, кто на станции: F6 → блок 🛠 УТИЛИТЫ ВЫДАЧИ (та же дверь).",
+            "  • Сейв: garrysmod/data/polus11/flux.json (НЕ удалять при обновлениях).",
+            "  • Оффлайн-очередь: выданное ушедшему засчитается при его входе.",
+            "  • Консоль (Глава 16): p11_fluxgive <SteamID64> <сумма> · магазин: тот же вызов.",
+            "  • Журнал операций: консоль сервера, строки «ФЛЮКС +/-: ...».",
+            "  • Пакеты пополнения для бойцов: F6 (Discord-закреп, docs/DONATE.md).",
+        }, "\n"))
     end
 
     -- первая загрузка данных
