@@ -239,6 +239,8 @@ function P11FW.OpenAdminMenu(forceTab)
     f.TabButtons = {}
 
     surface.SetFont("P11FW.Adm.Tab")
+    f.TabRowOff = 0
+    local LayoutTabs -- v4.19.1 «ЛЕНТА»: раскладка/прокрутка ряда вкладок (объявлена до цикла — её зовёт и DoClick)
     for i, t in ipairs(tabs) do
         local tb = vgui.Create("DButton", f)
         tb:SetPos(12 + (i - 1) * 86, 58) -- v4.14.1: 10 вкладок («💠 ПОТОК» приехала)
@@ -286,10 +288,69 @@ function P11FW.OpenAdminMenu(forceTab)
             if t.id == "players" or t.id == "utils" or t.id == "acts" or t.id == "mod" then RequestAdminData() end
             if t.id == "admranks" and f.RefreshAdmRanks then f:RefreshAdmRanks() end
             if t.id == "whitelist" and f.RefreshWhitelistTab then f:RefreshWhitelistTab() end
+            -- v4.19.1 «ЛЕНТА»: активная вкладка — всегда в кадре
+            if LayoutTabs then
+                local per2 = math.max(1, math.floor((f:GetWide() - 24 - 60) / 86))
+                if i > (f.TabRowOff or 0) + per2 then f.TabRowOff = i - per2
+                elseif i <= (f.TabRowOff or 0) then f.TabRowOff = i - 1 end
+                LayoutTabs()
+            end
             surface.PlaySound("buttons/button15.wav")
         end
         f.TabButtons[t.id] = tb
     end
+
+    -- ============ v4.19.1 «ЛЕНТА»: вкладки больше НЕ УЛЕТАЮТ ЗА КАДР ============
+    -- Заявка владельца: «куда вкладка улетела — сделай возможность листать
+    -- вкладки, а то их много и многие уже за кадр уходят». В кадре столько
+    -- вкладок, сколько влезает по ширине; крайние листаются стрелками ◀ ▶.
+    LayoutTabs = function()
+        local per = math.max(1, math.floor((f:GetWide() - 24 - 60) / 86))
+        local maxOff = math.max(0, #tabs - per)
+        f.TabRowOff = math.Clamp(f.TabRowOff or 0, 0, maxOff)
+        for i, t in ipairs(tabs) do
+            local tb = f.TabButtons[t.id]
+            if IsValid(tb) then
+                local slot = i - f.TabRowOff
+                if slot >= 1 and slot <= per then
+                    tb:SetPos(12 + (slot - 1) * 86, 58)
+                    tb:SetVisible(true)
+                else
+                    tb:SetVisible(false)
+                end
+            end
+        end
+    end
+    f.LayoutTabs = LayoutTabs
+
+    local function TabArrow(txt, dx, shift)
+        local a = vgui.Create("DButton", f)
+        a:SetPos(f:GetWide() - 60 + dx, 58)
+        a:SetSize(28, 32)
+        a:SetText("")
+        a.Paint = function(s, w, h)
+            draw.RoundedBox(5, 0, 0, w, h, Color(255, 255, 255, 8))
+            draw.SimpleText(txt, "P11FW.Adm.Tab", w / 2, h / 2,
+                s:IsHovered() and AC.gold or AC.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        end
+        a.DoClick = function()
+            f.TabRowOff = (f.TabRowOff or 0) + shift
+            LayoutTabs()
+            surface.PlaySound("buttons/button9.wav")
+        end
+    end
+    TabArrow("◀", 0, -1)
+    TabArrow("▶", 30, 1)
+
+    -- открыли меню на конкретной вкладке (напр. «ИВЕНТ НЕЧТО») — подогнать ряд, чтобы её было видно
+    for i, t in ipairs(tabs) do
+        if t.id == f.ActiveTab then
+            local per3 = math.max(1, math.floor((f:GetWide() - 24 - 60) / 86))
+            if i > per3 then f.TabRowOff = i - per3 end
+            break
+        end
+    end
+    LayoutTabs()
 
     -- контейнер вкладок
     local function NewTab(id)
