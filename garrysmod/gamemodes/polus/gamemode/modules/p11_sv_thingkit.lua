@@ -381,6 +381,21 @@ net.Receive("P11_TKit", function(_, ply)
         return
     end
 
+    -- v4.14.2 «КАЗНА»: ДВЕРЬ ВЫХОДА — изгнать паразита из себя.
+    -- Стоит ДО гейта IsThing: инкубация (заражён, но не активен) тоже может выйти.
+    if act == "leave" then
+        if ply:GetNWBool("P11_Infected", false) then
+            ply.P11_RootWasInf = nil
+            ply.P11_RootWasAct = nil
+            if POLUS11.Cure then POLUS11.Cure(ply, true) end
+            Tell(ply, "Ты выгнал паразита: тряска прошла, когти отвалились. Ты снова человек.")
+            TKLog("САМО-ИЗГНАНИЕ ПАРАЗИТА: " .. ply:Nick())
+        else
+            Tell(ply, "В тебе нет паразита — изгонять нечего.")
+        end
+        return
+    end
+
     -- дальше — только активному Нечто
     if not IsThing(ply) then
         Tell(ply, "Пульт тела работает только у активного Нечто. " ..
@@ -474,4 +489,4 @@ concommand.Add("p11_thingtest", function(ply)
 end)
 
 print("[POLUS-11] НЕЧТО «ЛИЧИНА 3.0» v4.10.0: маскировка переписана начисто — ТК-API, " ..
-    "автопоглощение с логом [TK], когти-страховь, пульт тела P11_TKit, diag p11_thingtest")
+    "автопоглощение с логом [TK], когти-страховь, пульт тела P11_TKit, diag p11_thingtest, дверь выхода act=leave")

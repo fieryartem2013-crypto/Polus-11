@@ -32,6 +32,15 @@
 -- заявка «остаётся до рестарта»: рубильник навсегда в «вкл»
 if POLUS11.Config then POLUS11.Config.InfectionPersists = true end
 
+-- v4.14.2 «КАЗНА»: РЕЖИМНЫЕ РУБИЛЬНИКИ выхода из нечто.
+-- По заявке заражение живёт ДО РЕСТАРТА, и смерть/смена профы его НЕ снимают.
+-- Если полярник захочет «классику» — рубильники переводят смерть/смену профы
+-- в СНЯТИЕ нечто (Cure):  p11_thing_deathdrop 1  /  p11_thing_jobdrop 1
+local cvDeathDrop = CreateConVar("p11_thing_deathdrop", "0", FCVAR_ARCHIVE,
+    "1 = смерть СНИМАЕТ нечто (по умолч. 0 — заражение до рестарта)")
+local cvJobDrop = CreateConVar("p11_thing_jobdrop", "0", FCVAR_ARCHIVE,
+    "1 = смена профы СНИМАЕТ нечто (по умолч. 0 — заражение до рестарта)")
+
 local CLAW_WEPS = {
     weapon_polus11_thing = true,
     weapon_polus11_thing_split = true,
@@ -236,6 +245,17 @@ hook.Add("PlayerSpawn", "P11.ThingRootSpawn", function(ply)
     end
 
     if not ply.P11_RootWasInf then return end
+
+    -- рубильник: смерть ВЫПУСКАЕТ паразита (p11_thing_deathdrop 1)
+    if cvDeathDrop:GetBool() then
+        ply.P11_RootWasInf = nil
+        ply.P11_RootWasAct = nil
+        if POLUS11.Cure then POLUS11.Cure(ply, true) end
+        RNotify(ply, "Смерть выпустила паразита — ты снова человек. (p11_thing_deathdrop 0 — вернуть режим «до рестарта».)")
+        RLog("рубильник deathdrop: смерть сняла нечто с " .. ply:Nick())
+        return
+    end
+
     ply:SetNWBool("P11_Infected", true)
     if ply.P11_RootWasAct then ply:SetNWBool("P11_InfActive", true) end
 
@@ -263,6 +283,16 @@ end)
 hook.Add("P11FW.JobChanged", "P11.ThingRootJob", function(ply, newId, oldId)
     if not IsValid(ply) then return end
     if not ply:GetNWBool("P11_Infected", false) then return end
+
+    -- рубильник: смена профы ВЫПУСКАЕТ паразита (p11_thing_jobdrop 1)
+    if cvJobDrop:GetBool() then
+        ply.P11_RootWasInf = nil
+        ply.P11_RootWasAct = nil
+        if POLUS11.Cure then POLUS11.Cure(ply, true) end
+        RNotify(ply, "Смена должности вытряхнула паразита — ты снова человек. (p11_thing_jobdrop 0 — вернуть режим «до рестарта».)")
+        RLog("рубильник jobdrop: смена профы (" .. tostring(oldId) .. " → " .. tostring(newId) .. ") сняла нечто с " .. ply:Nick())
+        return
+    end
 
     -- явленную форму монстра лоадаут новой профы всё равно перекроет —
     -- спрячем её сразу, чтобы таймер явления не сорвал личину позже
@@ -323,6 +353,20 @@ end)
 
 -- ============ 3) САМОДИАГНОСТИКА (военсовет смотрит КОНКРЕТНОГО бойца) ============
 
+-- ДВЕРЬ ВЫХОДА №2: консольная команда (дубликат кнопки «🩸 ИЗГНАТЬ ПАРАЗИТА»)
+concommand.Add("p11_thingleave", function(ply)
+    if not IsValid(ply) then return end
+    if ply:GetNWBool("P11_Infected", false) then
+        ply.P11_RootWasInf = nil
+        ply.P11_RootWasAct = nil
+        if POLUS11.Cure then POLUS11.Cure(ply, true) end
+        ply:ChatPrint("Ты выгнал паразита: тряска прошла, когти отвалились. Ты снова человек.")
+        RLog("САМО-ИЗГНАНИЕ (p11_thingleave): " .. ply:Nick())
+    else
+        ply:ChatPrint("В тебе нет паразита — изгонять нечего.")
+    end
+end)
+
 concommand.Add("p11_thingroot", function(ply, cmd, args)
     if IsValid(ply) and not P11FW.Config.Admin(ply) then return end
     local out = { "== НЕЧТО·КОРЕНЬ: КТО НЕСЁТ ЗАРАЖЕНИЕ ДО РЕСТАРТА ==" }
@@ -344,11 +388,14 @@ concommand.Add("p11_thingroot", function(ply, cmd, args)
         end
     end
     if n == 0 then out[#out + 1] = "  заражённых нет." end
-    out[#out + 1] = "  смерть/смена профы заражение НЕ снимают; снимают антидот и админ-пульт."
+    out[#out + 1] = "  смерть/смена профы заражение НЕ снимают (рубильники deathdrop="
+        .. cvDeathDrop:GetString() .. " jobdrop=" .. cvJobDrop:GetString()
+        .. "); снимают: антидот, админ-пульт, «🩸 ИЗГНАТЬ ПАРАЗИТА», p11_thingleave."
     local txt = table.concat(out, "\n")
     if IsValid(ply) then ply:PrintMessage(HUD_PRINTCONSOLE, txt) else print(txt) end
 end)
 
-print("[POLUS-11] НЕЧТО «КОРЕНЬ» v4.13.2 «КРЕПЬ»: заражение НЕУБИВАЕМО до рестарта — смерть/смена профы переподтверждаются из снимка; "
+print("[POLUS-11] НЕЧТО «КОРЕНЬ» v4.14.2 «КАЗНА»: заражение НЕУБИВАЕМО до рестарта — смерть/смена профы переподтверждаются из снимка; "
     .. "личина переживает смену профы (P11_LastIdentity); чат/рация зовут тварь украденным именем; "
-    .. "СВЕП НЕЧТО АВТОМАТОМ ДАЁТ " .. ThingHPNow() .. " ХП (достаточно самих когтей; тюнер p11_thinghp); диагностика p11_thingroot")
+    .. "СВЕП НЕЧТО АВТОМАТОМ ДАЁТ " .. ThingHPNow() .. " ХП (достаточно самих когтей; тюнер p11_thinghp); "
+    .. "ДВЕРИ ВЫХОДА: пульт R «🩸 ИЗГНАТЬ ПАРАЗИТА» / p11_thingleave; режимные рубильники p11_thing_deathdrop, p11_thing_jobdrop; диагностика p11_thingroot")

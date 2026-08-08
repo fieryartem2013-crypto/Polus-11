@@ -138,6 +138,19 @@ local function OpenThingKit()
             Send("test") f:Remove()
         end)
         ABtn(268, y + 158, W - 28 - 254, 34, "ЗАКРЫТЬ", C.dim, function() f:Remove() end)
+        -- v4.14.2 «КАЗНА»: дверь выхода уже на инкубации
+        if isInf then
+            local pending = false
+            ABtn(14, y + 200, W - 28, 34, "🩸 ИЗГНАТЬ ПАРАЗИТА — нажми ДВАЖДЫ (станешь человеком)", C.red, function()
+                if not pending then
+                    pending = true
+                    LocalPlayer():ChatPrint("🩸 Пульт: нажми кнопку ещё раз — паразит будет изгнан.")
+                    timer.Simple(3, function() pending = false end)
+                    return
+                end
+                Send("leave") f:Remove()
+            end)
+        end
         return f
     end
 
@@ -215,6 +228,22 @@ local function OpenThingKit()
             Send("spider") f:Remove()
         end)
         y = y + 42
+    end
+
+    -- ---------- v4.14.2 «КАЗНА»: дверь выхода ----------
+    do
+        local pending2 = false
+        ABtn(14, y, 250, 32, "🩸 ИЗГНАТЬ ПАРАЗИТА (×2 клика)", C.red, function()
+            if not pending2 then
+                pending2 = true
+                LocalPlayer():ChatPrint("🩸 Пульт: нажми ещё раз — паразит будет изгнан навсегда.")
+                timer.Simple(3, function() pending2 = false end)
+                return
+            end
+            Send("leave") f:Remove()
+        end)
+        ABtn(268, y, W - 28 - 254, 32, "выход: паразит уходит — останешься человеком (или p11_thingleave)", C.dim, function() end, false)
+        y = y + 40
     end
 
     -- ---------- диагностика + шпаргалка ----------

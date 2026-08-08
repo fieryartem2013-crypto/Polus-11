@@ -217,7 +217,7 @@ function P11FW.OpenAdminMenu(forceTab)
         { id = "players",   name = "ИГРОКИ",    minLevel = (P11FW.Config and P11FW.Config.RankManageLevel) or 10 },
         { id = "mod",       name = "МОДЕРАЦИЯ", perm = "warn", badge = "!" },
         { id = "acts",      name = "ДЕЙСТВИЯ",  minLevel = 4 },
-        { id = "flux",      name = "💠 ПОТОК",  minLevel = 4 }, -- v4.14.1: выдача донат-валюты (заявка «где вкладка»)
+        { id = "flux",      name = "💠 ПОТОК",  minLevel = 4 }, -- v4.14.2: КАЗНА — выдача трёх валют (ПФ/₽/⏱)
         { id = "jobs",      name = "ДОЛЖНОСТИ", minLevel = 14 },
         { id = "factions",  name = "ФРАКЦИИ",   minLevel = 14 },
         { id = "utils",     name = "УТИЛИТЫ",   minLevel = 14 },
@@ -1836,80 +1836,100 @@ function P11FW.OpenAdminMenu(forceTab)
         local title = vgui.Create("DLabel", p)
         title:SetPos(16, 12) title:SetSize(824, 26)
         title:SetFont("P11FW.Big") title:SetTextColor(FC)
-        title:SetText("💠 ВЫДАЧА ДОНАТ-ВАЛЮТЫ «ПОЛЮС-ФЛЮКС» (ПФ)")
+        title:SetText("🏛 КАЗНА: ВЫДАЧА ВАЛЮТ СТАНЦИИ — 💠 ПФ · ₽ ДЕНЬГИ · ⏱ СТАЖ")
 
         local sub = vgui.Create("DLabel", p)
         sub:SetPos(16, 40) sub:SetSize(824, 34)
         sub:SetFont("P11FW.Small") sub:SetTextColor(AC.dim)
-        sub:SetText("Доступ с ранга Administrator (4)+. Каждая операция журналируется станцией (кто/кому/сколько).")
+        sub:SetText("Доступ с ранга Administrator (4)+. Каждая операция журналируется станцией (кто/кому/что/сколько); минус — СПИСАТЬ.")
 
-        -- ==== ОНЛАЙН: утилит-меню ростера ====
+        -- ==== v4.14.2 «КАЗНА»: ОНЛАЙН-РОСТЕР ТРЁХ ВАЛЮТ ====
         local big = vgui.Create("DButton", p)
-        big:SetPos(16, 82) big:SetSize(824, 58) big:SetText("")
+        big:SetPos(16, 82) big:SetSize(824, 54) big:SetText("")
         big.Paint = function(s, w, h)
             draw.RoundedBox(8, 0, 0, w, h, s:IsHovered() and Color(36, 60, 74) or Color(26, 44, 56))
             surface.SetDrawColor(FC)
             surface.DrawOutlinedRect(0, 0, w, h, 1)
-            draw.SimpleText("🛠 ОТКРЫТЬ УТИЛИТ-МЕНЮ ВЫДАЧИ — все бойцы онлайн: +100 / +500 / −100 / своя сумма",
+            draw.SimpleText("🛠 КАЗНА СТАНЦИИ — онлайн-ростер: 💠 ПФ · ₽ ДЕНЬГИ · ⏱ СТАЖ (v4.14.2)",
                 "P11FW.Text", w / 2, h / 2, Color(185, 238, 248), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
         end
         big.DoClick = function()
             surface.PlaySound("buttons/button15.wav")
+            RunConsoleCommand("p11_kazna")
+        end
+
+        local old = vgui.Create("DButton", p)
+        old:SetPos(16, 142) old:SetSize(824, 26) old:SetText("")
+        old.Paint = function(s, w, h)
+            draw.RoundedBox(6, 0, 0, w, h, s:IsHovered() and Color(30, 40, 52) or Color(22, 30, 40))
+            draw.SimpleText("…старое утилит-меню только ФЛЮКСА (p11_utils)",
+                "P11FW.Small", w / 2, h / 2, AC.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        end
+        old.DoClick = function()
+            surface.PlaySound("buttons/button15.wav")
             RunConsoleCommand("p11_utils")
         end
 
-        -- ==== ОФФЛАЙН/МАГАЗИН: выдача по SteamID64 ====
-        local offT = vgui.Create("DLabel", p)
-        offT:SetPos(16, 158) offT:SetSize(824, 20)
-        offT:SetFont("P11FW.Text") offT:SetTextColor(FC)
-        offT:SetText("ВЫДАТЬ ПО SteamID64 (ушёл со станции — дождётся входа; эта же команда нужна магазину CraftedStore/EasyDonate):")
+        -- ==== ОФФЛАЙН: ТРИ СТРОКИ ВЫДАЧИ (nick-кусок онлайн / STEAM_0 / SteamID64) ====
+        local OFFS = {
+            { kind = "flux",  name = "💠 ПФ",        col = Color(130, 220, 235), ph = "ПФ (100)" },
+            { kind = "money", name = "₽ ДЕНЬГИ",     col = Color(235, 205, 100), ph = "₽ (1000)" },
+            { kind = "time",  name = "⏱ СТАЖ (мин)", col = Color(150, 230, 150), ph = "мин (60)" },
+        }
+        for ri, off in ipairs(OFFS) do
+            local ry = 178 + (ri - 1) * 36
+            local lbl = vgui.Create("DLabel", p)
+            lbl:SetPos(16, ry) lbl:SetSize(130, 30)
+            lbl:SetFont("P11FW.Text") lbl:SetTextColor(off.col) lbl:SetText(off.name)
 
-        local sid = vgui.Create("DTextEntry", p)
-        sid:SetPos(16, 182) sid:SetSize(300, 30)
-        sid:SetFont("P11FW.Text")
-        sid:SetPlaceholderText("SteamID64 бойца (76561198…)")
+            local idE = vgui.Create("DTextEntry", p)
+            idE:SetPos(150, ry) idE:SetSize(280, 30)
+            idE:SetFont("P11FW.Text")
+            idE:SetPlaceholderText("ник-кусок / STEAM_0:x / SteamID64")
 
-        local amt = vgui.Create("DTextEntry", p)
-        amt:SetPos(324, 182) amt:SetSize(140, 30)
-        amt:SetFont("P11FW.Text")
-        amt:SetPlaceholderText("Сумма (100)")
+            local amtE = vgui.Create("DTextEntry", p)
+            amtE:SetPos(438, ry) amtE:SetSize(140, 30)
+            amtE:SetFont("P11FW.Text")
+            amtE:SetPlaceholderText(off.ph)
 
-        local give = vgui.Create("DButton", p)
-        give:SetPos(472, 182) give:SetSize(180, 30) give:SetText("")
-        give.Paint = function(s, w, h)
-            draw.RoundedBox(6, 0, 0, w, h, s:IsHovered() and Color(50, 70, 40) or Color(36, 52, 30))
-            surface.SetDrawColor(150, 230, 150)
-            surface.DrawOutlinedRect(0, 0, w, h, 1)
-            draw.SimpleText("ВЫДАТЬ ПФ", "P11FW.Text", w / 2, h / 2 - 1,
-                Color(195, 240, 190), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-        end
-        give.DoClick = function()
-            local id = string.Trim(sid:GetText() or "")
-            local n = tonumber(amt:GetText() or "") or 0
-            if #id < 10 or n == 0 then
-                surface.PlaySound("buttons/button10.wav")
-                chat.AddText(FGOLD, "[ПОТОК] Нужны SteamID64 (76561198…) и ненулевая сумма.")
-                return
+            local gB = vgui.Create("DButton", p)
+            gB:SetPos(586, ry) gB:SetSize(180, 30) gB:SetText("")
+            gB.Paint = function(s, w, h)
+                draw.RoundedBox(6, 0, 0, w, h, s:IsHovered() and Color(50, 70, 40) or Color(36, 52, 30))
+                surface.SetDrawColor(off.col)
+                surface.DrawOutlinedRect(0, 0, w, h, 1)
+                draw.SimpleText("ВЫДАТЬ", "P11FW.Text", w / 2, h / 2 - 1,
+                    Color(195, 240, 190), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
             end
-            RunConsoleCommand("p11_fluxgive", id, tostring(math.floor(n)))
-            surface.PlaySound("buttons/button15.wav")
-            chat.AddText(FC, "[ПОТОК] Команда ушла: p11_fluxgive " .. id .. " " .. math.floor(n) ..
-                " (Глава ранга 16 — замок консоли).")
+            gB.DoClick = function()
+                local id = string.Trim(idE:GetText() or "")
+                local n = tonumber(amtE:GetText() or "") or 0
+                if #id < 2 or n == 0 then
+                    surface.PlaySound("buttons/button10.wav")
+                    chat.AddText(FGOLD, "[КАЗНА] Нужны цель (ник/STEAM_0/64) и ненулевая сумма.")
+                    return
+                end
+                RunConsoleCommand("p11_kaznagive", off.kind, id, tostring(math.floor(n)))
+                surface.PlaySound("buttons/button15.wav")
+                chat.AddText(off.col, "[КАЗНА] Команда ушла: p11_kaznagive " .. off.kind .. " " .. id ..
+                    " " .. math.floor(n) .. " (Глава 16 — замок консоли; минус = списать).")
+            end
         end
 
         -- ==== СПРАВКА ====
         local info = vgui.Create("DLabel", p)
-        info:SetPos(16, 226) info:SetSize(824, 220)
+        info:SetPos(16, 292) info:SetSize(824, 166)
         info:SetFont("P11FW.Small") info:SetTextColor(AC.dim)
         info:SetAutoWrapVertical(true)
         info:SetText(table.concat({
-            "Где что лежит:",
-            "  • Баланс ФЛЮКСА тех, кто на станции: F6 → блок 🛠 УТИЛИТЫ ВЫДАЧИ (та же дверь).",
-            "  • Сейв: garrysmod/data/polus11/flux.json (НЕ удалять при обновлениях).",
-            "  • Оффлайн-очередь: выданное ушедшему засчитается при его входе.",
-            "  • Консоль (Глава 16): p11_fluxgive <SteamID64> <сумма> · магазин: тот же вызов.",
-            "  • Журнал операций: консоль сервера, строки «ФЛЮКС +/-: ...».",
-            "  • Пакеты пополнения для бойцов: F6 (Discord-закреп, docs/DONATE.md).",
+            "КАЗНА СТАНЦИИ (v4.14.2) — одна дверь на три валюты:",
+            "  • Окно-ростер (кнопка выше / консоль p11_kazna) — онлайн-бойцы, ранг 4+: клик по валюте → сумма → ВЫДАТЬ.",
+            "  • Три строки выше — ОФФЛАЙН-выдача (ушёл со станции): цель = кусок ника онлайн / STEAM_0:x / SteamID64.",
+            "  • Ушедшему всё дойдёт при входе; рубли и стаж пишутся прямо в сейвы.",
+            "  • Сейвы (НЕ удалять при обновлениях): garrysmod/data/polus11/ flux.json · economy.json · playtime.json.",
+            "  • Консоль (Глава 16 — замок): p11_kaznagive <flux|money|time> <цель> <сумма> · список: p11_kaznalist.",
+            "  • Магазину (CraftedStore/EasyDonate) оставлен вызов: p11_fluxgive <SteamID64> <сумма>.",
+            "  • Журнал: консоль сервера, строки «КАЗНА: ...» и «ФЛЮКС +/-: ...».",
         }, "\n"))
     end
 
