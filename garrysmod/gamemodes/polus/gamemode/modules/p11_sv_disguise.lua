@@ -100,7 +100,7 @@ local SUITS = {
     {
         id = "personnel", name = "Техперсонал станции",
         desc = "Рабочая куртка обслуги: механик, сантехник, «тот парень с ключами». Незаметен, как тень.",
-        jobIds = { "tech", "medic" },
+        jobIds = { "janitor", "cook", "porter", "tech", "medic" }, -- v4.17.0 «КОНТРАБАНДА»: ВЕСЬ персонал для кейса «ОБСЛУГА»
         models = {
             "models/player/Group01/male_01.mdl",
             "models/player/Group01/male_04.mdl",
@@ -331,6 +331,49 @@ net.Receive("P11_Disguise", function(len, ply)
 
     if op == 1 then -- запрос списка легенд (открытие кейса)
         SendMenuData(ply)
+        return
+    end
+
+    -- v4.17.0 «КОНТРАБАНДА»: кейс «ОБСЛУГА» (weapon_polus11_disguise2) —
+    -- МГНОВЕННАЯ авто-легенда ПЕРСОНАЛА: облик обслуги, позывной сами,
+    -- должность из куртки-постного блока, липовой документ. Стоит ДО
+    -- гейта HasCase «ЛЕГАТА» — кейс криминала проверяем своим классом.
+    if op == 6 then
+        if not ply:HasWeapon("weapon_polus11_disguise2") then
+            Result(ply, false, "Кейса «ОБСЛУГА» нет в снаряге.")
+            return
+        end
+        if IsActiveThing(ply) then
+            Result(ply, false, "Телу кейс не нужен — оно само лицо меняет.")
+            return
+        end
+        if ply.P11_Disguise then -- маска есть → ПКМ-повтор срывает её
+            if RemoveDisguise(ply, false) then
+                Result(ply, true, "Маска сорвана. Ты снова сам(а) собой.")
+            end
+            return
+        end
+        if CurTime() < (ply.P11_DsgCD or 0) then
+            Result(ply, false, "Грим ещё не готов. Жди " .. math.ceil((ply.P11_DsgCD or 0) - CurTime()) .. " сек.")
+            return
+        end
+        local suit = FindSuit("personnel")
+        if not suit then Result(ply, false, "Легенд персонала не завезли.") return end
+        local opts = {}
+        for _, jid in ipairs(suit.jobIds) do
+            local t = P11FW and P11FW.JobTeams and P11FW.JobTeams[jid]
+            if t then opts[#opts + 1] = t end
+        end
+        if #opts == 0 then
+            Result(ply, false, "На станции нет должностей персонала для легенды.")
+            return
+        end
+        local ok, err
+        for _ = 1, 4 do -- позывной мог пересечься — пробуем ещё раз
+            ok, err = ApplyDisguise(ply, suit, opts[math.random(#opts)], "")
+            if ok then break end
+        end
+        Result(ply, ok, ok and "🎭 Легенда обслуги наложена — станция видит тебя персоналом." or (err or "Грим сорвался."))
         return
     end
 

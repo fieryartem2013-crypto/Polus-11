@@ -285,6 +285,7 @@ local function DrawRow(d, x, y, W)
 end
 
 local function DrawRowsClip(x, topY, W, viewH)
+    P11B.hit = {} -- v4.17.0: кликабельные прямоугольники строк (мини-меню игрока)
     local yy = topY - (P11B.scroll or 0)
     for _, g in ipairs(P11B.groups) do
         -- шапка фракции
@@ -303,6 +304,9 @@ local function DrawRowsClip(x, topY, W, viewH)
                 if not ok then
                     -- одна «битая» строка — серый пропуск, табло живёт дальше
                     draw.RoundedBox(4, x, yy, W, ROW_H, Color(40, 42, 50, 150))
+                end
+                if IsValid(d.ply) then -- v4.17.0: строка кликается → мини-меню
+                    P11B.hit[#P11B.hit + 1] = { x = x, y = yy, w = W, h = ROW_H, d = d }
                 end
             end
             yy = yy + ROW_H + 2
@@ -490,3 +494,120 @@ hook.Add("OnPlayerChat", "P11.BoardChat", function(ply, text)
 end)
 
 print("[POLUS-11] TAB v2.1 загружен (колонка РАНГ для всех — v4.8.0)")
+
+-- ============================================================
+--  v4.17.0 «КОНТРАБАНДА» — МИНИ-МЕНЮ ИГРОКА В ТАБе
+--  (заявка: «при нажатии на игрока в ТАБ открывалась мини-менюшка:
+--  открыть стим-профиль, скопировать SteamID, ник и стим-ник»).
+--  Курсор у табло уже есть (кликер включён при открытии), поэтому
+--  работаем ручным хит-тестом по запомненным строкам — vgui-строкам
+--  в нулевом табло взяться неоткуда.
+-- ============================================================
+
+surface.CreateFont("P11B.MiniT", { font = "Roboto", size = 18, weight = 800, extended = true })
+surface.CreateFont("P11B.Mini",  { font = "Roboto", size = 15, weight = 600, extended = true })
+
+local function CloseMini()
+    if IsValid(P11B.mini) then P11B.mini:Remove() end
+    P11B.mini = nil
+end
+
+local function MiniBtn(f, y, label, col, fn)
+    local b = vgui.Create("DButton", f)
+    b:SetPos(10, y) b:SetSize(260, 30)
+    b:SetText("")
+    b.Paint = function(s2, w, h)
+        draw.RoundedBox(6, 0, 0, w, h,
+            s2:IsHovered() and Color(col.r, col.g, col.b, 245) or Color(24, 32, 44, 235))
+        surface.SetDrawColor(col.r, col.g, col.b, 160)
+        surface.DrawOutlinedRect(0, 0, w, h, 1)
+        draw.SimpleText(label, "P11B.Mini", w / 2, h / 2 - 1, Color(228, 236, 245),
+            TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+    end
+    b.DoClick = function()
+        surface.PlaySound("buttons/button15.wav")
+        fn()
+    end
+    return b
+end
+
+local function MiniNote(txt)
+    chat.AddText(Color(120, 185, 255), "[TAB] ", Color(232, 238, 245), txt)
+end
+
+local function OpenPlayerMini(d)
+    if not (d and IsValid(d.ply)) then return end
+    local ply = d.ply
+    CloseMini()
+
+    local f = vgui.Create("DFrame")
+    P11B.mini = f
+    f:SetSize(280, 252)
+    local mx, my = gui.MouseX(), gui.MouseY()
+    f:SetPos(math.Clamp(mx + 10, 4, ScrW() - 292), math.Clamp(my + 10, 4, ScrH() - 260))
+    f:SetTitle("")
+    f:ShowCloseButton(false)
+    f:MakePopup()
+    f:SetDeleteOnClose(true)
+    f.OnRemove = function() if P11B.mini == f then P11B.mini = nil end end
+    f.Think = function() -- табло ушло/игрок вышел — меню за ним
+        if not P11B.open or not IsValid(ply) then f:Remove() end
+    end
+    f.Paint = function(s2, w, h)
+        draw.RoundedBox(10, 0, 0, w, h, Color(10, 14, 20, 248))
+        surface.SetDrawColor(120, 185, 255, 170)
+        surface.DrawOutlinedRect(0, 0, w, h, 1)
+        draw.SimpleText(FitText and FitText(d.name, "P11B.MiniT", 240) or d.name,
+            "P11B.MiniT", 14, 12, Color(235, 240, 248), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+        draw.SimpleText((d.job ~= "" and d.job or "без должности") .. " · " .. (IsValid(ply) and ply:SteamID() or "?"),
+            "P11B.Mini", 14, 34, Color(150, 165, 180), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+    end
+
+    MiniBtn(f, 62, "Открыть Steam-профиль", Color(70, 120, 180), function()
+        local id64 = ply:SteamID64()
+        if isstring(id64) and id64 ~= "" and id64 ~= "0" then
+            gui.OpenURL("https://steamcommunity.com/profiles/" .. id64)
+            MiniNote("Открываю профиль: " .. d.real)
+        else
+            MiniNote("SteamID64 неизвестен (стим/бот) — профиль не открыть.")
+        end
+    end)
+    MiniBtn(f, 98, "Копировать SteamID", Color(90, 140, 200), function()
+        SetClipboardText(tostring(ply:SteamID() or "?"))
+        MiniNote("SteamID скопирован: " .. tostring(ply:SteamID()))
+    end)
+    MiniBtn(f, 134, "Копировать ник (позывной)", Color(120, 165, 210), function()
+        SetClipboardText(tostring(d.name))
+        MiniNote("Ник скопирован: " .. tostring(d.name))
+    end)
+    MiniBtn(f, 170, "Копировать Steam-ник", Color(150, 190, 220), function()
+        SetClipboardText(tostring(d.real))
+        MiniNote("Steam-ник скопирован: " .. tostring(d.real))
+    end)
+    MiniBtn(f, 210, "Закрыть", Color(130, 60, 55), function()
+        f:Remove()
+    end)
+
+    surface.PlaySound("buttons/button14.wav")
+end
+
+-- клик ЛКМ по строке табло → мини-меню (ручной хит-тест; клик по самой
+-- менюшке строки не считаем — иначе она пересоздавалась бы на свои кнопки)
+hook.Add("PlayerButtonDown", "P11.BoardClick", function(ply, btn)
+    if btn ~= MOUSE_LEFT then return end
+    if ply ~= LocalPlayer() then return end
+    if not P11B.open then return end
+    local mx, my = gui.MouseX(), gui.MouseY()
+    if IsValid(P11B.mini) then
+        local fx, fy = P11B.mini:GetPos()
+        local fw, fh = P11B.mini:GetSize()
+        if mx >= fx and mx <= fx + fw and my >= fy and my <= fy + fh then return end
+    end
+    for _, h in ipairs(P11B.hit or {}) do
+        if mx >= h.x and mx <= h.x + h.w and my >= h.y and my <= h.y + h.h then
+            OpenPlayerMini(h.d)
+            return
+        end
+    end
+end)
+

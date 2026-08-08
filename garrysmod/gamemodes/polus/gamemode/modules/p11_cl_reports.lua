@@ -69,6 +69,15 @@ net.Receive("P11_Rep", function()
         local snd = net.ReadBool()
         chat.AddText(Color(255, 125, 115), "[РЕПОРТЫ] ", Color(232, 238, 245), txt)
         if snd then surface.PlaySound("buttons/button17.wav") end
+        -- v4.17.0 «КОНТРАБАНДА» (заявка): справа само выезжает менюшка
+        -- репортов у админа, когда кто-то пишет репорт (анти-спам 12 сек)
+        if IsAdm() then
+            P11R._autoNext = P11R._autoNext or 0
+            if CurTime() >= P11R._autoNext then
+                P11R._autoNext = CurTime() + 12
+                P11.OpenReports(true)
+            end
+        end
 
     elseif op == 4 then -- открыть окно
         if P11.OpenReports then P11.OpenReports() end
@@ -93,14 +102,18 @@ local function StatusChip(r)
     return "ОТКРЫТ", RC.gold
 end
 
-function P11.OpenReports()
+function P11.OpenReports(dockRight) -- v4.17.0: dockRight=true — окно справа (авто-вызов репортом)
     if IsValid(P11R.frame) then P11R.frame:Remove() end
     local adm = IsAdm()
 
     local f = vgui.Create("DFrame")
     P11R.frame = f
     f:SetSize(640, 520)
-    f:Center()
+    if dockRight then -- v4.17.0: авто-выезд — прижат к правому краю
+        f:SetPos(ScrW() - 640 - 56, math.floor((ScrH() - 520) / 2))
+    else
+        f:Center()
+    end
     f:SetTitle("")
     f:SetDraggable(true)
     f:MakePopup()

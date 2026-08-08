@@ -45,6 +45,11 @@ local SEED_FACTIONS = {
         color = Color(90, 130, 200), -- резидентская морская волна
     },
     {
+        id = "crime", name = "Криминал станции", order = 8, -- v4.17.0 «КОНТРАБАНДА»
+        desc = "Подполье «Полюса-11»: контрабанда, скупка краденого, чёрный рынок. Липовая внешность обслуги — кейс «ОБСЛУГА» (маскировка ТОЛЬКО под персонал). Старшие — по вайтлисту, курьер — открытая вакансия.",
+        color = Color(150, 90, 170),
+    },
+    {
         id = "nechto", name = "НЕЧТО", order = 99,
         desc = "Ивентовые формы Нечто. ВЫДАЮТСЯ ТОЛЬКО АДМИНИСТРАЦИЕЙ. Если ты это читаешь — штаб знает о твоей находке слишком много.",
         color = Color(150, 55, 60),
@@ -426,6 +431,62 @@ local SEED_JOBS = {
         },
     },
 
+    -- ================= ФРАКЦИЯ КРИМИНАЛ СТАНЦИИ (v4.17.0 «КОНТРАБАНДА») =================
+    -- Заявка владельца: «добавь криминал станции: контрабандисты и т.д.,
+    -- им кейс с маскировкой только под персонал — отдельным свепом».
+    -- Кейс «ОБСЛУГА» (weapon_polus11_disguise2): щелчок — мгновенная
+    -- липовая легенда обслуги (УБОРЩИК/повар/грузчик/техник/медик со
+    -- СТОКОВЫМИ моделями HL2 — паков не просит). Позывной и документ —
+    -- липовые, срыв — повторным щелчком; смерть/смена профы снимают сами.
+    {
+        id = "seed_crime_kurer", time = 0, category = "crime", order = 70,
+        name = "Курьер контрабанды",
+        desc = "Мелкая сошка подполья: переноска тайников, стукачество скупщику, прикрытие отходов. Кейс «ОБСЛУГА» прячет под обслугу по щелчку. ЕДИНСТВЕННАЯ ОТКРЫТАЯ вакансия криминала. 100 ХП.",
+        weapons = { "weapon_polus11_disguise2", "weapon_polus11_fists" }, hp = 100, armor = 0, max = 2,
+        color = Color(150, 95, 165),
+        models = {
+            "models/player/Group03/male_04.mdl",
+            "models/player/Group03/male_06.mdl",
+            "models/player/Group03/female_03.mdl",
+        },
+    },
+    {
+        id = "seed_crime_kontrband", time = 90, category = "crime", order = 71, whitelist = true,
+        name = "Контрабандист",
+        desc = "Провозит запрещёнку через периметр: патроны, спирт, ампулы — всё, кроме аффектов НКВД. Кейс «ОБСЛУГА», обрез двустволки ИЖ-43 (нет ARC9 — стоковая помпа), лом. 105 ХП / 50 брони.",
+        weapons = { "weapon_polus11_disguise2", { "arc9_eft_mr43", "weapon_shotgun" }, "weapon_crowbar" },
+        hp = 105, armor = 50, max = 3,
+        color = Color(140, 85, 160),
+        models = {
+            "models/player/Group03/male_02.mdl",
+            "models/player/Group03/male_05.mdl",
+            "models/player/Group03/male_09.mdl",
+        },
+    },
+    {
+        id = "seed_crime_skupshik", time = 150, category = "crime", order = 72, whitelist = true,
+        name = "Скупщик краденого",
+        desc = "Чёрный рынок станции в одном лице: принимает краденое, прячет тайники, держит цены подполья. Кейс «ОБСЛУГА», M1911A1 и рация на воровской волне. 105 ХП / 50 брони. Одно место.",
+        weapons = { "weapon_polus11_disguise2", { "arc9_eft_m1911a1", "weapon_pistol" }, "weapon_polus11_radio" },
+        hp = 105, armor = 50, max = 1,
+        color = Color(160, 100, 175),
+        models = {
+            "models/player/Group03m/male_03.mdl",
+            "models/player/Group03/male_07.mdl",
+        },
+    },
+    {
+        id = "seed_crime_glavar", time = 360, category = "crime", order = 73, whitelist = true,
+        name = "Главарь криминала станции",
+        desc = "«Смотрящий» Полюса-11: контрабандные каналы, долги, крыша. Кейс «ОБСЛУГА», револьвер .357, рация. Одно место. 115 ХП / 75 брони.",
+        weapons = { "weapon_polus11_disguise2", "weapon_357", "weapon_polus11_radio" },
+        hp = 115, armor = 75, max = 1,
+        color = Color(175, 110, 190),
+        models = {
+            "models/player/Group03m/male_04.mdl",
+            "models/player/Group03m/male_06.mdl",
+        },
+    },
 
 }
 

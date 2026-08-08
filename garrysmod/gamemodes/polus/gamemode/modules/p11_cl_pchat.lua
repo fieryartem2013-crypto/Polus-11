@@ -94,7 +94,7 @@ end
 -- ============ ГЕОМЕТРИЯ ============
 -- v4.15.0 «УГЛИ»: шире/выше; поднят НАД худом ХП и денег (якорь −200 от низа)
 local function Layout()
-    local w = math.min(1040, math.floor(ScrW() * 0.72)) -- v4.15.3 «КУРСОР»: расширен по заявке
+    local w = math.min(1240, math.floor(ScrW() * 0.80)) -- v4.17.0 «КОНТРАБАНДА»: ещё шире по заявке («столбики» у длинных сообщений)
     if w < 460 then w = 460 end
     local logH = 320
     local H = 30 + 4 + logH + 4 + 32 -- полоса каналов + журнал + поле ввода
@@ -648,6 +648,20 @@ function CH.Submit()
     CH.Close()
 end
 
+-- v4.17.0 «КОНТРАБАНДА» (заявка «не работает Enter и отправление»):
+-- ТРЕТИЙ контур отправки — PlayerButtonDown. Ему фокус дермы не нужен
+-- вообще: даже если OnEnter и OnKeyCodeTyped оба молчат, клавиша доедет.
+-- Дебаунс 0.2 сек отсекает двойной выстрел, когда живы два контура сразу.
+hook.Add("PlayerButtonDown", "P11CHAT.EnterRAW", function(ply, btn)
+    if ply ~= LocalPlayer() then return end
+    if not CH.Open_ then return end
+    if btn ~= KEY_ENTER and btn ~= KEY_KP_ENTER then return end
+    CH._rawEnter = CH._rawEnter or 0
+    if CurTime() < CH._rawEnter then return end
+    CH._rawEnter = CurTime() + 0.2
+    CH.Submit()
+end)
+
 -- клавиши чата (Y и U по умолчанию; у кого перебиндено — теми же именами)
 hook.Add("PlayerBindPress", "P11CHAT.Bind", function(ply, bind, pressed)
     if not cvOn:GetBool() then return end
@@ -694,7 +708,7 @@ timer.Simple(1, function()
             print("[P11CHAT-СВЯЗЬ] свой чат старший — BonChat усыплён (вернуть: p11_ownchat 0)")
         end
     end
-    print("[P11CHAT-СВЯЗЬ] v4.15.4 «ОБХОД» OK — кликер-яд убран наглухо (Enter/печать воскресли), Enter дублируется вторым контуром, хит-тест каналов, датчик p11_pchatdebug 1, канал с консоли p11_chmode; выкл чата: p11_ownchat 0")
+    print("[P11CHAT-СВЯЗЬ] v4.17.0 «КОНТРАБАНДА» OK — железный Enter третьим контуром (PlayerButtonDown), чат шире (1240/0.80), — кликер-яд убран наглухо (Enter/печать воскресли), Enter дублируется вторым контуром, хит-тест каналов, датчик p11_pchatdebug 1, канал с консоли p11_chmode; выкл чата: p11_ownchat 0")
 end)
 
 -- переключение рубильника на лету

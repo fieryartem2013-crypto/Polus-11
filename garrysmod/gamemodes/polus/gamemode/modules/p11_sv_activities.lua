@@ -238,7 +238,7 @@ function POLUS11.DirtUse(ent, ply)
     if POLUS11.MiniSessions[ply] then return end
 
     POLUS11.MiniStart(ply, ent, {
-        steps = 2, window = 2.6, title = "УБОРКА",
+        steps = 5, window = 1.4, title = "УБОРКА", -- v4.17.0 «КОНТРАБАНДА» (заявка): 5 этапов вместо трёх, каждый БЫСТРЕЕ (2.6→1.4 сек)
         cb = function(p, ent2, ok)
             if not IsValid(ent2) then return end
             if ok then
