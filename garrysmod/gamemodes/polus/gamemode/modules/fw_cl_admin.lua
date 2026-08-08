@@ -1345,8 +1345,14 @@ function P11FW.OpenAdminMenu(forceTab)
             f.SpawnFac = P11FW.CategoryList and P11FW.CategoryList[1] and P11FW.CategoryList[1].id or "misc"
             facC:SetValue(P11FW.CategoryList and P11FW.CategoryList[1] and P11FW.CategoryList[1].name or "misc")
             facC.OnSelect = function(_, _, _, data) f.SpawnFac = data end
+            -- v4.12.2 «ЭФИР»: подтверждение ОТПРАВКИ запроса (тишина = не дошло)
+            local function PlcAck(what)
+                chat.AddText(Color(255, 210, 110), "[ПЛАЦ] ", Color(235, 240, 250),
+                    what .. " — запрос ушёл на сервер. Жди тост «поставлена ЗДЕСЬ» + ✓ Проверку записи. Тихо 3 сек? Жми «⚡ ВСЁ ЗДЕСЬ» ниже или консоль: p11_arrival all.")
+            end
             local fs1 = MakeBtn(p, "ПОСТАВИТЬ ЗДЕСЬ", AC.ok, function()
                 SendAction(33, function() net.WriteString(f.SpawnFac or "misc") end)
+                PlcAck("Спавн фракции")
             end)
             fs1:SetPos(440, 264) fs1:SetSize(200, 30)
             local fs2 = MakeBtn(p, "УБРАТЬ ТОЧКУ", AC.bad, function()
@@ -1372,7 +1378,10 @@ function P11FW.OpenAdminMenu(forceTab)
             jobC:SetValue(jobs[1] and jobs[1].name or "")
             jobC.OnSelect = function(_, _, _, data) f.SpawnJob = data end
             local js1 = MakeBtn(p, "ПОСТАВИТЬ ЗДЕСЬ", AC.ok, function()
-                if (f.SpawnJob or "") ~= "" then SendAction(37, function() net.WriteString(f.SpawnJob) end) end
+                if (f.SpawnJob or "") ~= "" then
+                    SendAction(37, function() net.WriteString(f.SpawnJob) end)
+                    PlcAck("Спавн профы")
+                end
             end)
             js1:SetPos(440, 348) js1:SetSize(200, 30)
             local js2 = MakeBtn(p, "УБРАТЬ ТОЧКУ", AC.bad, function()
@@ -1385,8 +1394,15 @@ function P11FW.OpenAdminMenu(forceTab)
                 "ЗАСПАВНИТЬ", function() SendAction(35) end,
                 "УБРАТЬ", function() SendAction(36) end)
 
-            local listBtn = MakeBtn(p, "ЧТО УЖЕ РАССТАВЛЕНО? (список в чат)", AC.gold, function() SendAction(39) end)
-            listBtn:SetPos(440, 436) listBtn:SetSize(406, 30)
+            local listBtn = MakeBtn(p, "ЧТО РАССТАВЛЕНО?", AC.gold, function() SendAction(39) end)
+            listBtn:SetPos(440, 436) listBtn:SetSize(198, 30)
+            -- v4.12.2 «ЭФИР»: халява-кнопка — все фракции и все профы здесь (act 40)
+            local allBtn = MakeBtn(p, "⚡ ВСЁ ЗДЕСЬ", AC.ok, function()
+                SendAction(40)
+                PlcAck("ВСЕ фракции и профы")
+            end)
+            allBtn:SetPos(648, 436) allBtn:SetSize(198, 30)
+            allBtn:SetTooltip("поставить ЗДЕСЬ точки всех фракций и всех проф сразу (рестарт переживут)")
         end
 
         local p = NewTab("utils")

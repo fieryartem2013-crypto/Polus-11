@@ -138,6 +138,12 @@ net.Receive("P11FW_AdminAction", function(len, ply)
 
     local act = net.ReadUInt(6) -- v4.12.1 «ПЛАЦ»: 6 бит в пару клиенту (было 5 — акты 33+ умирали по дороге)
 
+    -- v4.12.2 «ЭФИР»: каждый запрос расстановки спавнов — В КОНСОЛЬ СЕРВЕРА
+    -- (симптом «не ставится» теперь диагностируется: строки нет → запрос вообще не дошёл)
+    if act >= 33 then
+        print(string.format("[POLUS-11] ПЛАЦ-запрос: %s прислал act=%d", ply:Nick(), act))
+    end
+
     if act == 1 or act == 2 or act == 3 then -- арест / рабство / бан (через ворота рангов)
         local idx = net.ReadUInt(8)
         local mins = net.ReadUInt(16)
@@ -372,6 +378,10 @@ net.Receive("P11FW_AdminAction", function(len, ply)
         if POLUS11 and POLUS11.ArrivalJobClear then POLUS11.ArrivalJobClear(ply, jid) end
     elseif act == 39 then -- показать, какие спавны расставлены
         if POLUS11 and POLUS11.ArrivalList then POLUS11.ArrivalList(ply) end
+
+    -- ============ v4.12.2 «ЭФИР»: ХАЛЯВА-КНОПКА «ВСЁ ЗДЕСЬ» ============
+    elseif act == 40 then -- поставить ВСЕ фракции + ВСЕ профы где стоишь
+        if POLUS11 and POLUS11.ArrivalAllHere then POLUS11.ArrivalAllHere(ply) end
     end
 
     -- свежие данные в меню

@@ -356,6 +356,28 @@ local function FindJobId(q)
     return best
 end
 
+-- «ВСЁ ЗДЕСЬ» как публичный API: зовёт консоль p11_arrival all И
+-- админ-меню act 40 (v4.12.2 «ЭФИР» — халява-кнопка из меню зон)
+function POLUS11.ArrivalAllHere(ply)
+    if not IsValid(ply) then return end
+    local base, ay = ply:GetPos(), Angle(0, ply:EyeAngles().y, 0)
+    local i = 0
+    for _, c in ipairs(P11FW.CategoryList or {}) do
+        POLUS11.Arrivals[c.id] = { pos = base, ang = ay }
+        i = i + 1
+    end
+    local j = 0
+    for id in pairs(P11FW.Jobs or {}) do
+        POLUS11.JobArrivals[id] = { pos = base, ang = ay }
+        j = j + 1
+    end
+    ArSave()
+    P11FW.Notify(ply, "✓ Расставил ЗДЕСЬ все: фракций " .. i .. ", проф " .. j .. " — бойцы будут спавниться на этом плацу")
+    POLUS11.SpawnMark(base, ay, 2, "ВСЕ ФРАКЦИИ + ВСЕ ПРОФЫ (" .. i .. "/" .. j .. ")", 8)
+    P11FW.Log("Прибытие(all): " .. ply:Nick() .. " расставил ВСЕ зоны (" .. i .. " фракций, " .. j .. " проф)")
+    ArVerify(ply)
+end
+
 concommand.Add("p11_arrival", function(ply, cmd, args)
     if IsValid(ply) and not P11FW.Config.Admin(ply) then return end
     local sub = tostring(args[1] or "")
@@ -385,22 +407,7 @@ concommand.Add("p11_arrival", function(ply, cmd, args)
 
     elseif sub == "all" then
         -- халява-кнопка владельца: ВСЕ фракции и ВСЕ профы → здесь
-        local base, ay = ply:GetPos(), Angle(0, ply:EyeAngles().y, 0)
-        local i = 0
-        for _, c in ipairs(P11FW.CategoryList or {}) do
-            POLUS11.Arrivals[c.id] = { pos = base, ang = ay }
-            i = i + 1
-        end
-        local j = 0
-        for id in pairs(P11FW.Jobs or {}) do
-            POLUS11.JobArrivals[id] = { pos = base, ang = ay }
-            j = j + 1
-        end
-        ArSave()
-        P11FW.Notify(ply, "✓ Расставил ЗДЕСЬ все: фракций " .. i .. ", проф " .. j .. " — бойцы будут спавниться на этом плацу")
-        POLUS11.SpawnMark(base, ay, 2, "ВСЕ ФРАКЦИИ + ВСЕ ПРОФЫ (" .. i .. "/" .. j .. ")", 8)
-        P11FW.Log("Прибытие(all): " .. ply:Nick() .. " расставил ВСЕ зоны (" .. i .. " фракций, " .. j .. " проф)")
-        ArVerify(ply)
+        POLUS11.ArrivalAllHere(ply)
 
     elseif sub == "job" and args[2] then
         local jid = FindJobId(table.concat(args, " ", 2)) -- v4.9.2: принимаем id ИЛИ название («мед», «Пулемётчик»)

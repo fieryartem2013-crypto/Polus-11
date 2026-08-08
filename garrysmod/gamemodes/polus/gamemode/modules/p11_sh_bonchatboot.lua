@@ -41,4 +41,37 @@ if SERVER then
 else
     include("bonchat/base_cl.lua")
     print("[P11-ЭФИР] фронтенд чата: BonChat (MIT © Bonyoze) подключён клиенту ✔ | движковый чат: bonchat_enable 0")
+
+    -- ============ v4.12.2 «ЭФИР»: СТРАХОВКА «КАСТОМНОГО ЧАТА НЕТ» ============
+    -- Исторический сценарий падения: у клиента bonchat_enable стоит 0
+    -- (выключено когда-то руками/чужим конфигом, конвар архивный и живёт
+    -- вечно) — чат ванильный вечно. Лечим сами через 9 сек: вернуть 1
+    -- (BonChat перехватит конвар ДИНАМИЧЕСКИ — перезаход не нужен).
+    timer.Simple(9, function()
+        local cv = GetConVar("bonchat_enable")
+        if cv and not cv:GetBool() then
+            RunConsoleCommand("bonchat_enable", "1")
+            notification.AddLegacy("ЭФИР: чат станции был выключен — включён обратно автоматически (bonchat_enable 1).", NOTIFY_HINT, 6)
+            print("[P11-ЭФИР] СТРАХОВКА: bonchat_enable был 0 → вернули 1 (окно ЭФИРА оживёт без перезахода)")
+        end
+        if not (BonChat and IsValid(BonChat.frame)) then
+            notification.AddLegacy("ЭФИР: кастомный чат не поднялся — напиши в консоль p11_chatfix и скинь владельцу КРАСНЫЕ строки консоли клиента (клавиша ~).", NOTIFY_ERROR, 9)
+            print("[P11-ЭФИР] ВНИМАНИЕ: BonChat.frame не создан через 9 сек после загрузки — мешает чужой аддон-чат или ошибка клиента ВЫШЕ по этому логу. Команда: p11_chatfix")
+        end
+    end)
+
+    -- самопочинка по требованию: включить + статус в консоль
+    concommand.Add("p11_chatfix", function()
+        local cv = GetConVar("bonchat_enable")
+        if cv and not cv:GetBool() then
+            RunConsoleCommand("bonchat_enable", "1")
+            print("[P11-ЭФИР] chatfix: bonchat_enable → 1 (окно ЭФИРА оживает немедленно)")
+        end
+        local alive = BonChat and IsValid(BonChat.frame)
+        print("[P11-ЭФИР] chatfix: панель BonChat = " .. (alive and "ЖИВА" or "НЕТ — ищи КРАСНУЮ ошибку клиента выше (чаще чужой аддон-чат)"))
+        notification.AddLegacy(
+            alive and "ЭФИР: чат жив — открывайся клавишей Enter или Y."
+                    or  "ЭФИР: чат НЕ поднят — красные строки консоли клиента (~) → владельцу.",
+            alive and NOTIFY_HINT or NOTIFY_ERROR, 6)
+    end, nil, "Самопочинка чата станции: включить BonChat + статус (v4.12.2)")
 end
