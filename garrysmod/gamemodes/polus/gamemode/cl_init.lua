@@ -48,6 +48,7 @@ local cl = {
     "modules/p11_cl_utility.lua",     -- v4.10.0 «ГАРАЖ»: утилиты выдачи ПОЛЮС-ФЛЮКСА (rank 4+)
     "modules/p11_cl_poi.lua",         -- v4.10.0 «ГАРАЖ»: маяки «куда идти»
     "modules/p11_cl_thingkit.lua",    -- v4.10.0 «ГАРАЖ»: пульт тела Нечто «ЛИЧИНА 3.0» (после cl_mutations!)
+    "modules/p11_cl_pchat.lua",       -- v4.14.0 «СВЯЗЬ»: СВОЙ чат станции (заявка «сделай сам свой кастомный чат») — ВСЕГДА ПОСЛЕДНИЙ (его net.Receive побеждает)
 }
 
 local loaded = 0
