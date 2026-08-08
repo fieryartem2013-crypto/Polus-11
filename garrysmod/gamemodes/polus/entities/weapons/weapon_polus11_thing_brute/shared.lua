@@ -35,7 +35,8 @@ SWEP.Secondary.Ammo        = "none"
 
 SWEP.Weight = 8
 
-local BRUTE_HP    = 170
+local BRUTE_HP    = 170 -- минимум туши (страховка на отсутствие ТУШИ КОРНЯ)
+local BRUTE_BONUS = 70  -- надбавка туши ПОВЕРХ текущего максимума (400 → 470)
 local BRUTE_SPEED = 0.9
 
 function SWEP:Initialize()
@@ -52,8 +53,10 @@ function P11_BruteApply(ply)
         run  = ply:GetRunSpeed(),
     }
     local oldMax = ply.P11_BruteSaved.hp > 0 and ply.P11_BruteSaved.hp or 100
-    ply:SetMaxHealth(BRUTE_HP)
-    ply:SetHealth(math.min(BRUTE_HP, ply:Health() + (BRUTE_HP - oldMax)))
+    -- v4.13.1 «ТУША»: туша ДОБАВЛЯЕТ к телу нечто (400+70), а не срезает до 170
+    local newMax = math.max(BRUTE_HP, oldMax + BRUTE_BONUS)
+    ply:SetMaxHealth(newMax)
+    ply:SetHealth(math.min(newMax, ply:Health() + (newMax - oldMax)))
     ply:SetWalkSpeed(ply.P11_BruteSaved.walk * BRUTE_SPEED)
     ply:SetRunSpeed(ply.P11_BruteSaved.run * BRUTE_SPEED)
 end

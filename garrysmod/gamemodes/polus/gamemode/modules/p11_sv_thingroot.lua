@@ -1,5 +1,5 @@
 -- ============================================================
---  ПОЛЮС-11 — НЕЧТО «КОРЕНЬ» (server) v4.13.0
+--  ПОЛЮС-11 — НЕЧТО «КОРЕНЬ» (server) v4.13.1 «ТУША»
 --  ЗАЯВКИ ВЛАДЕЛЬЦА:
 --   1) «если ты умер взяв себе нечто или поменял профу — нечто
 --      пропадает, а не остаётся до рестарта» → НЕЧТО ТЕПЕРЬ
@@ -18,6 +18,12 @@
 --      именем (bonchat/message.lua), РАЦИЯ подписывает эфир
 --      личиной (p11_sv_radio.lua), а TAB/ники/документы видят
 --      личину уже давно. Логи сервера — честные (реальное имя).
+--   3) «свеп нечто автоматом даёт 400 ХП» (v4.13.1) → пока в
+--      снаряже есть КОГТИ и тварь АКТИВНА — тело уплотняется до
+--      400 ХП (максимум и полный хил при обрастании плотью).
+--      Когти ушли/антидот — тело возвращается к ХП профы.
+--      Туша Поглотителя пересчитана: +70 поверх 400 (470),
+--      а не срез до старых 170 (см. weapon_polus11_thing_brute).
 --
 --  ЭТОТ ФАЙЛ ВКЛЮЧЁН ПОСЛЕДНИМ: его PlayerSpawn/JobChanged
 --  бегут за старыми контурами и перевыставляют состояние.
@@ -60,6 +66,64 @@ local function RNotify(ply, msg)
     else ply:ChatPrint("[ПОЛЮС-11] " .. msg) end
 end
 
+-- ХП должности бойца (эталон «человеческого» тела)
+local function JobHP(ply)
+    local job = P11FW and P11FW.GetJob and P11FW.GetJob(ply)
+    local hp = tonumber(job and job.hp) or 100
+    if hp <= 0 then hp = 100 end
+    return math.Clamp(hp, 1, 1000)
+end
+
+-- ============ 4) СВЕП НЕЧТО = 400 ХП (заявка v4.13.1 «ТУША») ============
+-- Пока активная тварь держит КОГТИ в снаряге — плоть уплотнена до 400.
+-- Снятие: когти ушли (странным путём), антидот, админ-излечение.
+local THING_HP = 400
+POLUS11.ThingHPValue = THING_HP
+
+local function ThingHPPutOn(ply)
+    if ply.P11_ThingHPSaved then return end -- плоть уже уплотнена
+    local oldMax = ply:GetMaxHealth()
+    if oldMax <= 0 then oldMax = 100 end
+    if oldMax >= THING_HP then
+        -- максимум уже раздут (хвост брута/старой жизни): эталон — ХП профы
+        oldMax = JobHP(ply)
+        if oldMax >= THING_HP then oldMax = 100 end
+    end
+    ply.P11_ThingHPSaved = oldMax
+    ply:SetMaxHealth(THING_HP)
+    ply:SetHealth(THING_HP) -- «автоматом даёт 400 ХП»: оброс — сразу полный
+end
+POLUS11.ThingHPPutOn = ThingHPPutOn
+
+local function ThingHPTakeOff(ply)
+    local s = ply.P11_ThingHPSaved
+    if not s then return end
+    ply.P11_ThingHPSaved = nil
+    ply:SetMaxHealth(s > 0 and s or 100)
+    if ply:Health() > ply:GetMaxHealth() then
+        ply:SetHealth(ply:GetMaxHealth())
+    end
+end
+POLUS11.ThingHPTakeOff = ThingHPTakeOff
+
+timer.Create("P11.ThingRootHP", 1, 0, function()
+    for _, ply in ipairs(player.GetAll()) do
+        if IsValid(ply) and ply:Alive() then
+            local boosted = (ply.P11_ThingHPSaved ~= nil)
+            if IsActiveThing(ply) and HasAnyClaw(ply) then
+                if not boosted then
+                    ThingHPPutOn(ply)
+                    RNotify(ply, "Плоть уплотнилась — тело нечто: " .. THING_HP .. " ХП.")
+                    RLog("тело нечто (" .. THING_HP .. " ХП) надето: " .. ply:Nick())
+                end
+            elseif boosted then
+                ThingHPTakeOff(ply)
+                RLog("тело нечто снято (когтей нет): " .. ply:Nick())
+            end
+        end
+    end
+end)
+
 -- ============ ОБЁРТКИ ЯДРА (без накопления при auto-refresh) ============
 
 -- запоминаем ПОСЛЕДНЮЮ надетую личину (переодевание после смены профы)
@@ -96,6 +160,7 @@ function POLUS11.Cure(ply, silent)
         ply.P11_RootWasInf = nil
         ply.P11_RootWasAct = nil
         ply.P11_LastIdentity = nil -- вылеченный не носит чужих лиц
+        ThingHPTakeOff(ply)          -- и уплотнённой плоти (400 ХП)
     end
     if rootCureOrig then return rootCureOrig(ply, silent) end
 end
@@ -119,6 +184,16 @@ hook.Add("PlayerSpawn", "P11.ThingRootSpawn", function(ply)
     -- личина УМЕРЛА публично (её видели убитой) — честно сгорает;
     -- заражение — НЕТ, оно до рестарта
     ply.P11_LastIdentity = nil
+
+    -- тело 400 ХП прошлой жизни сгорает вместе с тушей:
+    -- максимум выравниваем до ХП профы (буст наденется заново,
+    -- как только вернутся когти)
+    ply.P11_ThingHPSaved = nil
+    local jhp = JobHP(ply)
+    if ply:GetMaxHealth() > jhp then
+        ply:SetMaxHealth(jhp)
+        if ply:Health() > jhp then ply:SetHealth(jhp) end
+    end
 
     if not ply.P11_RootWasInf then return end
     ply:SetNWBool("P11_Infected", true)
@@ -161,6 +236,14 @@ hook.Add("P11FW.JobChanged", "P11.ThingRootJob", function(ply, newId, oldId)
     timer.Simple(0.15, function()
         if not (IsValid(ply) and ply:Alive()) then return end
         if not ply:GetNWBool("P11_Infected", false) then return end
+
+        -- «человеческий» максимум новой профы: старый сейв ТУШИ
+        -- недействителен (лоадаут уже выставил ХП новой должности)
+        ply.P11_ThingHPSaved = nil
+        if not (IsActiveThing(ply) and HasAnyClaw(ply)) then
+            local njhp = JobHP(ply)
+            if ply:GetMaxHealth() > njhp then ply:SetMaxHealth(njhp) end
+        end
 
         if ply:GetNWString("P11_FakeNick", "") ~= "" and istable(last) then
             -- чужая личина: лоадаут профы перекрыл облик — НАТЯНУТЬ ОБРАТНО
@@ -209,12 +292,14 @@ concommand.Add("p11_thingroot", function(ply, cmd, args)
             n = n + 1
             local li = p.P11_LastIdentity
             out[#out + 1] = string.format(
-                "  %-20s актив=%s снимокСмерти=%s личина=«%s» когти=%s",
+                "  %-20s актив=%s снимокСмерти=%s личина=«%s» когти=%s ХП=%d/%d(буст=%s)",
                 p:Nick(),
                 tostring(p:GetNWBool("P11_InfActive", false)),
                 tostring(p.P11_RootWasInf == true),
                 (istable(li) and tostring(li.nick or "?")) or "нет",
-                tostring(HasAnyClaw(p))
+                tostring(HasAnyClaw(p)),
+                p:Health(), p:GetMaxHealth(),
+                tostring(p.P11_ThingHPSaved ~= nil)
             )
         end
     end
@@ -224,5 +309,6 @@ concommand.Add("p11_thingroot", function(ply, cmd, args)
     if IsValid(ply) then ply:PrintMessage(HUD_PRINTCONSOLE, txt) else print(txt) end
 end)
 
-print("[POLUS-11] НЕЧТО «КОРЕНЬ» v4.13.0: заражение НЕУБИВАЕМО до рестарта — смерть/смена профы переподтверждаются из снимка; "
-    .. "личина переживает смену профы (P11_LastIdentity); чат/рация зовут тварь украденным именем; диагностика p11_thingroot")
+print("[POLUS-11] НЕЧТО «КОРЕНЬ» v4.13.1 «ТУША»: заражение НЕУБИВАЕМО до рестарта — смерть/смена профы переподтверждаются из снимка; "
+    .. "личина переживает смену профы (P11_LastIdentity); чат/рация зовут тварь украденным именем; "
+    .. "СВЕП НЕЧТО АВТОМАТОМ ДАЁТ " .. THING_HP .. " ХП (когти есть и тварь активна — плоть уплотнена); диагностика p11_thingroot")
