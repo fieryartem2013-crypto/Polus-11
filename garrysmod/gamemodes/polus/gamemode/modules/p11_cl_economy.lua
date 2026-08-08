@@ -288,7 +288,17 @@ local function OpenShopWindow()
                     surface.SetDrawColor(255, 170, 60, 60 + 60 * math.abs(math.sin(CurTime() * 3)))
                     surface.DrawOutlinedRect(0, 0, w, h, 2)
                 end
-                draw.SimpleText(it.name, "P11.Eco.Med", 12, 16, TEXT)
+                -- v4.19.4 «ПОЧЁТ»: метка должностного замка медслужбы
+                local nameLine = it.name
+                local medLocked = false
+                if it.medjob then
+                    local jid = P11FW and P11FW.GetJobId and P11FW.GetJobId(LocalPlayer()) or ""
+                    local okJ = (jid == "medic" or jid == "seed_rkka_medsestra" or jid == "seed_rkka_medglav" or jid == "vip_voenvrach")
+                        or (P11FW.Config and P11FW.Config.Admin and P11FW.Config.Admin(LocalPlayer()))
+                    nameLine = nameLine .. (okJ and "  [МЕДСЛУЖБА]" or "  [ТОЛЬКО МЕДСЛУЖБЕ]")
+                    medLocked = not okJ
+                end
+                draw.SimpleText(nameLine, "P11.Eco.Med", 12, 16, medLocked and BAD or TEXT)
                 draw.SimpleText(it.desc or "", "P11.Eco.Small", 12, 38, DIM)
                 if it.sale then
                     draw.SimpleText("🔥 −40% ДНЯ", "P11.Eco.Small", w - 230, 28,
@@ -403,6 +413,7 @@ function P11.OpenPlaceMenu()
         { id = "arm",        name = "🪖 Армейский контейнер",  desc = "лут: патроны всех видов (v4.15.0)" },
         { id = "hearth",     name = "🔥 Буржуйка «УГЛИ»",      desc = "механика: топливо из 🎒 → греет (v4.15.0)" },
         { id = "flag",       name = "🚩 Точка захвата",         desc = "РККА ↔ Орёл: встань в круг — жми точку (v4.16.0)" },
+        { id = "contract",   name = "📜 Интендант-нарядник",    desc = "контракты часа: сложно, но оплата большая (v4.19.4)" },
     }
     -- v4.12.0: точек много → скролл-лента вместо роста окна
     local sc = vgui.Create("DScrollPanel", f)

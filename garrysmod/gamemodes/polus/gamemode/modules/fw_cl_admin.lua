@@ -220,6 +220,7 @@ function P11FW.OpenAdminMenu(forceTab)
         { id = "flux",      name = "💠 ПОТОК",  minLevel = 4 }, -- v4.14.2: КАЗНА — выдача трёх валют (ПФ/₽/⏱)
         { id = "ann",       name = "ОПОВЕЩЕНИЕ", minLevel = 4 }, -- v4.18.0 «РЕПРОДУКТОР»: плашка всей станции
         { id = "event",     name = "ИВЕНТ НЕЧТО", minLevel = 4 }, -- v4.18.2 «ВЕРБОВКА»: ивент у кадровика своей кнопкой
+        { id = "medals",    name = "МЕДАЛИ", minLevel = 9 }, -- v4.19.4 «ПОЧЁТ»: выдача/снятие медалей (Developer+)
         { id = "jobs",      name = "ДОЛЖНОСТИ", minLevel = 14 },
         { id = "factions",  name = "ФРАКЦИИ",   minLevel = 14 },
         { id = "utils",     name = "УТИЛИТЫ",   minLevel = 14 },
@@ -287,6 +288,7 @@ function P11FW.OpenAdminMenu(forceTab)
             for id, p in pairs(f.TabPanels) do p:SetVisible(id == t.id) end
             if t.id == "players" or t.id == "utils" or t.id == "acts" or t.id == "mod" then RequestAdminData() end
             if t.id == "admranks" and f.RefreshAdmRanks then f:RefreshAdmRanks() end
+            if t.id == "medals" and f.RefreshMedals then f:RefreshMedals() end -- v4.19.4 «ПОЧЁТ»
             if t.id == "whitelist" and f.RefreshWhitelistTab then f:RefreshWhitelistTab() end
             -- v4.19.1 «ЛЕНТА»: активная вкладка — всегда в кадре
             if LayoutTabs then
@@ -361,6 +363,17 @@ function P11FW.OpenAdminMenu(forceTab)
         p:SetVisible(id == f.ActiveTab)
         f.TabPanels[id] = p
         return p
+    end
+
+    -- ============ v4.19.4 «ПОЧЁТ»: ВКЛАДКА МЕДАЛИ ============
+    -- Тело строит модуль медалей (p11_cl_medals) — зовём в рантайме,
+    -- порядок загрузки файлов роли не играет.
+    do
+        local p = NewTab("medals")
+        if P11FW.MedalsTabBuild then
+            local okM, errM = pcall(P11FW.MedalsTabBuild, p, f)
+            if not okM then print("[POLUS][ERROR] вкладка МЕДАЛИ: " .. tostring(errM)) end
+        end
     end
 
     -- ==================================================

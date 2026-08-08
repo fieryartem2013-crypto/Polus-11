@@ -43,6 +43,9 @@ POLUS11.Items = {
     chemlight= { name = "Химсвет (пачка)",  price = 250,  class = "weapon_polus11_chemlight",desc = "Кидай и размечай путь в облаке спор. (цена v4.9.1)" },
     scalpel  = { name = "Скальпель",        price = 900,  class = "weapon_polus11_scalpel", desc = "Хирургический. И не только хирургический. (цена v4.9.1)" },
     ampoule  = { name = "Ампула «Анальгин-С»", price = 450, class = "p11_ampoule",          desc = "Расходка медика для процедурной инъекции (+25 ХП). В руки не даётся. (цена v4.9.1)" },
+    -- v4.19.4 «ПОЧЁТ»: лекарства РАССУДКА — купить может только медслужба (медсёстры/полевой медик/военврач), употребить — любой
+    coffee   = { name = "Чашка горячего кофе",  price = 150, sanity = 30, medjob = true, desc = "Бодрит и греет: +30 рассудка. Продажа — только медслужбе. (v4.19.4)" },
+    pills    = { name = "Таблетки «Аминазин-С»", price = 520, sanity = 70, medjob = true, desc = "Курс психиатра у полюса: +70 рассудка. Продажа — только медслужбе. (v4.19.4)" },
     -- ---- ПАТРОНЫ всех видов (v4.9.3 «ГРОШ», заявка «в дарке можно покупать патроны») ----
     ammo_pistol = { name = "Патроны пистолетные (x60)", price = 350, ammo = { type = "pistol", n = 60 }, desc = "К ПМ, TT-33 и любой пистолетной мелочи станции." },
     ammo_smg    = { name = "Патроны пистолет-пулемётные (x90)", price = 450, ammo = { type = "smg1", n = 90 }, desc = "К АКС-74У, ППШ и прочим быстрым стволам." },
@@ -105,7 +108,7 @@ function POLUS11.InvSync(ply)
     -- каталог шлём тоже (цены могут правиться без рестарта)
     local cat = {}
     for id, it in pairs(POLUS11.Items) do
-        cat[id] = { name = it.name, price = it.price, desc = it.desc, class = it.class }
+        cat[id] = { name = it.name, price = it.price, desc = it.desc, class = it.class, medjob = it.medjob and true or nil }
         -- v4.2: скидка дня (актуальная цена + маркер)
         if POLUS11.SaleOfDay and POLUS11.SaleOfDay.id == id then
             cat[id].price = POLUS11.SalePrice and POLUS11.SalePrice(id) or it.price
@@ -147,7 +150,17 @@ end
 function POLUS11.ShopBuy(ply, id)
     local it = POLUS11.Items[id]
     if not it then return end
-    if id ~= "ampoule" and not it.ent and not it.ammo and not it.dyn and not it.mat and not POLUS11.InvCanUse(it.class) then
+    -- v4.19.4 «ПОЧЁТ»: лекарства рассудка продаются ТОЛЬКО медслужбе
+    if it.medjob then
+        local jid = P11FW and P11FW.GetJobId and P11FW.GetJobId(ply) or ""
+        local ok = (POLUS11.MedJobs and POLUS11.MedJobs[jid]) or (P11FW.Config and P11FW.Config.Admin and P11FW.Config.Admin(ply))
+        if not ok then
+            POLUS11.Notify(ply, "«" .. it.name .. "» интендант отпускает только МЕДСЛУЖБЕ (медсёстры, полевой медик, военврач). Попроси медика сходить за лекарством.")
+            ply:EmitSound("buttons/button10.wav", 60, 90)
+            return
+        end
+    end
+    if id ~= "ampoule" and not it.ent and not it.ammo and not it.dyn and not it.mat and not it.sanity and not POLUS11.InvCanUse(it.class) then -- v4.19.4 «ПОЧЁТ»: +it.sanity (кофе/аминазин — предметы без класса)
         POLUS11.Notify(ply, "«" .. it.name .. "» сейчас нет на складе (нет пака оружия на сервере).")
         ply:EmitSound("buttons/button10.wav", 60, 90)
         return
@@ -181,6 +194,24 @@ function POLUS11.InvUse(ply, id)
     end
     if id == "ampoule" then
         POLUS11.Notify(ply, "Ампула — расходка: шприц потратит её сам при процедурной инъекции.")
+        return
+    end
+    if it.sanity then -- v4.19.4 «ПОЧЁТ»: кофе/аминазин — глоток рассудка
+        if POLUS11.SanityAdd then
+            POLUS11.SanityAdd(ply, it.sanity, "«" .. it.name .. "»")
+        else
+            POLUS11.Notify(ply, "Модуль рассудка молчит — скажи Главе.")
+            return
+        end
+        data.items[id] = data.items[id] - 1
+        if data.items[id] <= 0 then data.items[id] = nil end
+        DebouncedSave()
+        if id == "coffee" then
+            ply:EmitSound("npc/barnacle/barnacle_gulp2.wav", 60, 110)
+        else
+            ply:EmitSound("items/smallmedkit1.wav", 65, 100)
+        end
+        POLUS11.InvSync(ply)
         return
     end
     if it.dyn == true then -- v4.9.3 «ГРОШ»: умный боекомплект — два магазина к стволу в руках
@@ -473,6 +504,7 @@ local PLACEABLE = {
     arm       = "polus11_lootarm",    -- v4.15.0 «УГЛИ»: армейский контейнер (лут, восполняется)
     hearth    = "polus11_hearth",     -- v4.15.0 «УГЛИ»: буржуйка — топливо из 🎒 → жар греет станцию
     flag      = "polus11_cappoint",   -- v4.16.0 «ЗАХВАТ»: точка захвата РККА ↔ Орёл (шкала/оклад)
+    contract  = "polus_p11_contractnpc", -- v4.19.4 «ПОЧЁТ»: интендант-нарядник (контракты часа)
 }
 
 local function PlaceFile(role)
@@ -532,6 +564,7 @@ hook.Add("InitPostEntity", "P11.PlaceLoad", function()
         LoadPlaced("tech")
         LoadPlaced("bloodlab")  -- v4.12.0 «ОТБОЙ»: стол крови возвращён
         LoadPlaced("labtable")
+        LoadPlaced("contract")  -- v4.19.4 «ПОЧЁТ»: интендант-нарядник
         -- внимание: «generator» НЕ грузим — энергосистема выведена из игры (v4.12.0)
         if POLUS11.PatrolSyncAll then timer.Simple(2.5, function() POLUS11.PatrolSyncAll(nil) end) end
     end)
@@ -553,6 +586,7 @@ hook.Add("PostCleanupMap", "P11.PlaceLoad2", function()
         LoadPlaced("tech")
         LoadPlaced("bloodlab")  -- v4.12.0 «ОТБОЙ»: стол крови возвращён
         LoadPlaced("labtable")
+        LoadPlaced("contract")  -- v4.19.4 «ПОЧЁТ»: интендант-нарядник
         -- внимание: «generator» НЕ грузим — энергосистема выведена из игры (v4.12.0)
         if POLUS11.PatrolSyncAll then timer.Simple(1.5, function() POLUS11.PatrolSyncAll(nil) end) end
     end)

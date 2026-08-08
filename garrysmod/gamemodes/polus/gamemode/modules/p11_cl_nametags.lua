@@ -146,6 +146,17 @@ hook.Add("HUDPaint", "P11_Nametags", function()
                                 TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 2, Color(0, 0, 0, a * 0.8))
                         end
 
+                        -- v4.19.4 «ПОЧЁТ»: медали НАД ником (до 3 глифов + «+N»)
+                        if P11 and P11.MedalGlyphs then
+                            local okM, mg, mn = pcall(P11.MedalGlyphs, ply, 3)
+                            if okM and mg and mg ~= "" then
+                                local extra = (mn or 0) > 3 and (" +" .. (mn - 3)) or ""
+                                draw.SimpleTextOutlined(mg .. extra, "P11.HUD.Text",
+                                    pos.x, pos.y - 24, Color(255, 205, 100, a),
+                                    TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 2, Color(0, 0, 0, a * 0.8))
+                            end
+                        end
+
                         -- динамик говорящего — ПОД табличкой
                         if ply.IsSpeaking and ply:IsSpeaking() then
                             local pulse = 0.55 + math.sin(CurTime() * 10) * 0.45

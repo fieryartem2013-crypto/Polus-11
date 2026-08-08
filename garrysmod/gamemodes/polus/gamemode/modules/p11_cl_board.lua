@@ -240,8 +240,19 @@ local function DrawRow(d, x, y, W)
     -- осталось только в консольном p11_spies (Глава, ранг 16) — по запросу,
     -- а не на всеобщем обозрении.
     if P11B.amAdmin and d.infected then marks = marks .. " ☣" end
+    local mx = nx + wN + 6
     if marks ~= "" then
-        draw.SimpleText(marks, "P11B.Tiny", nx + wN + 6, cy, Color(150, 160, 175, 190), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        draw.SimpleText(marks, "P11B.Tiny", mx, cy, Color(150, 160, 175, 190), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        surface.SetFont("P11B.Tiny")
+        mx = mx + (surface.GetTextSize(marks) or 0) + 5
+    end
+    -- v4.19.4 «ПОЧЁТ»: медали бойца следом за именем (до 3 глифов + «+N»)
+    if IsValid(d.ply) and P11 and P11.MedalGlyphs then
+        local okM, mg, mn = pcall(P11.MedalGlyphs, d.ply, 3)
+        if okM and mg and mg ~= "" then
+            local extra = (mn or 0) > 3 and (" +" .. (mn - 3)) or ""
+            draw.SimpleText(mg .. extra, "P11B.Tiny", mx, cy, COL_GOLD, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        end
     end
 
     -- колонка РАНГ (v4.8.0): от User до Главы, цвет ранга + перелив у высших
@@ -351,6 +362,18 @@ local function DrawBoard()
     draw.SimpleText("MILITARY HORROR RP · 1982 · v" .. tostring(POLUS_BUILD or "?"), "P11B.Tiny", x + 18, y + 40, Color(120, 160, 190, 220), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
     draw.SimpleText(tostring(P11B.online or ""), "P11B.Small", x + W - 16, y + 14, Color(170, 178, 195), TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP)
     draw.SimpleText(os.date("%H:%M") .. "  ·  " .. game.GetMap(), "P11B.Tiny", x + W - 16, y + 40, COL_DIM, TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP)
+    -- v4.19.4 «ПОЧЁТ»: ДОСКА ПОЧЁТА — топ-3 по медалям прямо в шапке ТАБа
+    if P11 and P11.MedalTop then
+        local okT, top = pcall(P11.MedalTop, 3)
+        if okT and top and #top > 0 then
+            local parts = {}
+            for i, t in ipairs(top) do
+                parts[#parts + 1] = "★" .. t.name .. " ×" .. t.n
+            end
+            draw.SimpleText("ДОСКА ПОЧЁТА: " .. table.concat(parts, "  ·  "), "P11B.Tiny",
+                x + W - 16, y + 56, COL_GOLD, TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP)
+        end
+    end
     -- v4.6.6: наигрыш службы — время открывает профы
     local me2 = LocalPlayer()
     if IsValid(me2) then
@@ -546,7 +569,7 @@ local function OpenPlayerMini(d)
 
     local f = vgui.Create("DFrame")
     P11B.mini = f
-    f:SetSize(280, 252)
+    f:SetSize(280, 292)
     local mx, my = gui.MouseX(), gui.MouseY()
     f:SetPos(math.Clamp(mx + 10, 4, ScrW() - 292), math.Clamp(my + 10, 4, ScrH() - 260))
     f:SetTitle("")
@@ -565,9 +588,22 @@ local function OpenPlayerMini(d)
             "P11B.MiniT", 14, 12, Color(235, 240, 248), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
         draw.SimpleText((d.job ~= "" and d.job or "без должности") .. " · " .. (IsValid(ply) and ply:SteamID() or "?"),
             "P11B.Mini", 14, 34, Color(150, 165, 180), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+        -- v4.19.4 «ПОЧЁТ»: медали бойца в карточке
+        if P11 and P11.MedalIds then
+            local okM, ids = pcall(P11.MedalIds, ply)
+            if okM and ids and #ids > 0 then
+                local glyphs = {}
+                for _, id2 in ipairs(ids) do
+                    local dd = P11.Medals and P11.Medals.defs and P11.Medals.defs[id2]
+                    glyphs[#glyphs + 1] = (dd and dd.g) or "?"
+                end
+                draw.SimpleText(table.concat(glyphs, " ") .. "  — медалей: " .. #ids,
+                    "P11B.Mini", 14, 52, Color(255, 205, 100), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+            end
+        end
     end
 
-    MiniBtn(f, 62, "Открыть Steam-профиль", Color(70, 120, 180), function()
+    MiniBtn(f, 94, "Открыть Steam-профиль", Color(70, 120, 180), function()
         local id64 = ply:SteamID64()
         if isstring(id64) and id64 ~= "" and id64 ~= "0" then
             gui.OpenURL("https://steamcommunity.com/profiles/" .. id64)
@@ -576,19 +612,29 @@ local function OpenPlayerMini(d)
             MiniNote("SteamID64 неизвестен (стим/бот) — профиль не открыть.")
         end
     end)
-    MiniBtn(f, 98, "Копировать SteamID", Color(90, 140, 200), function()
+    MiniBtn(f, 130, "Копировать SteamID", Color(90, 140, 200), function()
         SetClipboardText(tostring(ply:SteamID() or "?"))
         MiniNote("SteamID скопирован: " .. tostring(ply:SteamID()))
     end)
-    MiniBtn(f, 134, "Копировать ник (позывной)", Color(120, 165, 210), function()
+    MiniBtn(f, 166, "Копировать ник (позывной)", Color(120, 165, 210), function()
         SetClipboardText(tostring(d.name))
         MiniNote("Ник скопирован: " .. tostring(d.name))
     end)
-    MiniBtn(f, 170, "Копировать Steam-ник", Color(150, 190, 220), function()
+    MiniBtn(f, 202, "Копировать Steam-ник", Color(150, 190, 220), function()
         SetClipboardText(tostring(d.real))
         MiniNote("Steam-ник скопирован: " .. tostring(d.real))
     end)
-    MiniBtn(f, 210, "Закрыть", Color(130, 60, 55), function()
+    -- v4.19.4 «ПОЧЁТ»: награда — если у меня есть право вручать
+    local meL = LocalPlayer()
+    local scopeL = (P11 and P11.MedalScopeLocal) and P11.MedalScopeLocal() or nil
+    if scopeL == "full" or (scopeL == "dept" and IsValid(meL) and meL ~= ply) then
+        MiniBtn(f, 238, "★ Вручить медаль (ПОЧЁТ)", Color(190, 150, 55), function()
+            if P11 and P11.MedalAwardMenu then
+                P11.MedalAwardMenu(ply)
+            end
+        end)
+    end
+    MiniBtn(f, 256, "Закрыть", Color(130, 60, 55), function()
         f:Remove()
     end)
 
