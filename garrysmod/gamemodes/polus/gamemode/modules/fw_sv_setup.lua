@@ -136,7 +136,7 @@ net.Receive("P11FW_AdminAction", function(len, ply)
     if CurTime() < ply.P11FW_NextAct then return end
     ply.P11FW_NextAct = CurTime() + 0.5
 
-    local act = net.ReadUInt(5)
+    local act = net.ReadUInt(6) -- v4.12.1 «ПЛАЦ»: 6 бит в пару клиенту (было 5 — акты 33+ умирали по дороге)
 
     if act == 1 or act == 2 or act == 3 then -- арест / рабство / бан (через ворота рангов)
         local idx = net.ReadUInt(8)
@@ -351,8 +351,9 @@ net.Receive("P11FW_AdminAction", function(len, ply)
 
     -- ============ v4.5.0: ЗОНА ПРИБЫТИЯ + ГРУЗОВИК ============
     elseif act == 33 then -- поставить зону прибытия для фракции
-        local fid = net.ReadString()
+        local fid = string.sub(net.ReadString() or "", 1, 32)
         if POLUS11 and POLUS11.ArrivalSet then POLUS11.ArrivalSet(ply, fid) end
+        if POLUS11 and POLUS11.ArrivalVerify then POLUS11.ArrivalVerify(ply) end -- v4.12.1: громкий ✓ чтения назад
     elseif act == 34 then -- убрать зону прибытия фракции
         local fid = net.ReadString()
         if POLUS11 and POLUS11.ArrivalClear then POLUS11.ArrivalClear(ply, fid) end
@@ -363,8 +364,9 @@ net.Receive("P11FW_AdminAction", function(len, ply)
 
     -- ============ v4.6.1: СПАВН ПРОФЫ + СПИСОК ============
     elseif act == 37 then -- поставить точку спавна для ПРОФЫ
-        local jid = net.ReadString()
+        local jid = string.sub(net.ReadString() or "", 1, 48)
         if POLUS11 and POLUS11.ArrivalJobSet then POLUS11.ArrivalJobSet(ply, jid) end
+        if POLUS11 and POLUS11.ArrivalVerify then POLUS11.ArrivalVerify(ply) end -- v4.12.1: громкий ✓ чтения назад
     elseif act == 38 then -- убрать точку спавна профы
         local jid = net.ReadString()
         if POLUS11 and POLUS11.ArrivalJobClear then POLUS11.ArrivalJobClear(ply, jid) end

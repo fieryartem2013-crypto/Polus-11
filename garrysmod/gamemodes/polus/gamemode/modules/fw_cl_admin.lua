@@ -33,8 +33,11 @@ end
 P11FW.RequestAdminData = RequestAdminData
 
 local function SendAction(act, writer)
+    -- v4.12.1 «ПЛАЦ»: ШЕСТЬ бит (не 5!) — акты 33..39 (спавны фракции/профы/
+    -- грузовик/список) в 5 бит не влезали и обрезались в чужие действия
+    -- (33→арест!, 37→уволить!), поэтому точки из меню НИКОГДА не ставились.
     net.Start("P11FW_AdminAction")
-        net.WriteUInt(act, 5)
+        net.WriteUInt(act, 6)
         if writer then writer() end
     net.SendToServer()
 end

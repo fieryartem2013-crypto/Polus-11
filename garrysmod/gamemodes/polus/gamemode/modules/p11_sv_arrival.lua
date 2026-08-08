@@ -334,6 +334,7 @@ local function ArVerify(ply)
     print("[POLUS-11] СПАВН: ✓ прибытия в JSON — фракций " .. nf .. ", проф " .. nj)
     return true
 end
+POLUS11.ArrivalVerify = ArVerify -- v4.12.1 «ПЛАЦ»: зовёт и админ-меню (act 33/37), не только консоль
 
 -- принять id ИЛИ кусок НАЗВАНИЯ профы (умный поиск «мед», «пулем», «учён»)
 local function FindJobId(q)
