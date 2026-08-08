@@ -1,5 +1,5 @@
 -- ============================================================
---  ПОЛЮС-11 — «ГЛАЗ»: ПУЛЬТ ДИСПЕТЧЕРА (client) v4.20.0 «ПОСТ»
+--  ПОЛЮС-11 — «ГЛАЗ»: ПУЛЬТ ДИСПЕТЧЕРА (client) v4.20.1 «КЛАВИША»
 --  Полный реворк по эталону владельца (кадры видео URF-полиции):
 --   • статик-шум при каждом переключении
 --   • крестовина W/A/S/D с именами каналов («Нет камеры» за краем)
@@ -47,6 +47,22 @@ for wi, w in ipairs(D.weapons) do
 end
 
 local cvDbg = CreateConVar("p11_dspdebug", "0", FCVAR_ARCHIVE) -- v4.19.2 «ШЛЮЗ»: HUD-датчик сеанса/клавы
+
+-- v4.20.1 «КЛАВИША»: бинокль уехал с V (дефолтный ноклип!) на G (выбор
+-- владельца); живой перебинд без новой версии: p11_dspkey_iris b / n / h …
+local cvIrisKey = CreateClientConVar("p11_dspkey_iris", "g", true, false)
+
+local function IrisKeyName() -- одна ПЕЧАТНАЯ буква, иначе дефолт G
+    local k = string.upper(tostring(cvIrisKey:GetString() or "g"))
+    k = string.gsub(k, "%s", "")
+    if #k ~= 1 then k = "G" end
+    return k
+end
+local function IrisKeyCode()
+    local kc = input.GetKeyCode(IrisKeyName())
+    if not kc or kc < 0 then return KEY_G end
+    return kc
+end
 
 surface.CreateFont("P11.Dsp.Title", { font = "Roboto", size = 19, weight = 800, extended = true })
 surface.CreateFont("P11.Dsp.Row",   { font = "Roboto", size = 15, weight = 600, extended = true })
@@ -315,7 +331,7 @@ hook.Add("PlayerButtonDown", "P11.DspKeys", function(ply, key)
     elseif key == KEY_SPACE then
         nextKey = CurTime() + 0.25
         D.SetMode(D.mode == "cam" and "ply" or "cam")
-    elseif key == KEY_V then -- «Сменить вид»: бинокль вкл/выкл
+    elseif key == IrisKeyCode() then -- «Сменить вид»: бинокль вкл/выкл (v4.20.1: G, был V = ноклип)
         nextKey = CurTime() + 0.2
         D.SetIris(not D.iris)
     elseif key == MOUSE_MIDDLE then -- курсор + сайд-пульт (текстовых полей нет — безопасно)
@@ -470,7 +486,7 @@ function D.RebuildPanel()
                 me and COL.gold or COL.txt)
         end
     else
-        Head("ЛЮДИ (A/D шаг, W/S прыжок ×3, V — бинокль):")
+        Head("ЛЮДИ (A/D шаг, W/S прыжок ×3, " .. IrisKeyName() .. " — бинокль):")
         local pls = PList()
         if #pls == 0 then Row("НИКОГО В ПОЛЕ ЗРЕНИЯ", function() end, COL.dim) end
         for i, p in ipairs(pls) do
@@ -502,7 +518,7 @@ function D.RebuildPanel()
             Row("📍 МАЯК ЦЕЛИ — 60 сек, видят орлы  (−20 эн.)",
                 function() if affordMark then SendT(5, tt) else surface.PlaySound("buttons/button10.wav") end end,
                 affordMark and COL.gold or COL.dim)
-            Row("👁 СМЕНИТЬ ВИД — бинокль (V)", function() D.SetIris(not D.iris) end,
+            Row("👁 СМЕНИТЬ ВИД — бинокль (" .. IrisKeyName() .. ")", function() D.SetIris(not D.iris) end,
                 D.iris and COL.gold or COL.txt)
         end
     end
@@ -779,7 +795,7 @@ hook.Add("HUDPaint", "P11.DspHUD", function()
                     TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
                 ly = ly + 27
             end
-            draw.SimpleText("Сменить вид (V)" .. (D.iris and "  —  БИНОКЛЬ ВКЛ" or ""),
+            draw.SimpleText("Сменить вид (" .. IrisKeyName() .. ")" .. (D.iris and "  —  БИНОКЛЬ ВКЛ" or ""),
                 "P11.Dsp.Row", lx + 125, ly + 8,
                 D.iris and Color(235, 205, 120) or Color(200, 215, 240),
                 TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
@@ -860,4 +876,4 @@ hook.Add("HUDPaint", "P11.DspDebug", function()
         Color(140, 255, 160), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 end)
 
-print("[POLUS-11] «ГЛАЗ»: пульт диспетчера v4.20.0 «ПОСТ» OK")
+print("[POLUS-11] «ГЛАЗ»: пульт диспетчера v4.20.1 «КЛАВИША» OK")
