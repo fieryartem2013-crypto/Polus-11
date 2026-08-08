@@ -306,6 +306,44 @@ function POLUS11.TakeFromSafe(ply, id)
     POLUS11.InvSync(ply)
 end
 
+-- v4.14.4 «БАГАЖ» (заявка: «через C-меню положить оружие в руках в багаж»):
+-- активный ствол укладывается в инвентарь ячейкой каталога ларька.
+-- Когти Нечто, физган/тулган и прочий непокупной инструмент — НЕ лезет
+-- (их классов в каталоге нет, отказ честный).
+local STOW_ALIAS = { -- наследие: старые классы → ячейки каталога
+    weapon_polus11_rpd = "rpd", -- скриптовый РПД из «ИГЛЫ» складывается в ячейку ARC9-РПД
+}
+function POLUS11.InvStow(ply)
+    if not (IsValid(ply) and ply:Alive()) then return end
+    local wep = ply:GetActiveWeapon()
+    if not IsValid(wep) then
+        POLUS11.Notify(ply, "В руках пусто — убирать нечего.")
+        ply:EmitSound("buttons/button10.wav", 60, 90)
+        return
+    end
+    local class = wep:GetClass()
+    local id = STOW_ALIAS[class]
+    local it = id and POLUS11.Items[id] or nil
+    if not it then
+        for cid, cand in pairs(POLUS11.Items) do
+            if cand.class == class then id = cid it = cand break end
+        end
+    end
+    if not it then
+        POLUS11.Notify(ply, "«" .. class .. "» в багаж не лезет — укладывается только то, что продаёт ларёк.")
+        ply:EmitSound("buttons/button10.wav", 60, 90)
+        return
+    end
+    ply:StripWeapon(class)
+    local data = InvOf(ply)
+    data.items[id] = (data.items[id] or 0) + 1
+    DebouncedSave()
+    POLUS11.InvSync(ply)
+    POLUS11.Notify(ply, "«" .. it.name .. "» убран в багаж. Вернуть: 🎒 C-меню → ИСПОЛЬЗОВАТЬ.")
+    ply:EmitSound("buttons/button9.wav", 55, 110)
+    POLUS11.Log(ply:Nick() .. " убрал «" .. it.name .. "» (" .. class .. ") в багаж")
+end
+
 -- ============ NET: действия из UI ============
 
 net.Receive("P11_InvAct", function(len, ply)
@@ -319,6 +357,8 @@ net.Receive("P11_InvAct", function(len, ply)
 
     if act == 1 then      -- использовать
         POLUS11.InvUse(ply, id)
+    elseif act == 5 then  -- v4.14.4 «БАГАЖ»: ствол из рук — в инвентарь
+        POLUS11.InvStow(ply)
     elseif act == 2 then  -- купить (доступ только через открытый ларёк!)
         if not ply.P11_ShopOpenEnt or not IsValid(ply.P11_ShopOpenEnt)
             or ply:GetPos():DistToSqr(ply.P11_ShopOpenEnt:GetPos()) > 300 * 300 then

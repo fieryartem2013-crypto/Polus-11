@@ -176,8 +176,43 @@ end
 function P11.OpenInventory()
     local f = EcoFrame("🎒 ИНВЕНТАРЬ — взятое отсюда ложится в руки", 620, 460)
     local sc = vgui.Create("DScrollPanel", f)
-    sc:SetPos(12, 62) sc:SetSize(596, 344)
+    sc:SetPos(12, 62) sc:SetSize(596, 302) -- v4.14.4 «БАГАЖ»: чуть уже — внизу встала кнопка укладки
     sc:GetVBar():SetWide(5)
+
+    -- v4.14.4 «БАГАЖ» (заявка: «через C-меню положить оружие в руках в багаж»):
+    -- укладывает АКТИВНЫЙ ствол в инвентарь; ярлык подтягивает имя из каталога
+    local stowBtn = vgui.Create("DButton", f)
+    stowBtn:SetPos(12, 62 + 302 + 8)
+    stowBtn:SetSize(596, 34)
+    stowBtn:SetText("")
+    stowBtn.Paint = function(s, w, h)
+        local me = LocalPlayer()
+        local wep = IsValid(me) and me:GetActiveWeapon() or nil
+        local class = IsValid(wep) and wep:GetClass() or nil
+        local label = "⬇ В БАГАЖ — в руках пусто"
+        local col = DIM
+        if class then
+            local name = nil
+            for cid, cand in pairs(P11.Eco.catalog or {}) do
+                if cand.class == class then name = cand.name break end
+            end
+            if not name and class == "weapon_polus11_rpd" then name = "РПД (ручной пулемёт)" end
+            if name then
+                label = "⬇ В БАГАЖ: " .. name
+                col = Color(255, 205, 110)
+            else
+                label = "⬇ В БАГАЖ — «" .. class .. "» не лезет (не из ларька)"
+            end
+        end
+        draw.RoundedBox(8, 0, 0, w, h, s:IsHovered() and Color(58, 48, 30) or Color(38, 32, 22))
+        surface.SetDrawColor(255, 205, 110, 150)
+        surface.DrawOutlinedRect(0, 0, w, h, 1)
+        draw.SimpleText(label, "P11.Eco.Med", w / 2, h / 2, col, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+    end
+    stowBtn.DoClick = function()
+        surface.PlaySound("buttons/button15.wav")
+        EcoAct(5)
+    end
 
     -- v4.10.0 «ГАРАЖ»: кнопка-вход в кустарную мастерскую (крафт)
     local craftBtn = vgui.Create("DButton", f)
