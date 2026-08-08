@@ -94,9 +94,9 @@ end
 -- ============ ГЕОМЕТРИЯ ============
 -- v4.15.0 «УГЛИ»: шире/выше; поднят НАД худом ХП и денег (якорь −200 от низа)
 local function Layout()
-    local w = math.min(880, math.floor(ScrW() * 0.62))
+    local w = math.min(1040, math.floor(ScrW() * 0.72)) -- v4.15.3 «КУРСОР»: расширен по заявке
     if w < 460 then w = 460 end
-    local logH = 300
+    local logH = 320
     local H = 30 + 4 + logH + 4 + 32 -- полоса каналов + журнал + поле ввода
     return w, H, logH
 end
@@ -500,11 +500,14 @@ function CH.Build()
         end
     end
 
-    -- кнопки каналов
+    -- кнопки каналов (+ v4.15.3 «КУРСОР»: прямоугольники для ручного
+    -- хит-теста — клики работают ДАЖЕ если дерма где-то глотает мышь)
+    CH.ChipRects = {}
     local x = 2
     for _, m in ipairs(MODES) do
         surface.SetFont("P11CHAT.Chip")
         local tw = surface.GetTextSize(m.lbl) + 16
+        CH.ChipRects[#CH.ChipRects + 1] = { x1 = x, x2 = x + tw, id = m.id }
         local b = vgui.Create("DButton", strip)
         b:SetPos(x, 1)
         b:SetSize(tw, stripH - 2)
@@ -529,11 +532,37 @@ function CH.Build()
     end
     strip:SetWide(x)
 
+    -- v4.15.3 «КУРСОР»: ЖЕЛЕЗНЫЙ ввод на рамке окна.
+    -- ЛКМ в любом месте чата = возможность писать (фокус в поле сразу);
+    -- ЛКМ по полосе каналов = выбор канала (хит-тест по прямоугольникам,
+    -- не зависит от того, дошёл ли клик до самих кнопок дермы).
+    local function FrameClick(code)
+        if not CH.Open_ then return end
+        if code ~= MOUSE_LEFT then return end
+        local mx, my = gui.MouseX(), gui.MouseY()
+        local fx, fy = f:GetPos()
+        local lx, ly = mx - fx, my - fy
+        if ly >= 0 and ly <= stripH and CH.ChipRects then
+            for _, r in ipairs(CH.ChipRects) do
+                if lx >= r.x1 and lx <= r.x2 then
+                    if CH.Cur ~= r.id then CH.SetMode(r.id, true) end
+                    break
+                end
+            end
+        end
+        if IsValid(CH.Entry) then
+            CH.Entry:RequestFocus()
+            CH.Entry:SetCaretPos(#(CH.Entry:GetText() or ""))
+        end
+    end
+    f.OnMousePressed = function(_, code) FrameClick(code) end
+    strip.OnMousePressed = function(_, code) FrameClick(code) end
+
     -- плейсхолдер-напоминалка рисуется поверх пустого поля
     entry.PaintOver = function(s, w2, h2)
         if s:GetText() == "" then
             local m = ModeOf(CH.Cur)
-            draw.SimpleText(m.lbl .. ": пиши сюда… (TAB — сменить канал, ↑ — история)",
+            draw.SimpleText(m.lbl .. ": пиши сюда… (клик = курсор, TAB/клик в шапку = канал, ↑ — история)",
                 "P11CHAT.Tiny", 8, h2 / 2, Color(150, 162, 178), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
         end
     end
@@ -560,10 +589,16 @@ function CH.Open()
     f:Show()
     f:SetMouseInputEnabled(true)
     f:SetKeyboardInputEnabled(true)
-    f:MakePopup()
     CH.Strip:Show()
+    CH.Strip:SetMouseInputEnabled(true) -- v4.15.3: ярус полосы тоже
     CH.Entry:Show()
     CH.Entry:SetEnabled(true)
+    CH.Entry:SetMouseInputEnabled(true)
+    CH.Entry:SetKeyboardInputEnabled(true)
+    f:MakePopup()
+    f:MoveToFront()
+    gui.EnableScreenClicker(true) -- страховь курсора (попап его и так даст)
+    surface.PlaySound("UI/buttonclickrelease.wav")
     -- v4.15.0 «УГЛИ»: фокус строго СЛЕДУЮЩИМ тиком — в тот же тик поле ещё
     -- «не нарисовалось» и фокус молча слетал (отсюда «не могу писать»)
     timer.Simple(0.05, function()
@@ -587,6 +622,7 @@ function CH.Close()
         CH.Frame:SetKeyboardInputEnabled(false)
         CH.Frame:KillFocus()
     end
+    gui.EnableScreenClicker(false) -- v4.15.3: парно к страховке в Open
     if IsValid(LocalPlayer()) then LocalPlayer().bonchatIsTyping = false end
 end
 
@@ -649,7 +685,7 @@ timer.Simple(1, function()
             print("[P11CHAT-СВЯЗЬ] свой чат старший — BonChat усыплён (вернуть: p11_ownchat 0)")
         end
     end
-    print("[P11CHAT-СВЯЗЬ] v4.15.0 «УГЛИ» OK — окно на DFrame: фокус мыши/клавы родной, ESC гасится двумя контурами, каналы кликаются, ввод сразу; чат выше худов и крупнее; выкл: p11_ownchat 0")
+    print("[P11CHAT-СВЯЗЬ] v4.15.3 «КУРСОР» OK — ЖЕЛЕЗНЫЙ ввод: клик по чату = фокус поля, клик по полосе = канал (ручной хит-тест), ESC×2 контура, чат шире; выкл: p11_ownchat 0")
 end)
 
 -- переключение рубильника на лету
@@ -673,4 +709,4 @@ concommand.Add("p11_pchat", function()
     if cvOn:GetBool() then CH.Open() end
 end, nil, "Свой чат «СВЯЗЬ»: статус + открыть окно (p11_ownchat 1/0 — вкл/выкл)")
 
-print("[P11CHAT-СВЯЗЬ] модуль чата v4.15.0 «УГЛИ» загружен (окно соберётся через сек)")
+print("[P11CHAT-СВЯЗЬ] модуль чата v4.15.3 «КУРСОР» загружен (окно соберётся через сек)")
