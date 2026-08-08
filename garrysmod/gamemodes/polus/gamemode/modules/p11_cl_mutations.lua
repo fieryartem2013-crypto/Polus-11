@@ -30,7 +30,8 @@ hook.Add("HUDPaint", "P11.MutationHUD", function()
     surface.SetDrawColor(160, 50, 55, 170)
     surface.DrawOutlinedRect(x, y, w, h, 1)
 
-    draw.SimpleText("🩸 МУТАЦИИ ТВАРИ", "P11.Mut.Big", x + 12, y + 10,
+    -- v4.14.3 «ЗАРЯД»: эмодзи 🩸 шрифт не тянул (□□) и наезжал на «жертв: N» — чистый текст
+    draw.SimpleText("МУТАЦИИ ТВАРИ", "P11.Mut.Big", x + 12, y + 10,
         Color(255, 120, 115), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
     draw.SimpleText("жертв: " .. kills, "P11.Mut.Small", x + w - 12, y + 14,
         Color(220, 180, 180), TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP)

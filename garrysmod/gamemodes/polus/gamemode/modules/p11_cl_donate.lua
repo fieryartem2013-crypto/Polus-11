@@ -25,7 +25,7 @@ surface.CreateFont("P11D.Small", { font = "Roboto", size = 14, weight = 400, ext
 P11D = P11D or { Frame = nil }
 
 -- ДС-магазин: ВСТАВЬ свой инвайт (постоянный: Приглашения → «не истекает»)
-local DONATE_URL = "https://discord.gg/ВСТАВЬ_ИНВАЙТ"
+local DONATE_URL = "https://discord.gg/kdNXgaetC" -- вставлен владельцем в v4.14.3 «ЗАРЯД» (плашка «ХОЗЯИНУ» убрана)
 
 local C = {
     bg     = Color(10, 14, 20, 246),

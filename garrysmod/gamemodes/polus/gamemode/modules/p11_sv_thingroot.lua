@@ -33,13 +33,13 @@
 if POLUS11.Config then POLUS11.Config.InfectionPersists = true end
 
 -- v4.14.2 «КАЗНА»: РЕЖИМНЫЕ РУБИЛЬНИКИ выхода из нечто.
--- По заявке заражение живёт ДО РЕСТАРТА, и смерть/смена профы его НЕ снимают.
--- Если полярник захочет «классику» — рубильники переводят смерть/смену профы
--- в СНЯТИЕ нечто (Cure):  p11_thing_deathdrop 1  /  p11_thing_jobdrop 1
-local cvDeathDrop = CreateConVar("p11_thing_deathdrop", "0", FCVAR_ARCHIVE,
-    "1 = смерть СНИМАЕТ нечто (по умолч. 0 — заражение до рестарта)")
-local cvJobDrop = CreateConVar("p11_thing_jobdrop", "0", FCVAR_ARCHIVE,
-    "1 = смена профы СНИМАЕТ нечто (по умолч. 0 — заражение до рестарта)")
+-- v4.14.3 «ЗАРЯД»: заявка «сменил профу и даже умер — всё равно я нечто,
+-- почини» → рубильники перевёрнуты ВКЛЮЧЁННЫМИ: смерть и смена профы
+-- СНИМАЮТ нечто (Cure). Вернуть старый режим «до рестарта»: поставить 0.
+local cvDeathDrop = CreateConVar("p11_thing_deathdrop", "1", FCVAR_ARCHIVE,
+    "1 = смерть СНИМАЕТ нечто (по умолч. 1; 0 — заражение до рестарта)")
+local cvJobDrop = CreateConVar("p11_thing_jobdrop", "1", FCVAR_ARCHIVE,
+    "1 = смена профы СНИМАЕТ нечто (по умолч. 1; 0 — заражение до рестарта)")
 
 local CLAW_WEPS = {
     weapon_polus11_thing = true,
@@ -395,7 +395,6 @@ concommand.Add("p11_thingroot", function(ply, cmd, args)
     if IsValid(ply) then ply:PrintMessage(HUD_PRINTCONSOLE, txt) else print(txt) end
 end)
 
-print("[POLUS-11] НЕЧТО «КОРЕНЬ» v4.14.2 «КАЗНА»: заражение НЕУБИВАЕМО до рестарта — смерть/смена профы переподтверждаются из снимка; "
-    .. "личина переживает смену профы (P11_LastIdentity); чат/рация зовут тварь украденным именем; "
-    .. "СВЕП НЕЧТО АВТОМАТОМ ДАЁТ " .. ThingHPNow() .. " ХП (достаточно самих когтей; тюнер p11_thinghp); "
-    .. "ДВЕРИ ВЫХОДА: пульт R «🩸 ИЗГНАТЬ ПАРАЗИТА» / p11_thingleave; режимные рубильники p11_thing_deathdrop, p11_thing_jobdrop; диагностика p11_thingroot")
+print("[POLUS-11] НЕЧТО «КОРЕНЬ» v4.14.3 «ЗАРЯД»: заявка «умер/сменил профу — всё равно нечто, почини» — "
+    .. "смерть и смена профы теперь СНИМАЮТ паразита (рубильники p11_thing_deathdrop=1/p11_thing_jobdrop=1; 0 = старый режим «до рестарта»); "
+    .. "СВЕП НЕЧТО АВТОМАТОМ ДАЁТ " .. ThingHPNow() .. " ХП (тюнер p11_thinghp); двери выхода: пульт R «🩸 ИЗГНАТЬ ПАРАЗИТА» / p11_thingleave; диагностика p11_thingroot")

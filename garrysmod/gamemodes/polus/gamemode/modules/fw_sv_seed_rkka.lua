@@ -108,10 +108,11 @@ local SEED_JOBS = {
     },
     {
         -- v4.9.1 «ИГЛА»: НОВАЯ должность — пулемётчик с ручным РПД (заявка владельца)
+        -- v4.14.3 «ЗАРЯД»: ствол сменён на arc9_eft_rpd (заявка: «поменяй РПД пулемётчика на этот»)
         id = "seed_rkka_pulemetchik", time = 90, category = "rkka", order = 33,
         name = "Пулемётчик РККА",
         desc = "Огневая точка гарнизона: ручной пулемёт РПД с диском на 75 патронов. Пока РПД говорит — Нечто не подходит. Два места. 130 ХП / 110 брони.",
-        weapons = { "weapon_polus11_rpd", "weapon_polus11_radio" }, hp = 130, armor = 110, max = 2,
+        weapons = { "arc9_eft_rpd", "weapon_polus11_radio" }, hp = 130, armor = 110, max = 2, -- v4.14.3 «ЗАРЯД»: РПД заменён на ARC9 EFT (заявка владельца)
         color = Color(150, 130, 75),
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m43_s1_02.mdl",

@@ -131,7 +131,7 @@ POLUS11.FluxShop = {
     {
         id = "rpd", price = 60, icon = "🔫",
         name = "РПД — прямо в инвентарь",
-        desc = "Диск на 75. «Использовать» в 🎒 — и пулемёт в руках.",
+        desc = "ARC9 EFT РПД, дисковый. «Использовать» в 🎒 — и пулемёт в руках.",
         run = function(ply)
             local data = POLUS11.InvOf(ply)
             data.items["rpd"] = (data.items["rpd"] or 0) + 1
