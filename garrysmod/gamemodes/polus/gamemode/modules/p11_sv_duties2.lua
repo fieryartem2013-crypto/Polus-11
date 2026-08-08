@@ -189,7 +189,8 @@ local SUPPLY_NEXT = CurTime() + math.Rand(Cfg("SupplyGapMin", 900), Cfg("SupplyG
 local function SpawnSupply()
     -- точка: улица = виден небосвод; якоримся к постам/генераторам
     local anchors = {}
-    for _, cls in ipairs({ "polus_p11_patrol", "polus11_generator", "polus_fw_jobnpc" }) do
+    -- v4.12.0 «ОТБОЙ»: якорь-генератор вырезан из игры → якоримся к лутницам станции
+    for _, cls in ipairs({ "polus_p11_patrol", "polus11_lootcrate", "polus_fw_jobnpc" }) do
         for _, e in ipairs(ents.FindByClass(cls)) do
             if IsValid(e) then anchors[#anchors + 1] = e:GetPos() end
         end

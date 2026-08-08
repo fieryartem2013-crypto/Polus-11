@@ -1,12 +1,13 @@
 -- ============================================================
 --  ПОЛЮС-11 — сохранение станции на карту
---  (генераторы, бочки, лабораторные столы переживают рестарт)
+--  (бочки, лабораторные столы, терминалы переживают рестарт)
+--  v4.12.0 «ОТБОЙ»: генератор ВЫРЕЗАН из игры наглухо — из
+--  списка станции убран (старые записи в JSON просто игнорятся).
 -- ============================================================
 
 local DATA_DIR = "polus11"
 
 local CLASSES = {
-    polus11_generator = true,
     polus11_fuelbarrel = true,
     polus11_labtable = true,
     polus11_terminal = true, -- v4.0: ставленные терминалы тоже переживают рестарт
@@ -29,13 +30,6 @@ function POLUS11.SaveStation()
                     pos = {x = e:GetPos().x, y = e:GetPos().y, z = e:GetPos().z},
                     ang = {p = e:GetAngles().p, y = e:GetAngles().y, r = e:GetAngles().r},
                 }
-                -- для генератора сохраняем топливо, поломку, износ и режим (v3.7)
-                if cls == "polus11_generator" then
-                    d.fuel = e.GetFuel and e:GetFuel() or 0
-                    d.damaged = e.GetDamaged and e:GetDamaged() or false
-                    d.wear = e.GetWear and e:GetWear() or 0
-                    d.reserve = e.GetReserve and e:GetReserve() or false
-                end
                 out[#out + 1] = d
             end
         end
@@ -68,19 +62,6 @@ function POLUS11.LoadStation()
                 e:SetAngles(Angle(d.ang.p or 0, d.ang.y or 0, d.ang.r or 0))
                 e:Spawn()
                 e:Activate()
-
-                if d.class == "polus11_generator" then
-                    timer.Simple(0.1, function()
-                        if IsValid(e) then
-                            e:SetFuel(d.fuel or POLUS11.Config.FuelPerBarrel)
-                            e:SetDamaged(d.damaged == true)
-                            if d.damaged and e.SoundLoop then e.SoundLoop:Stop() end
-                            -- v3.7: износ и режим РЕЗЕРВ переживают рестарт
-                            if e.SetWear then e:SetWear(tonumber(d.wear) or 0) end
-                            if e.SetReserve then e:SetReserve(d.reserve == true) end
-                        end
-                    end)
-                end
             end
         end
     end

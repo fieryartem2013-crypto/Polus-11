@@ -60,6 +60,48 @@ local LOOT = {
         money = { min = 200, max = 700, ch = 1.0 },
         flux  = { n = 5, ch = 0.04 },
     },
+    -- v4.12.0 «ОТБОЙ»: ещё три лутницы по заявке «добавь лутабельные энтити»
+    polus11_lootmed = {
+        name = "МЕДШКАФ",
+        respawn = 300,
+        snd = "items/suitchargeok1.wav",
+        items = {
+            { id = "cloth",   min = 1, max = 2, ch = 0.90 },
+            { id = "spirit",  min = 1, max = 1, ch = 0.50 },
+            { id = "ampoule", min = 1, max = 1, ch = 0.45 },
+            { id = "syringe", min = 1, max = 1, ch = 0.20 },
+            { id = "medkit",  min = 1, max = 1, ch = 0.08 },
+        },
+        money = { min = 40, max = 120, ch = 0.10 },
+    },
+    polus11_lootmil = {
+        name = "ОРУЖЕЙНЫЙ ЯЩИК",
+        respawn = 420,
+        snd = "items/ammo_pickup.wav",
+        items = {
+            { id = "ammo_pistol", min = 1, max = 1, ch = 0.55 },
+            { id = "scrap",       min = 1, max = 2, ch = 0.70 },
+            { id = "ammo_smg",    min = 1, max = 1, ch = 0.40 },
+            { id = "parts",       min = 1, max = 1, ch = 0.40 },
+            { id = "ammo_ar",     min = 1, max = 1, ch = 0.35 },
+            { id = "ammo_buck",   min = 1, max = 1, ch = 0.35 },
+            { id = "scalpel",     min = 1, max = 1, ch = 0.05 },
+        },
+        money = { min = 80, max = 200, ch = 0.15 },
+    },
+    polus11_loottech = {
+        name = "ГРУДА ЛОМА",
+        respawn = 300,
+        snd = "physics/metal/metal_barrel_impact_soft1.wav",
+        items = {
+            { id = "scrap", min = 2, max = 3, ch = 0.95 },
+            { id = "parts", min = 1, max = 2, ch = 0.65 },
+            { id = "fuel",  min = 1, max = 1, ch = 0.40 },
+            { id = "cloth", min = 1, max = 1, ch = 0.35 },
+            { id = "cons",  min = 1, max = 1, ch = 0.20 },
+        },
+        money = { min = 30, max = 100, ch = 0.12 },
+    },
 }
 
 local CLS_TABLE = "polus11_crafttable"
@@ -115,6 +157,9 @@ function POLUS11.LootUse(e, ply)
     end
     if POLUS11.InvSaveNow then POLUS11.InvSaveNow() end
     POLUS11.InvSync(ply)
+
+    -- v4.12.0 «ОТБОЙ»: обыск лутницы — дело смены (задача «Обыщи …»)
+    if POLUS11.TaskEvent then POLUS11.TaskEvent(ply, "loot_find") end
 
     -- тара пустеет: темнеет и молчит до таймера (Think энтити вернёт свет)
     e.LootReady = false
@@ -176,11 +221,12 @@ local function RoleClass(role)
     local backup = {
         crate = "polus11_lootcrate", barrel = "polus11_lootbarrel",
         cache = "polus11_lootcache", crafttable = "polus11_crafttable",
+        med = "polus11_lootmed", mil = "polus11_lootmil", tech = "polus11_loottech",
     }
     return backup[role]
 end
 
--- «ящик»/«бочка»/«тайник»/«верстак»/«стол» → роль расстановки
+-- «ящик»/«бочка»/«тайник»/«верстак»/«мед»/«боевой»/«груда» → роль расстановки
 local function ResolveRole(a)
     a = string.lower(tostring(a or ""))
     if a == "crate" or a == "ящик" or a == "Ящик" or a == "ящики" then return "crate" end
@@ -188,10 +234,13 @@ local function ResolveRole(a)
     if a == "cache" or a == "тайник" or a == "Тайник" then return "cache" end
     if a == "table" or a == "craft" or a == "crafttable" or a == "верстак" or a == "Верстак"
         or a == "стол" or a == "Стол" then return "crafttable" end
+    if a == "med" or a == "мед" or a == "Мед" or a == "шкаф" or a == "медшкаф" then return "med" end
+    if a == "mil" or a == "боевой" or a == "патроны" or a == "оружейный" then return "mil" end
+    if a == "tech" or a == "груда" or a == "контейнер" or a == "мусорка" or a == "ломгруда" then return "tech" end
     return nil
 end
 
-local ALL_ROLES = { "crate", "barrel", "cache", "crafttable" }
+local ALL_ROLES = { "crate", "barrel", "cache", "crafttable", "med", "mil", "tech" }
 
 -- место на земле рядом с игроком: угол/радиус → луч сверху, прямую видимость,
 -- свободный хулл и отсутствие соседей-лутниц ближе 130 юнитов
@@ -256,8 +305,8 @@ concommand.Add("p11_lootspawn", function(ply, cmd, args)
     end
     local role = ResolveRole(args and args[1])
     if not role then
-        POLUS11.Notify(ply, "Кого сыпем? p11_lootspawn crate 12 | barrel 6 | cache 4 | table 1")
-        ply:ChatPrint("[ЛУТ] Роли: crate (ящик), barrel (бочка), cache (тайник), table (верстак).")
+        POLUS11.Notify(ply, "Кого сыпем? p11_lootspawn crate 12 | barrel 6 | cache 4 | med 5 | mil 4 | tech 8 | table 1")
+        ply:ChatPrint("[ЛУТ] Роли: crate (ящик), barrel (бочка), cache (тайник), med (медшкаф), mil (боевой ящик), tech (груда лома), table (верстак).")
         return
     end
     local cls = RoleClass(role)
@@ -328,4 +377,4 @@ concommand.Add("p11_lootclear", function(ply, cmd, args)
     if POLUS11.Log then POLUS11.Log("ЛУТ: уборка " .. table.concat(roles, ",") .. " — " .. removed .. " шт") end
 end)
 
-print("[POLUS-11] ЛУТ «КУЗНЯ» v4.11.0: ящик/бочка/тайник — обыск за E и самовосполнение; верстак — окно мастерской; p11_lootspawn crate 12")
+print("[POLUS-11] ЛУТ «ОТБОЙ» v4.12.0: ящик/бочка/тайник/медшкаф/боевой ящик/груда лома — обыск за E и самовосполнение; верстак — окно мастерской; p11_lootspawn crate 12")

@@ -346,31 +346,42 @@ end)
 
 function P11.OpenPlaceMenu()
     if not P11FW.Config.Admin(LocalPlayer()) then return end
-    local f = EcoFrame("📍 РАССТАВИТЬ ОБЪЕКТЫ — куда смотришь, туда и встанет", 420, 730)
+    local f = EcoFrame("📍 РАССТАВИТЬ ОБЪЕКТЫ — куда смотришь, туда и встанет", 420, 560)
     local roles = {
-        { id = "generator",  name = "⚡ Генератор",          desc = "старт с полной заправкой" },
+        -- v4.12.0 «ОТБОЙ»: генератор вырезан из игры — из списка убран
         { id = "terminal",   name = "🖥 Сменный терминал",   desc = "допуск: профы с флагом терминала" },
         { id = "shopnpc",    name = "🏪 Ларёк снабжения",    desc = "витрина за рубли (экономика)" },
         { id = "storage",    name = "🗄 Личный сейф",        desc = "общая точка доступа к сейфам" },
         { id = "patrol",     name = "🚩 Пост патруля",       desc = "точка обхода РККА (v4.1)" },
         { id = "kitchen",    name = "🍲 Полевая кухня",      desc = "плита повара: горячие пайки (v4.2)" },
         { id = "avtosalon",  name = "🚗 Гараж (ПОЛЮС-АВТО)", desc = "торговец транспортом LVS (v4.10.0)" },
-        { id = "crafttable", name = "🛠 Кустарный верстак",  desc = "стол крафтов: все рецепты (v4.11.0)" },
+        { id = "crafttable", name = "🛠 Кустарный верстак",  desc = "стол крафтов: все 12 рецептов (v4.11.0)" },
+        { id = "bloodlab",   name = "🩸 Стол анализа крови", desc = "«КРОВЬ-2» — миниигра теста (v4.12.0)" },
+        { id = "labtable",   name = "🧪 Лабораторный стол",  desc = "общий стол теста крови (v4.12.0)" },
         { id = "crate",      name = "📦 Ящик лома",          desc = "лут: лом/брезент/еда (восполняется)" },
         { id = "barrel",     name = "🛢 Топливная бочка",    desc = "лут: соляра/спирт (восполняется)" },
         { id = "cache",      name = "💼 Тайник снабженца",   desc = "редкий лут: ₽/запчасти/УКОЛ-С (v4.11.0)" },
+        { id = "med",        name = "💊 Медшкаф",            desc = "лут: бинты/ампулы/шприц (v4.12.0)" },
+        { id = "mil",        name = "🔫 Оружейный ящик",     desc = "лут: патронные пачки (v4.12.0)" },
+        { id = "tech",       name = "⚙ Груда лома",          desc = "лут: МНОГО лома+запчасти (v4.12.0)" },
     }
-    for i, r in ipairs(roles) do
-        local y = 64 + (i - 1) * 56
-        RowButton(f, 12, y, 180, 46, r.name, ACC, function()
+    -- v4.12.0: точек много → скролл-лента вместо роста окна
+    local sc = vgui.Create("DScrollPanel", f)
+    sc:SetPos(10, 60) sc:SetSize(400, 488)
+    sc:GetVBar():SetWide(5)
+    for _, r in ipairs(roles) do
+        local card = sc:Add("DPanel")
+        card:Dock(TOP) card:DockMargin(0, 0, 0, 5) card:SetTall(50)
+        card:SetPaintBackground(false)
+        RowButton(card, 2, 2, 176, 46, r.name, ACC, function()
             net.Start("P11_PlaceEnt")
                 net.WriteString(r.id)
             net.SendToServer()
             surface.PlaySound("buttons/button15.wav")
             f:Remove()
         end)
-        local d = vgui.Create("DLabel", f)
-        d:SetPos(200, y + 2) d:SetSize(208, 42) d:SetFont("P11.Eco.Small") d:SetTextColor(DIM)
+        local d = vgui.Create("DLabel", card)
+        d:SetPos(186, 4) d:SetSize(208, 42) d:SetFont("P11.Eco.Small") d:SetTextColor(DIM)
         d:SetText(r.desc .. "\n(сохранится на карте)")
         d:SetWrap(true) d:SetAutoStretchVertical(true)
     end

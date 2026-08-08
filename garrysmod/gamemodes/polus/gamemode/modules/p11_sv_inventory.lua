@@ -456,6 +456,11 @@ local PLACEABLE = {
     crate     = "polus11_lootcrate",  -- v4.11.0 «КУЗНЯ»: ящик лома (лут)
     barrel    = "polus11_lootbarrel", -- v4.11.0 «КУЗНЯ»: топливная бочка (лут)
     cache     = "polus11_lootcache",  -- v4.11.0 «КУЗНЯ»: тайник снабженца (лут)
+    med       = "polus11_lootmed",    -- v4.12.0 «ОТБОЙ»: медшкаф (лут)
+    mil       = "polus11_lootmil",    -- v4.12.0 «ОТБОЙ»: оружейный ящик (лут)
+    tech      = "polus11_loottech",   -- v4.12.0 «ОТБОЙ»: груда лома (лут)
+    bloodlab  = "polus11_bloodlab",   -- v4.12.0 «ОТБОЙ»: стол анализа крови «КРОВЬ-2» — снова расставляется и сохраняется
+    labtable  = "polus11_labtable",   -- v4.12.0 «ОТБОЙ»: лабораторный стол (тест крови)
 }
 
 local function PlaceFile(role)
@@ -510,6 +515,12 @@ hook.Add("InitPostEntity", "P11.PlaceLoad", function()
         LoadPlaced("crate")
         LoadPlaced("barrel")
         LoadPlaced("cache")
+        LoadPlaced("med")       -- v4.12.0 «ОТБОЙ»
+        LoadPlaced("mil")
+        LoadPlaced("tech")
+        LoadPlaced("bloodlab")  -- v4.12.0 «ОТБОЙ»: стол крови возвращён
+        LoadPlaced("labtable")
+        -- внимание: «generator» НЕ грузим — энергосистема выведена из игры (v4.12.0)
         if POLUS11.PatrolSyncAll then timer.Simple(2.5, function() POLUS11.PatrolSyncAll(nil) end) end
     end)
 end)
@@ -525,6 +536,12 @@ hook.Add("PostCleanupMap", "P11.PlaceLoad2", function()
         LoadPlaced("crate")
         LoadPlaced("barrel")
         LoadPlaced("cache")
+        LoadPlaced("med")       -- v4.12.0 «ОТБОЙ»
+        LoadPlaced("mil")
+        LoadPlaced("tech")
+        LoadPlaced("bloodlab")  -- v4.12.0 «ОТБОЙ»: стол крови возвращён
+        LoadPlaced("labtable")
+        -- внимание: «generator» НЕ грузим — энергосистема выведена из игры (v4.12.0)
         if POLUS11.PatrolSyncAll then timer.Simple(1.5, function() POLUS11.PatrolSyncAll(nil) end) end
     end)
 end)
@@ -538,6 +555,11 @@ net.Receive("P11_PlaceEnt", function(len, ply)
     ply.P11_PlaceNext = CurTime() + 0.7
 
     local role = string.sub(net.ReadString() or "", 1, 16)
+    if role == "generator" then -- v4.12.0 «ОТБОЙ»: генератор вырезан из игры наглухо
+        POLUS11.Notify(ply, "Генератор ВЫРЕЗАН из игры (v4.12.0 «ОТБОЙ»): ставить больше нечего. Свет горит всегда.")
+        ply:ChatPrint("[СТАНЦИЯ] Энергосистема выведена из игры. Новые точки: верстак, ящики, медшкаф, стол крови.")
+        return
+    end
     local class = PLACEABLE[role]
     if not class then return end
 

@@ -129,11 +129,8 @@ net.Receive("P11_PanelAction", function(len, ply)
     elseif act == 10 then -- пульт открыт/закрыт (флаг)
         ply.P11_PanelOpen = net.ReadBool()
 
-    elseif act == 11 then -- рестарт топлива генераторов
-        for _, g in ipairs(ents.FindByClass("polus11_generator")) do
-            g:AddFuelBarrel(0.5)
-        end
-        POLUS11.Notify(ply, "Генераторы долиты (+полбочки).")
+    elseif act == 11 then -- (было: долив генераторов) v4.12.0 «ОТБОЙ»: энергосистема выведена из игры
+        POLUS11.Notify(ply, "Генераторов на станции больше нет — энергосистема выведена из игры (v4.12.0 «ОТБОЙ»). Свет горит всегда; тьма — только по твоему приказу (кнопка блэкаута).")
 
     elseif act == 12 then -- СИРЕНА: общее построение
         POLUS11.TriggerSiren(ply)

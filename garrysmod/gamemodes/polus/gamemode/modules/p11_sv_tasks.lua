@@ -14,25 +14,28 @@ util.AddNetworkString("P11_FearFX")
 
 POLUS11.TaskDefs = {
 
+    -- v4.12.0 «ОТБОЙ»: генераторов больше НЕТ (вырезаны из игры) — дела смены
+    -- перевязаны на новые оси: ОБЫСК лутниц (loot_find) и ВЕРСТАК (craft_do).
     engineer = {
-        { key = "refuel_gen", name = "Долей солярку в генератор", max = 2 },
-        { key = "repair_gen", name = "Отремонтируй сломанный генератор", max = 1 },
-        { key = "refill_ft",  name = "Заправь огнемёт от генератора", max = 1 },
-        { key = "alive",      name = "Дежурство: 5 мин без смерти", max = 300, time = true },
+        { key = "craft_do",  name = "Собери изделия на верстаке (×3)", max = 3 },
+        { key = "loot_find", name = "Обыщи ящики/бочки станции (×3)", max = 3 },
+        { key = "alive",     name = "Дежурство: 5 мин без смерти", max = 300, time = true },
     },
 
     -- ============ v3.7: задачи новых должностей ============
 
     porter = {
-        { key = "haul",       name = "Перетаскивай грузы (бочки на плече)", max = 4 },
-        { key = "refuel_gen", name = "Доставь топливо до генератора", max = 2 },
-        { key = "alive",      name = "Смена на складе: 5 мин без смерти", max = 300, time = true },
+        { key = "haul",      name = "Перетаскивай грузы (бочки на плече)", max = 4 },
+        { key = "loot_find", name = "Притащи добычу из лутниц (×2)", max = 2 },
+        { key = "alive",     name = "Смена на складе: 5 мин без смерти", max = 300, time = true },
     },
 
+    -- ТЕХНИК-МЕХАНИК (заявка «дай новые задачи механику»):
+    -- машинное закрыто, работа руками — верстак и запчасти с полей.
     tech = {
-        { key = "gen_service", name = "Обслужи генератор (техосмотр/поломка)", max = 3 },
-        { key = "repair_gen",  name = "Отремонтируй генератор после аварии", max = 1 },
-        { key = "alive",       name = "Дежурство в машинном: 5 мин", max = 300, time = true },
+        { key = "craft_do",  name = "ТО станции: собери на верстаке (×3)", max = 3 },
+        { key = "loot_find", name = "Добудь запчасти из лутниц (×2)", max = 2 },
+        { key = "alive",     name = "Дежурство механика: 5 мин", max = 300, time = true },
     },
 
     medic = {
@@ -45,15 +48,15 @@ POLUS11.TaskDefs = {
     -- их дела уехали в категорийные пулы ниже (POLUS11.CategoryTaskDefs).
 
     janitor = {
-        { key = "repair_gen", name = "Подсоби у генератора (ремонт/обслуживание)", max = 1 },
-        { key = "refuel_gen", name = "Помоги с бочкой у генератора", max = 1 },
-        { key = "alive",      name = "Неуловимая спина со шваброй: 5 мин", max = 300, time = true },
+        { key = "craft_do",  name = "Собери хозмелочь на верстаке", max = 1 },
+        { key = "loot_find", name = "Обыщи лутницу — пригодится что угодно", max = 1 },
+        { key = "alive",     name = "Неуловимая спина со шваброй: 5 мин", max = 300, time = true },
     },
 
     cook = {
-        { key = "fed",        name = "Накорми экипаж (разные люди)", max = 3 },
-        { key = "refuel_gen", name = "Дотащи бочку до генератора", max = 1 },
-        { key = "alive",      name = "Камбуз жив: 5 мин без смерти", max = 300, time = true },
+        { key = "fed",       name = "Накорми экипаж (разные люди)", max = 3 },
+        { key = "loot_find", name = "Обыщи ящик — вдруг попадётся тушёнка", max = 1 },
+        { key = "alive",     name = "Камбуз жив: 5 мин без смерти", max = 300, time = true },
     },
 
     recruit = {
@@ -84,9 +87,9 @@ POLUS11.CategoryTaskDefs = {
         { key = "alive",      name = "Дежурство в лаборатории: 5 мин", max = 300, time = true },
     },
     personnel = {
-        { key = "clean",      name = "Убери грязь на станции (×2)", max = 2 },
-        { key = "refuel_gen", name = "Подсоби с топливом для генератора", max = 1 },
-        { key = "alive",      name = "Хозработы: 5 мин без происшествий", max = 300, time = true },
+        { key = "clean",     name = "Убери грязь на станции (×2)", max = 2 },
+        { key = "loot_find", name = "Обыщи ящик или бочку станции (×1)", max = 1 },
+        { key = "alive",     name = "Хозработы: 5 мин без происшествий", max = 300, time = true },
     },
 }
 

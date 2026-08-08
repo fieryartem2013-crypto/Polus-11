@@ -45,6 +45,10 @@ local POI = {
     polus11_lootcrate  = { lbl = "📦 ЯЩИК ЛОМА",    col = Color(215, 195, 140), ready = true },
     polus11_lootbarrel = { lbl = "🛢 ТОПЛИВНАЯ БОЧКА", col = Color(205, 175, 95), ready = true },
     polus11_lootcache  = { lbl = "💼 ТАЙНИК",       col = Color(255, 150, 150), ready = true },
+    -- v4.12.0 «ОТБОЙ»: +3 лутницы
+    polus11_lootmed    = { lbl = "💊 МЕДШКАФ",      col = Color(170, 235, 210), ready = true },
+    polus11_lootmil    = { lbl = "🔫 БОЕВОЙ ЯЩИК",  col = Color(215, 170, 110), ready = true },
+    polus11_loottech   = { lbl = "⚙ ГРУДА ЛОМА",    col = Color(200, 200, 205), ready = true },
 }
 
 -- кэш найденных точек (пересчёт раз в ~0.7 сек — карта большая)
@@ -122,4 +126,4 @@ hook.Add("HUDPaint", "P11.POIBeacons", function()
     end
 end)
 
-print("[P11POI] v4.11.0 «КУЗНЯ» OK — маяки «куда идти» + верстак и ПОЛНЫЕ лутницы (выкл: p11_poi 0)")
+print("[P11POI] v4.12.0 «ОТБОЙ» OK — маяки «куда идти» + верстак и ПОЛНЫЕ лутницы ×6 (выкл: p11_poi 0)")

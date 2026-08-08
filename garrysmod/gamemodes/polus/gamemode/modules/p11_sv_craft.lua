@@ -129,6 +129,8 @@ function POLUS11.CraftDo(ply, id)
     end
     data.items[rc.give] = (tonumber(data.items[rc.give]) or 0) + 1
     if POLUS11.InvSaveNow then POLUS11.InvSaveNow() end
+    -- v4.12.0 «ОТБОЙ»: сборка на верстаке — дело смены (задача «Собери …»)
+    if POLUS11.TaskEvent then POLUS11.TaskEvent(ply, "craft_do") end
 
     POLUS11.Notify(ply, "🛠 Собрано: «" .. rc.name .. "» — лежит в инвентаре (🎒 C-меню).")
     ply:ChatPrint("[МАСТЕРСКАЯ] Готово: «" .. rc.name .. "». Открой 🎒 инвентарь → ИСПОЛЬЗОВАТЬ.")
