@@ -51,6 +51,10 @@ local POI = {
     polus11_lootmed    = { lbl = "💊 МЕДШКАФ",      col = Color(170, 235, 210), ready = true },
     polus11_lootmil    = { lbl = "🔫 БОЕВОЙ ЯЩИК",  col = Color(215, 170, 110), ready = true },
     polus11_loottech   = { lbl = "⚙ ГРУДА ЛОМА",    col = Color(200, 200, 205), ready = true },
+    -- v4.15.0 «УГЛИ»
+    polus11_lootfood   = { lbl = "🥫 ПРОД. ЯЩИК",    col = Color(235, 215, 140), ready = true },
+    polus11_lootarm    = { lbl = "🪖 АРМ. КОНТЕЙНЕР", col = Color(190, 225, 170), ready = true },
+    polus11_hearth     = { lbl = "🔥 УГЛИ",           col = Color(255, 170, 90) },
 }
 
 -- gps-состояние (общее с меню): цель наводки

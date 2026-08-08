@@ -47,17 +47,18 @@ local function Trace(msg)
 end
 
 -- ============ ШРИФТЫ / СТИЛЬ ============
-surface.CreateFont("P11CHAT.Main", { font = "Roboto", size = 17, weight = 600, extended = true, antialias = true })
-surface.CreateFont("P11CHAT.Bold", { font = "Roboto", size = 17, weight = 800, extended = true, antialias = true })
-surface.CreateFont("P11CHAT.Chip", { font = "Roboto", size = 14, weight = 700, extended = true })
-surface.CreateFont("P11CHAT.Tiny", { font = "Roboto", size = 13, weight = 500, extended = true })
+-- v4.15.0 «УГЛИ»: крупнее на 2pt (заявка «увеличь чат — маленький очень»)
+surface.CreateFont("P11CHAT.Main", { font = "Roboto", size = 19, weight = 600, extended = true, antialias = true })
+surface.CreateFont("P11CHAT.Bold", { font = "Roboto", size = 19, weight = 800, extended = true, antialias = true })
+surface.CreateFont("P11CHAT.Chip", { font = "Roboto", size = 15, weight = 700, extended = true })
+surface.CreateFont("P11CHAT.Tiny", { font = "Roboto", size = 14, weight = 500, extended = true })
 
 local COL_BG     = Color(9, 12, 18, 225)
 local COL_BG2    = Color(13, 17, 25, 235)
 local COL_EDGE   = Color(70, 95, 130, 120)
 local COL_TEXT   = Color(232, 238, 245)
 local COL_TS     = Color(105, 120, 140)
-local ROW_H      = 19
+local ROW_H      = 22 -- v4.15.0: строки выше под крупный шрифт
 local MAX_LINES  = 220
 local FADE_SHOW  = 8  -- сек после последнего сообщения журнал виден
 local FADE_OUT   = 2  -- сек затухания
@@ -91,12 +92,17 @@ local function ModeOf(id)
 end
 
 -- ============ ГЕОМЕТРИЯ ============
+-- v4.15.0 «УГЛИ»: шире/выше; поднят НАД худом ХП и денег (якорь −200 от низа)
 local function Layout()
-    local w = math.min(640, math.floor(ScrW() * 0.52))
-    if w < 380 then w = 380 end
-    local logH = 240
-    local H = 26 + 4 + logH + 4 + 28
+    local w = math.min(880, math.floor(ScrW() * 0.62))
+    if w < 460 then w = 460 end
+    local logH = 300
+    local H = 30 + 4 + logH + 4 + 32 -- полоса каналов + журнал + поле ввода
     return w, H, logH
+end
+local function ChatPos()
+    local _, H = Layout()
+    return 16, ScrH() - H - 200 -- над зоной виталов: HUD ХП/денег не перекрываем
 end
 
 -- ============ РАЗБИВКА СТРОК (word-wrap с цветами) ============
@@ -335,15 +341,25 @@ function CH.Build()
     CH.Rows, CH.logW = {}, 0
 
     local W, H, logH = Layout()
-    local f = vgui.Create("DPanel")
+    local px, py = ChatPos()
+    -- DFrame вместо DPanel: родные MakePopup/курсор/фокус (v4.15.0 — боевой
+    -- почин «не закрывается по ESC / опции не кликаются / строки ввода нет»)
+    local f = vgui.Create("DFrame")
     CH.Frame = f
     f:SetSize(W, H)
-    f:SetPos(16, ScrH() - H - 40)
+    f:SetPos(px, py)
+    f:SetTitle("")
+    f:SetDraggable(false)
+    f:SetSizable(false)
+    f:SetDeleteOnClose(false)
+    f:ShowCloseButton(false)
+    if IsValid(f.btnMinim) then f.btnMinim:SetVisible(false) end
+    if IsValid(f.btnMaxim) then f.btnMaxim:SetVisible(false) end
     f:SetMouseInputEnabled(false)
     f:SetKeyboardInputEnabled(false)
 
-    local logTop, stripH = 26 + 4, 26
-    local entryH = 28
+    local logTop, stripH = 30 + 4, 30
+    local entryH = 32
 
     f.Paint = function(s, w, h)
         if not cvOn:GetBool() then return end
@@ -424,6 +440,20 @@ function CH.Build()
         surface.SetDrawColor(m.col.r, m.col.g, m.col.b, 190)
         surface.DrawOutlinedRect(0, 0, w2, h2, 1)
         s:DrawTextEntryText(COL_TEXT, m.col, COL_TEXT)
+    end
+
+    -- v4.15.0 «УГЛИ»: второй ESC-контур опросом (фокус может сидеть на окне,
+    -- а не на поле) — страхует OnKeyCodeTyped поля
+    f.Think = function()
+        if not CH.Open_ then CH._escHeld = false return end
+        local down = input.IsKeyDown(KEY_ESCAPE)
+        if down and not CH._escHeld then
+            CH._escHeld = true
+            CH.Close()
+            gui.HideGameUI()
+        elseif not down then
+            CH._escHeld = false
+        end
     end
 
     function entry:OnEnter() CH.Submit() end
@@ -520,30 +550,43 @@ end
 
 function CH.Open()
     if not cvOn:GetBool() then return end
+    if CH.Open_ then return end
     if not IsValid(CH.Frame) then CH.Build() end
     CH.Open_ = true
     CH.Unread = 0
     CH.Scroll = 0
+    CH.HistIdx = 0
     local f = CH.Frame
+    f:Show()
     f:SetMouseInputEnabled(true)
     f:SetKeyboardInputEnabled(true)
     f:MakePopup()
     CH.Strip:Show()
     CH.Entry:Show()
-    CH.Entry:RequestFocus()
-    gui.EnableScreenClicker(true)
+    CH.Entry:SetEnabled(true)
+    -- v4.15.0 «УГЛИ»: фокус строго СЛЕДУЮЩИМ тиком — в тот же тик поле ещё
+    -- «не нарисовалось» и фокус молча слетал (отсюда «не могу писать»)
+    timer.Simple(0.05, function()
+        if not CH.Open_ or not IsValid(CH.Entry) then return end
+        CH.Entry:RequestFocus()
+        CH.Entry:SetCaretPos(#(CH.Entry:GetText() or ""))
+    end)
     LocalPlayer().bonchatIsTyping = true -- титул «печатает» идёт по старому проводу
 end
 
 function CH.Close()
+    if not CH.Open_ then return end
     CH.Open_ = false
-    if IsValid(CH.Frame) then
-        CH.Frame:SetMouseInputEnabled(false)
-        CH.Frame:SetKeyboardInputEnabled(false)
+    if IsValid(CH.Entry) and vgui.GetKeyboardFocus() == CH.Entry then
+        CH.Entry:KillFocus()
     end
     if IsValid(CH.Strip) then CH.Strip:Hide() end
     if IsValid(CH.Entry) then CH.Entry:Hide() end
-    gui.EnableScreenClicker(false)
+    if IsValid(CH.Frame) then
+        CH.Frame:SetMouseInputEnabled(false)
+        CH.Frame:SetKeyboardInputEnabled(false)
+        CH.Frame:KillFocus()
+    end
     if IsValid(LocalPlayer()) then LocalPlayer().bonchatIsTyping = false end
 end
 
@@ -573,17 +616,18 @@ end)
 -- счётчик пропущенных, когда чат закрыт
 hook.Add("HUDPaint", "P11CHAT.Unread", function()
     if not cvOn:GetBool() or CH.Open_ or CH.Unread <= 0 then return end
-    local _, H = Layout()
+    local px, py = ChatPos()
     draw.SimpleText("ПРОПУЩЕНО: " .. CH.Unread .. " — чат: клавиша Y",
-        "P11CHAT.Tiny", 18, ScrH() - H - 60, Color(255, 214, 110))
+        "P11CHAT.Tiny", px + 2, py - 18, Color(255, 214, 110))
 end)
 
 -- ресайз экрана — пересобрать геометрию и строки
 hook.Add("OnScreenSizeChanged", "P11CHAT.Resize", function()
     if IsValid(CH.Frame) then
         local W, H = Layout()
+        local px, py = ChatPos()
         CH.Frame:SetSize(W, H)
-        CH.Frame:SetPos(16, ScrH() - H - 40)
+        CH.Frame:SetPos(px, py)
     end
     CH.logW = select(1, Layout())
     RebuildRows()
@@ -605,7 +649,7 @@ timer.Simple(1, function()
             print("[P11CHAT-СВЯЗЬ] свой чат старший — BonChat усыплён (вернуть: p11_ownchat 0)")
         end
     end
-    print("[P11CHAT-СВЯЗЬ] v4.14.0 OK — свой чат станции: полоса каналов (клик/TAB), история (↑/↓), пропущенные, личина в именах; выкл: p11_ownchat 0")
+    print("[P11CHAT-СВЯЗЬ] v4.15.0 «УГЛИ» OK — окно на DFrame: фокус мыши/клавы родной, ESC гасится двумя контурами, каналы кликаются, ввод сразу; чат выше худов и крупнее; выкл: p11_ownchat 0")
 end)
 
 -- переключение рубильника на лету
@@ -629,4 +673,4 @@ concommand.Add("p11_pchat", function()
     if cvOn:GetBool() then CH.Open() end
 end, nil, "Свой чат «СВЯЗЬ»: статус + открыть окно (p11_ownchat 1/0 — вкл/выкл)")
 
-print("[P11CHAT-СВЯЗЬ] модуль свой чата v4.14.0 загружен (окно соберётся через сек)")
+print("[P11CHAT-СВЯЗЬ] модуль чата v4.15.0 «УГЛИ» загружен (окно соберётся через сек)")

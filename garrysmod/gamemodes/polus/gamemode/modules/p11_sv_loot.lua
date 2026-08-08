@@ -102,6 +102,36 @@ local LOOT = {
         },
         money = { min = 30, max = 100, ch = 0.12 },
     },
+    -- v4.15.0 «УГЛИ»: ещё две лутницы по заявке «добавь лутабельные вещи,
+    -- со временем восполняются» — стол снабженца и войсковая точка
+    polus11_lootfood = {
+        name = "ПРОДОВОЛЬСТВЕННЫЙ ЯЩИК",
+        respawn = 300,
+        snd = "physics/wood/wood_crate_impact_soft1.wav",
+        items = {
+            { id = "cons",      min = 1, max = 2, ch = 0.95 },
+            { id = "ration",    min = 1, max = 1, ch = 0.50 },
+            { id = "spirit",    min = 1, max = 1, ch = 0.35 },
+            { id = "chemlight", min = 1, max = 1, ch = 0.20 },
+            { id = "cloth",     min = 1, max = 1, ch = 0.30 },
+        },
+        money = { min = 30, max = 120, ch = 0.12 },
+    },
+    polus11_lootarm = {
+        name = "АРМЕЙСКИЙ КОНТЕЙНЕР",
+        respawn = 420,
+        snd = "items/ammo_pickup.wav",
+        items = {
+            { id = "ammo_pistol", min = 1, max = 1, ch = 0.50 },
+            { id = "ammo_smg",    min = 1, max = 1, ch = 0.45 },
+            { id = "ammo_ar",     min = 1, max = 1, ch = 0.40 },
+            { id = "ammo_buck",   min = 1, max = 1, ch = 0.35 },
+            { id = "ammo_dyn",    min = 1, max = 1, ch = 0.18 },
+            { id = "medkit",      min = 1, max = 1, ch = 0.06 },
+            { id = "scalpel",     min = 1, max = 1, ch = 0.06 },
+        },
+        money = { min = 60, max = 200, ch = 0.15 },
+    },
 }
 
 local CLS_TABLE = "polus11_crafttable"
@@ -222,6 +252,8 @@ local function RoleClass(role)
         crate = "polus11_lootcrate", barrel = "polus11_lootbarrel",
         cache = "polus11_lootcache", crafttable = "polus11_crafttable",
         med = "polus11_lootmed", mil = "polus11_lootmil", tech = "polus11_loottech",
+        food = "polus11_lootfood", arm = "polus11_lootarm", -- v4.15.0 «УГЛИ»
+        hearth = "polus11_hearth", -- v4.15.0 «УГЛИ»: буржуйка (не лутница, но рассыпается общей командой)
     }
     return backup[role]
 end
@@ -237,10 +269,14 @@ local function ResolveRole(a)
     if a == "med" or a == "мед" or a == "Мед" or a == "шкаф" or a == "медшкаф" then return "med" end
     if a == "mil" or a == "боевой" or a == "патроны" or a == "оружейный" then return "mil" end
     if a == "tech" or a == "груда" or a == "контейнер" or a == "мусорка" or a == "ломгруда" then return "tech" end
+    -- v4.15.0 «УГЛИ»
+    if a == "food" or a == "еда" or a == "прод" or a == "провиант" or a == "продовольственный" then return "food" end
+    if a == "arm" or a == "армейский" or a == "боекомплект" or a == "снабжение" then return "arm" end
+    if a == "hearth" or a == "печь" or a == "буржуйка" or a == "очаг" or a == "угли" then return "hearth" end
     return nil
 end
 
-local ALL_ROLES = { "crate", "barrel", "cache", "crafttable", "med", "mil", "tech" }
+local ALL_ROLES = { "crate", "barrel", "cache", "crafttable", "med", "mil", "tech", "food", "arm", "hearth" } -- v4.15.0 «УГЛИ»
 
 -- место на земле рядом с игроком: угол/радиус → луч сверху, прямую видимость,
 -- свободный хулл и отсутствие соседей-лутниц ближе 130 юнитов
