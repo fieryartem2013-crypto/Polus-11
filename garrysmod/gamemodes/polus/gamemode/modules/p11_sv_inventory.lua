@@ -135,6 +135,23 @@ function POLUS11.InvCanUse(class)
     return isstring(class) and weapons.Get(class) ~= nil
 end
 
+-- v4.11.0 «КУЗНЯ» (заявка владельца: «при покупке на всех профах будет
+-- выдаваться оружие, которое было куплено — исключение Нечто»):
+-- купленный СТВОЛ кладётся СРАЗУ В РУКИ любой профессии. Единственное
+-- исключение — активная Тварь: лапы не для ружей, ей покупка уходит
+-- на склад по-старому (личина достанет из инвентаря сама).
+local GIVE_ON_BUY = {
+    aks74u = true, aks74 = true, ppsh41 = true, mosin = true,
+    mr43 = true, k98 = true, rpd = true, flamer = true, scalpel = true,
+}
+
+-- активная Тварь (та самая, у которой когти) — по сетевому контракту ЛИЧИНЫ 3.0
+local function IsActiveThing(ply)
+    return IsValid(ply)
+        and ply:GetNWBool("P11_Infected", false)
+        and ply:GetNWBool("P11_InfActive", false)
+end
+
 -- купить (зовёт ларёк)
 function POLUS11.ShopBuy(ply, id)
     local it = POLUS11.Items[id]
@@ -150,6 +167,30 @@ function POLUS11.ShopBuy(ply, id)
             "₽. Цена: " .. price .. "₽, у тебя: " .. POLUS11.GetMoney(ply) .. "₽.")
         ply:EmitSound("buttons/button10.wav", 60, 90)
         return
+    end
+    -- v4.11.0 «КУЗНЯ»: купленный ствол — СРАЗУ В РУКИ (все профы без разбора;
+    -- активная Тварь — исключение: ей на склад, когти важнее ружья)
+    if GIVE_ON_BUY[id] and it.class then
+        if IsActiveThing(ply) then
+            -- общий путь ниже (в инвентарь)
+        elseif ply:HasWeapon(it.class) then
+            POLUS11.Notify(ply, "Такой ствол уже в руках — дубликат ушёл на склад (🎒 в C-меню).")
+            -- общий путь ниже (в инвентарь дубликатом)
+        else
+            ply:Give(it.class)
+            local w = ply:GetWeapon(it.class)
+            if IsValid(w) then
+                ply:SelectWeapon(it.class)
+                DebouncedSave()
+                POLUS11.Notify(ply, "«" .. it.name .. "» — сразу в руки. Патроны — там же, в ларьке.")
+                ply:ChatPrint("[ЛАРЁК] Выдал: «" .. it.name .. "» — уже в руках. Не забудь патроны.")
+                ply:EmitSound("items/ammo_pickup.wav", 60, 90)
+                POLUS11.InvSync(ply)
+                POLUS11.Log(ply:Nick() .. " купил " .. it.name .. " за " .. price .. "₽ (сразу в руки)")
+                return
+            end
+            -- дать не вышло (чудом) — упадёт в инвентарь общим путём
+        end
     end
     local data = InvOf(ply)
     data.items[id] = (data.items[id] or 0) + 1
@@ -411,6 +452,10 @@ local PLACEABLE = {
     patrol    = "polus_p11_patrol", -- v4.1: посты патруля
     kitchen   = "polus_p11_kitchen", -- v4.2: полевая кухня повара
     avtosalon = "polus11_avtosalon", -- v4.10.0 «ГАРАЖ»: торговец транспортом LVS
+    crafttable = "polus11_crafttable", -- v4.11.0 «КУЗНЯ»: верстак (стол крафтов)
+    crate     = "polus11_lootcrate",  -- v4.11.0 «КУЗНЯ»: ящик лома (лут)
+    barrel    = "polus11_lootbarrel", -- v4.11.0 «КУЗНЯ»: топливная бочка (лут)
+    cache     = "polus11_lootcache",  -- v4.11.0 «КУЗНЯ»: тайник снабженца (лут)
 }
 
 local function PlaceFile(role)
@@ -447,6 +492,11 @@ local function LoadPlaced(role)
     end
 end
 
+-- v4.11.0 «КУЗНЯ»: расстановку отдаём модулю лута (p11_lootspawn/p11_lootclear)
+POLUS11.PLACEABLE = PLACEABLE
+POLUS11.PlaceSave = SavePlaced
+POLUS11.PlaceLoad = LoadPlaced
+
 hook.Add("InitPostEntity", "P11.PlaceLoad", function()
     -- генератор/терминал грузит общий persist-станции; ларёк/сейф — свои файлы
     timer.Simple(2, function()
@@ -456,6 +506,10 @@ hook.Add("InitPostEntity", "P11.PlaceLoad", function()
         LoadPlaced("patrol")
         LoadPlaced("kitchen")
         LoadPlaced("avtosalon") -- v4.10.0 «ГАРАЖ»
+        LoadPlaced("crafttable") -- v4.11.0 «КУЗНЯ»
+        LoadPlaced("crate")
+        LoadPlaced("barrel")
+        LoadPlaced("cache")
         if POLUS11.PatrolSyncAll then timer.Simple(2.5, function() POLUS11.PatrolSyncAll(nil) end) end
     end)
 end)
@@ -467,6 +521,10 @@ hook.Add("PostCleanupMap", "P11.PlaceLoad2", function()
         LoadPlaced("patrol")
         LoadPlaced("kitchen")
         LoadPlaced("avtosalon") -- v4.10.0 «ГАРАЖ»
+        LoadPlaced("crafttable") -- v4.11.0 «КУЗНЯ»
+        LoadPlaced("crate")
+        LoadPlaced("barrel")
+        LoadPlaced("cache")
         if POLUS11.PatrolSyncAll then timer.Simple(1.5, function() POLUS11.PatrolSyncAll(nil) end) end
     end)
 end)

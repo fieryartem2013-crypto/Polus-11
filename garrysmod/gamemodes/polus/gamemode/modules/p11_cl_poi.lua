@@ -40,6 +40,11 @@ local POI = {
     polus_p11_kitchen  = { lbl = "🍲 КУХНЯ",        col = Color(255, 180, 120) },
     polus_p11_supply   = { lbl = "📦 СНАБЖЕНИЕ",    col = Color(200, 220, 170) },
     polus_p11_patrol   = { lbl = "🚩 ПОСТ ПАТРУЛЯ", col = Color(160, 200, 160) },
+    -- v4.11.0 «КУЗНЯ»: верстак всегда маячит; лутницы — только ПОЛНЫЕ (ready=true)
+    polus11_crafttable = { lbl = "🛠 ВЕРСТАК",      col = Color(185, 220, 255) },
+    polus11_lootcrate  = { lbl = "📦 ЯЩИК ЛОМА",    col = Color(215, 195, 140), ready = true },
+    polus11_lootbarrel = { lbl = "🛢 ТОПЛИВНАЯ БОЧКА", col = Color(205, 175, 95), ready = true },
+    polus11_lootcache  = { lbl = "💼 ТАЙНИК",       col = Color(255, 150, 150), ready = true },
 }
 
 -- кэш найденных точек (пересчёт раз в ~0.7 сек — карта большая)
@@ -53,7 +58,14 @@ local function ScanPOI()
     for cls, def in pairs(POI) do
         for _, e in ipairs(ents.FindByClass(cls)) do
             if IsValid(e) then
-                cache[#cache + 1] = { ent = e, def = def }
+                -- v4.11.0 «КУЗНЯ»: пустая лутница маяком НЕ светит (вернётся при пополнении)
+                local full = true
+                if def.ready and e.GetLootReadyAt then
+                    full = (e:GetLootReadyAt() or 0) <= CurTime()
+                end
+                if full then
+                    cache[#cache + 1] = { ent = e, def = def }
+                end
             end
         end
     end
@@ -110,4 +122,4 @@ hook.Add("HUDPaint", "P11.POIBeacons", function()
     end
 end)
 
-print("[P11POI] v4.10.0 OK — маяки «куда идти» (вкл по умолчанию; выкл: p11_poi 0)")
+print("[P11POI] v4.11.0 «КУЗНЯ» OK — маяки «куда идти» + верстак и ПОЛНЫЕ лутницы (выкл: p11_poi 0)")

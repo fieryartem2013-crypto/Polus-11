@@ -1,7 +1,7 @@
 -- ============================================================
---  ПОЛЮС-11 — КУСТАРНАЯ МАСТЕРСКАЯ (client) v4.10.0 «ГАРАЖ»
+--  ПОЛЮС-11 — КУСТАРНАЯ МАСТЕРСКАЯ (client) v4.11.0 «КУЗНЯ»
 --  Окно крафта: кнопка «🛠 МАСТЕРСКАЯ» в 🎒 инвентаре,
---  чат !крафт, консоль p11_craft.
+--  чат !крафт, консоль p11_craft, живой ВЕРСТАК на станции (E).
 --  Состав своих материалов читаем из общего кэша P11.Eco (его
 --  ведёт p11_cl_economy по серверному InvSync — живые цифры).
 --  РЕЦЕПТЫ тут — зеркало серверного списка (p11_sv_craft):
@@ -39,6 +39,19 @@ local RECIPES = {
         desc = "Бинт, спирт, упаковка. Медики одобряют самодеятельность." },
     { id = "flamer",    name = "Кустарный огнемёт",  needs = { fuel = 2, parts = 2, scrap = 2 },
         desc = "ГЛАВНЫЙ рецепт войны с Нечто: соляра + запчасти + лом." },
+    -- v4.11.0 «КУЗНЯ»: верстак — новые рецепты (боеприпасы и инструмент)
+    { id = "ammo9",     name = "Самокрут 9×18 (x60)", needs = { scrap = 1, parts = 1 },
+        desc = "Гильзы из лома, капсюли из запчастей. К пистолетам станции." },
+    { id = "ammosmg",   name = "ПП-патроны самосбор (x90)", needs = { scrap = 1, parts = 1, spirit = 1 },
+        desc = "Для АКС/ППШ: спирт-смазка — не клинит на морозе." },
+    { id = "ammoar",    name = "Винтовочно-автоматные (x60)", needs = { scrap = 2, parts = 1 },
+        desc = "Полный рожок к АК-74 и РПД из станочных остатков." },
+    { id = "ammobuck",  name = "Картечь 12-го самосбор (x16)", needs = { scrap = 1, cloth = 1, spirit = 1 },
+        desc = "Гвозди из лома, пыж из брезента — двустволка скажет спасибо." },
+    { id = "scalpel",   name = "Скальпель", needs = { scrap = 1, parts = 1 },
+        desc = "Обмолоток лома, заточка о наждак — режет честно." },
+    { id = "ukol",      name = "Инъектор «УКОЛ-С»", needs = { parts = 2, spirit = 2 },
+        desc = "Шприц-тюбики + стерильный спирт: два заряда живучести." },
 }
 
 P11C = P11C or { Frame = nil }
@@ -82,7 +95,7 @@ function P11.OpenCraft()
         draw.RoundedBoxEx(12, 0, 0, w, 66, C.panel, true, true, false, false)
         surface.SetDrawColor(C.line) surface.DrawRect(0, 66, w, 1)
         draw.SimpleText("🛠 КУСТАРНАЯ МАСТЕРСКАЯ", "P11C.Title", 16, 20, C.gold, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-        draw.SimpleText("материалы из ларька → готовые вещи в 🎒 инвентарь", "P11C.Small", 16, 46, C.dim, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        draw.SimpleText("материалы из ларька и ящиков → готовые вещи в 🎒 инвентарь · стол станции: ВЕРСТАК", "P11C.Small", 16, 46, C.dim, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
     end
 
     local xb = vgui.Create("DButton", f)
@@ -162,4 +175,4 @@ concommand.Add("p11_craft", function()
     P11.OpenCraft()
 end)
 
-print("[P11CRAFT] v4.10.0 OK — мастерская (🎒 инвентарь / !крафт / p11_craft)")
+print("[P11CRAFT] v4.11.0 «КУЗНЯ» OK — мастерская 12 рецептов (🎒 инвентарь / !крафт / p11_craft / ВЕРСТАК на станции)")
