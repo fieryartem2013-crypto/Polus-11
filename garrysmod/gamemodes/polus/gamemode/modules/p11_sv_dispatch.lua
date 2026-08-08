@@ -165,7 +165,7 @@ function POLUS11.DispatchUse(ply, term)
         return
     end
 
-    Sessions[ply] = { term = term, cds = {} }
+    Sessions[ply] = { term = term, cds = {}, since = CurTime(), ready = false } -- v4.19.2: READY-рукопожатие
     ply:Freeze(true)
 
     net.Start(NET)
@@ -186,6 +186,17 @@ timer.Create("P11.DspWatchdog", 1, 0, function()
     for ply, s in pairs(Sessions) do
         if not (IsValid(ply) and ply:Alive()) then
             POLUS11.DispatchDrop(ply)
+        elseif not s.ready and (s.since or 0) > 0 and CurTime() > s.since + 3 then
+            -- v4.19.2 «ШЛЮЗ» (заявка «из терминала не выйти»): пульт на
+            -- клиенте не поднялся (модуль не доехал или дал ошибку), а
+            -- тело морожено — заморозка сама отпускает за 3 секунды
+            POLUS11.DispatchDrop(ply)
+            if POLUS11.Notify then
+                POLUS11.Notify(ply, "Пульт «ГЛАЗА» не откликнулся с твоей стороны — сеанс сорван, руки свободны. Повторится — глянь клиентскую консоль (строки [POLUS]).")
+            end
+            if P11FW and P11FW.Log then
+                P11FW.Log("ГЛАЗ: сеанс " .. ply:Nick() .. " сорван молчанием пульта (READY не пришёл за 3 сек)")
+            end
         elseif not IsValid(s.term) then
             POLUS11.DispatchClose(ply, "Терминал утрачен — сеанс закрыт.")
         elseif ply:GetPos():DistToSqr(s.term:GetPos()) > 200 * 200 then
@@ -262,6 +273,11 @@ net.Receive(NET, function(len, ply)
     end
 
     if not Sessions[ply] then return end -- ниже — только с живого пульта
+
+    if op == 9 then -- READY: пульт клиента жив (рукопожатие v4.19.2 против «не выйти»)
+        Sessions[ply].ready = true
+        return
+    end
 
     if op == 2 then -- медпомощь +25 ХП
         local t = TargetOf(net.ReadUInt(16))
@@ -364,4 +380,27 @@ net.Receive(NET, function(len, ply)
     end
 end)
 
-print("[POLUS-11] «ГЛАЗ»: диспетчер-камеры Красных Орлов v4.19.0")
+-- ============ ЗАПАСНЫЕ ДВЕРИ ВЫХОДА (v4.19.2 «ШЛЮЗ») ============
+
+-- чатовая (если чат-ядро пропустит сигнал до нас — молча отработает)
+hook.Add("PlayerSay", "P11.DspSayExit", function(ply, text)
+    if not Sessions[ply] then return end
+    local t = tostring(text or "")
+    t = string.gsub(t, "^%s*(.-)%s*$", "%1")
+    if string.find(t, "!вых", 1, true) or string.find(t, "/вых", 1, true)
+        or string.find(t, "!ВЫХ", 1, true) or string.find(t, "!exit", 1, true)
+        or string.find(t, "!глаз выход", 1, true) then
+        POLUS11.DispatchClose(ply, "Вышел чатовой командой.")
+        return ""
+    end
+end)
+
+-- железная консольная: консоль открывается даже из морозилки
+concommand.Add("p11_dspxit", function(ply)
+    if not (IsValid(ply) and ply:IsPlayer()) then return end
+    if Sessions[ply] then
+        POLUS11.DispatchClose(ply, "Вышел консольной командой.")
+    end
+end)
+
+print("[POLUS-11] «ГЛАЗ»: диспетчер-камеры Красных Орлов v4.19.2 «ШЛЮЗ»")

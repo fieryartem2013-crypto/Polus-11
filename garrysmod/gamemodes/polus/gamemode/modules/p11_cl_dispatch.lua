@@ -21,6 +21,8 @@ D.pcount   = 0
 -- зеркало каталога сервера (p11_sv_dispatch CATALOG — тот же порядок!)
 D.weapons = { "MP5A3", "UMP-45", "M4A1", "M1A", "SA-58", "M700", "Rem 870", "M1911A1" }
 
+local cvDbg = CreateConVar("p11_dspdebug", "0", FCVAR_ARCHIVE) -- v4.19.2 «ШЛЮЗ»: HUD-датчик сеанса/клавы
+
 surface.CreateFont("P11.Dsp.Title", { font = "Roboto", size = 19, weight = 800, extended = true })
 surface.CreateFont("P11.Dsp.Row",   { font = "Roboto", size = 15, weight = 600, extended = true })
 surface.CreateFont("P11.Dsp.Small", { font = "Roboto", size = 13, weight = 600, extended = true })
@@ -92,7 +94,16 @@ end
 net.Receive("P11_Dsp", function()
     local op = net.ReadUInt(4)
     if op == 1 then
-        D.Open()
+        -- v4.19.2 «ШЛЮЗ»: подъём под pcall — тихая ошибка больше НЕ
+        -- висит скрытно с мороженым телом: рвём сеанс обратно
+        local ok, err = pcall(D.Open)
+        if not ok then
+            print("[ГЛАЗ][ERROR] пульт не поднялся: " .. tostring(err))
+            chat.AddText(Color(255, 120, 110), "[ГЛАЗ] пульт дал ошибку — сеанс сорван (смотри клиентскую консоль).")
+            Send0(1)
+        else
+            Send0(9) -- READY-рукопожатие: пульт жив
+        end
     elseif op == 2 then
         local why = net.ReadString()
         D.Close()
@@ -169,8 +180,9 @@ hook.Add("PlayerButtonDown", "P11.DspKeys", function(ply, key)
     if ply ~= LocalPlayer() then return end
     if CurTime() < nextKey then return end
 
-    if key == KEY_E then
+    if key == KEY_E or key == KEY_ESCAPE then -- v4.19.2 «ШЛЮЗ»: ESC тоже выводит из пульта
         nextKey = CurTime() + 0.3
+        if cvDbg:GetBool() then print("[ГЛАЗ→] выход: клавиша " .. key) end
         Send0(1)
         D.Close()
     elseif key == KEY_SPACE then
@@ -466,4 +478,16 @@ hook.Add("HUDPaint", "P11.DspHUD", function()
     end
 end)
 
-print("[POLUS-11] «ГЛАЗ»: пульт диспетчера v4.19.0 OK")
+-- HUD-датчик сеанса (p11_dspdebug 1): видно, жив ли пульт и что шлём
+hook.Add("HUDPaint", "P11.DspDebug", function()
+    if not cvDbg:GetBool() then return end
+    draw.SimpleText("ГЛАЗ-DEBUG: active=" .. tostring(D.active)
+        .. " mode=" .. tostring(D.mode)
+        .. " sel=" .. tostring(D.sel)
+        .. " cams=" .. #D.Cams()
+        .. " doors=" .. #D.doors,
+        "P11.Dsp.Small", ScrW() / 2, ScrH() - 150,
+        Color(140, 255, 160), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+end)
+
+print("[POLUS-11] «ГЛАЗ»: пульт диспетчера v4.19.2 «ШЛЮЗ» OK")
