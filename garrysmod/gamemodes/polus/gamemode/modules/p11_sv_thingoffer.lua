@@ -275,3 +275,48 @@ concommand.Add("p11_offer", function(ply)
     SetGlobalFloat("P11_ThingOfferUntil", 0) -- сброс флага планировщика
     POLUS11.ThingOfferOpen(true)
 end)
+
+-- ============ v4.18.2 «ВЕРБОВКА»: ИВЕНТ КНОПКОЙ (ранг 4+, без консоли) ============
+-- Заявка владельца: «сделай так, чтобы админы могли включать сами ивент
+-- с кадровщиком на взятие Нечто». Консоль p11_thingevent резал замок
+-- Главы (16) — теперь она открыта (PUBLIC), а для кнопки в F4 → АДМИН →
+-- «ИВЕНТ НЕЧТО» работает прямой канал: query/on/off, статус — ответом.
+util.AddNetworkString("P11_ThingEvent")
+
+local function EventStatusReply(ply)
+    local active = POLUS11.ThingOfferActive() and 1 or 0
+    local left = (active == 1)
+        and math.max(0, math.ceil(GetGlobalFloat("P11_ThingOfferUntil", 0) - CurTime())) or 0
+    local nextIn = (active == 0 and P.NextOffer)
+        and math.max(0, math.ceil(P.NextOffer - CurTime())) or 0
+    net.Start("P11_ThingEvent")
+        net.WriteUInt(active, 2)
+        net.WriteUInt(math.Clamp(left, 0, 65535), 16)
+        net.WriteUInt(math.Clamp(nextIn, 0, 65535), 16)
+        net.WriteUInt(math.Clamp(Cfg().window, 0, 65535), 16)
+        net.WriteUInt(math.Clamp(Cfg().gapMin, 0, 65535), 16)
+        net.WriteUInt(math.Clamp(Cfg().gapMax, 0, 65535), 16)
+    net.Send(ply)
+end
+
+net.Receive("P11_ThingEvent", function(len, ply)
+    if not IsValid(ply) or not ply:IsPlayer() then return end
+    if not P11FW.Config.Admin(ply) then
+        POLUS11.Notify(ply, "Только администрация (ранг 4+) управляет ивентом Нечто.")
+        return
+    end
+    ply.P11_ThingEventNext = ply.P11_ThingEventNext or 0
+    if CurTime() < ply.P11_ThingEventNext then return end
+    ply.P11_ThingEventNext = CurTime() + 0.4
+
+    local act = net.ReadUInt(2)
+    if act == 1 then
+        EventSwitch(ply, "on")
+    elseif act == 2 then
+        EventSwitch(ply, "off")
+    end
+    EventStatusReply(ply)
+end)
+
+print("[POLUS-11] ИВЕНТ НЕЧТО v4.18.2 «ВЕРБОВКА»: админы (ранг 4+) включают сами — вкладка F4→АДМИН «ИВЕНТ НЕЧТО», p11_thingevent открыт замком, !ивент")
+

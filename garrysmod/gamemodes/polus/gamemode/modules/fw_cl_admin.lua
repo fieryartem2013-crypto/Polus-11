@@ -219,6 +219,7 @@ function P11FW.OpenAdminMenu(forceTab)
         { id = "acts",      name = "ДЕЙСТВИЯ",  minLevel = 4 },
         { id = "flux",      name = "💠 ПОТОК",  minLevel = 4 }, -- v4.14.2: КАЗНА — выдача трёх валют (ПФ/₽/⏱)
         { id = "ann",       name = "ОПОВЕЩЕНИЕ", minLevel = 4 }, -- v4.18.0 «РЕПРОДУКТОР»: плашка всей станции
+        { id = "event",     name = "ИВЕНТ НЕЧТО", minLevel = 4 }, -- v4.18.2 «ВЕРБОВКА»: ивент у кадровика своей кнопкой
         { id = "jobs",      name = "ДОЛЖНОСТИ", minLevel = 14 },
         { id = "factions",  name = "ФРАКЦИИ",   minLevel = 14 },
         { id = "utils",     name = "УТИЛИТЫ",   minLevel = 14 },
@@ -1898,6 +1899,103 @@ function P11FW.OpenAdminMenu(forceTab)
         hint:SetPos(16, 338) hint:SetSize(824, 40)
         hint:SetFont("P11FW.Small") hint:SetTextColor(AC.dim)
         hint:SetText("Консольный канал той же трубы (для Главы, замок 16): p11_announce <текст>  •  сам себя оповещение тоже покажет — так задумано: сразу виден итоговый вид плашки.")
+    end
+
+    do
+        -- ==== ВКЛАДКА «ИВЕНТ НЕЧТО» (v4.18.2 «ВЕРБОВКА») ====
+        -- Заявка владельца: «админы могли включать сами ивент с кадровщиком
+        -- на взятие Нечто». Кнопка без консоли и без Главы: статус живой
+        -- (опрос 1.2 сек), ЗАПУСТИТЬ/ОТОЗВАТЬ — в ту же дверь EventSwitch.
+        local p = NewTab("event")
+        local RED = Color(255, 110, 100)
+        local GRN = Color(140, 225, 150)
+
+        local ST = { have = false, active = 0, left = 0, nextIn = 0, window = 90, gapMin = 900, gapMax = 1800 }
+        net.Receive("P11_ThingEvent", function() -- единственный клиентский слушатель канала
+            ST.have   = true
+            ST.active = net.ReadUInt(2)
+            ST.left   = net.ReadUInt(16)
+            ST.nextIn = net.ReadUInt(16)
+            ST.window = net.ReadUInt(16)
+            ST.gapMin = net.ReadUInt(16)
+            ST.gapMax = net.ReadUInt(16)
+        end)
+
+        local title = vgui.Create("DLabel", p)
+        title:SetPos(16, 12) title:SetSize(824, 26)
+        title:SetFont("P11FW.Big") title:SetTextColor(RED)
+        title:SetText("ИВЕНТ НЕЧТО У КАДРОВИКА — ручной запуск администрацией")
+
+        local sub = vgui.Create("DLabel", p)
+        sub:SetPos(16, 40) sub:SetSize(824, 34)
+        sub:SetFont("P11FW.Small") sub:SetTextColor(AC.dim)
+        sub:SetText("Ранг Administrator (4)+ — включает и отзывает особую вакансию САМ, без Главы и без консоли. Запуск = красная плашка над кадровиком и объявление всей станции.")
+
+        local status = vgui.Create("DLabel", p)
+        status:SetPos(16, 76) status:SetSize(824, 30)
+        status:SetFont("P11FW.Big") status:SetTextColor(GRN)
+        status:SetText("… запрос состояния …")
+
+        local info = vgui.Create("DLabel", p)
+        info:SetPos(16, 108) info:SetSize(824, 22)
+        info:SetFont("P11FW.Small") info:SetTextColor(AC.dim)
+
+        local start = vgui.Create("DButton", p)
+        start:SetPos(16, 146) start:SetSize(824, 56) start:SetText("")
+        start.Paint = function(s2, w, h)
+            local on = ST.active == 0
+            draw.RoundedBox(8, 0, 0, w, h,
+                on and (s2:IsHovered() and Color(70, 26, 22) or Color(52, 20, 17)) or Color(22, 24, 28))
+            surface.SetDrawColor(on and RED or AC.dim)
+            surface.DrawOutlinedRect(0, 0, w, h, 1)
+            draw.SimpleText(on and "ЗАПУСТИТЬ ИВЕНТ — особая вакансия у кадровика" or ("ИВЕНТ ИДЁТ — окно ещё ~" .. ST.left .. " сек"),
+                "P11FW.Text", w / 2, h / 2,
+                on and Color(255, 160, 150) or AC.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        end
+        start.DoClick = function()
+            if ST.active == 1 then surface.PlaySound("buttons/button10.wav") return end
+            net.Start("P11_ThingEvent") net.WriteUInt(1, 2) net.SendToServer()
+            surface.PlaySound("buttons/button17.wav")
+        end
+
+        local stop = vgui.Create("DButton", p)
+        stop:SetPos(16, 210) stop:SetSize(824, 48) stop:SetText("")
+        stop.Paint = function(s2, w, h)
+            local on = ST.active == 1
+            draw.RoundedBox(8, 0, 0, w, h,
+                on and (s2:IsHovered() and Color(26, 44, 30) or Color(18, 32, 22)) or Color(22, 24, 28))
+            surface.SetDrawColor(on and GRN or AC.dim)
+            surface.DrawOutlinedRect(0, 0, w, h, 1)
+            draw.SimpleText("ОТОЗВАТЬ ВАКАНСИЮ (сейчас " .. (on and "открыта" or "закрыта") .. ")",
+                "P11FW.Text", w / 2, h / 2,
+                on and Color(170, 235, 180) or AC.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        end
+        stop.DoClick = function()
+            net.Start("P11_ThingEvent") net.WriteUInt(2, 2) net.SendToServer()
+            surface.PlaySound("buttons/button15.wav")
+        end
+
+        local hint = vgui.Create("DLabel", p)
+        hint:SetPos(16, 268) hint:SetSize(824, 40)
+        hint:SetFont("P11FW.Small") hint:SetTextColor(AC.dim)
+        hint:SetText("Та же дверь из чата/консоли (теперь без замка Главы, ранг 4+ сам): !ивент [стоп/статус] · p11_thingevent on/off/status · p11_offer · диагностика p11_offerdiag")
+
+        p.Think = function()
+            p._nextQ = p._nextQ or 0
+            if CurTime() < p._nextQ then return end
+            p._nextQ = CurTime() + 1.2
+            net.Start("P11_ThingEvent") net.WriteUInt(0, 2) net.SendToServer()
+            if ST.have then
+                if ST.active == 1 then
+                    status:SetText("ОТКРЫТ — окно ещё ~" .. ST.left .. " сек")
+                    status:SetTextColor(GRN)
+                else
+                    status:SetText("ЗАКРЫТ" .. (ST.nextIn > 0 and (" · плановая волна через ~" .. ST.nextIn .. " сек") or ""))
+                    status:SetTextColor(RED)
+                end
+                info:SetText("Окно вакансии: " .. ST.window .. " сек · плановая волна: раз в " .. ST.gapMin .. "–" .. ST.gapMax .. " сек")
+            end
+        end
     end
 
     do
