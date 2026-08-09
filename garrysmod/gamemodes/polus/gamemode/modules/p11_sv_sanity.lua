@@ -22,6 +22,7 @@
 local TICK   = 2
 local TRIG50 = "P11_SanityWarn50"
 local TRIG25 = "P11_SanityWarn25"
+local SAN_DRAIN = CreateConVar("p11_sanitydrain", "1", FCVAR_ARCHIVE) -- v4.22.2 «ТИШИНА»: множитель расхода рассудка 0..3
 
 POLUS11.MedJobs = { -- единый список медслужбы (ларёк сверяется с ним)
     medic = true,
@@ -64,8 +65,11 @@ timer.Create("P11.SanityTick", TICK, 0, function()
     for _, ply in ipairs(player.GetAll()) do
         if IsValid(ply) and ply:Alive() and not ply:IsBot() then
             local d = 0
-            if blackout then d = d - 1.6 end
-            if storm    then d = d - 0.4 end
+            -- v4.22.2 «ТИШИНА»: расход мягче ~ на треть (заявка «анлак»),
+            -- живой тюнинг без рестарта — p11_sanitydrain 0..3
+            local dm = math.Clamp(SAN_DRAIN:GetFloat(), 0, 3)
+            if blackout then d = d - 1.1 * dm end
+            if storm    then d = d - 0.3 * dm end
 
             -- компания
             local near, closeFriend = 0, false
@@ -79,7 +83,7 @@ timer.Create("P11.SanityTick", TICK, 0, function()
                     end
                 end
             end
-            if near == 0 then          d = d - 0.8
+            if near == 0 then          d = d - 0.55 * dm
             elseif closeFriend then    d = d + 1.0
             else                       d = d + 0.15 end
 
@@ -94,7 +98,7 @@ timer.Create("P11.SanityTick", TICK, 0, function()
                     hearth = true
                 end
             end
-            d = d - corps * 0.5
+            d = d - corps * 0.35 * dm
             if hearth then d = d + 0.9 end
 
             -- тихий дрейф к 70 (свет, люди, делай своё дело)
