@@ -513,6 +513,7 @@ local PLACEABLE = {
     hearth    = "polus11_hearth",     -- v4.15.0 «УГЛИ»: буржуйка — топливо из 🎒 → жар греет станцию
     flag      = "polus11_cappoint",   -- v4.16.0 «ЗАХВАТ»: точка захвата РККА ↔ Орёл (шкала/оклад)
     contract  = "polus_p11_contractnpc", -- v4.19.4 «ПОЧЁТ»: интендант-нарядник (контракты часа)
+    jailnpc   = "polus_p11_jailnpc",    -- v4.22.0 «ОКОВЫ»: начальник караула (оформляет арест конвою)
 }
 
 local function PlaceFile(role)
@@ -572,6 +573,7 @@ hook.Add("InitPostEntity", "P11.PlaceLoad", function()
         LoadPlaced("bloodlab")  -- v4.12.0 «ОТБОЙ»: стол крови возвращён
         LoadPlaced("labtable")
         LoadPlaced("contract")  -- v4.19.4 «ПОЧЁТ»: интендант-нарядник
+        LoadPlaced("jailnpc")   -- v4.22.0 «ОКОВЫ»: начальник караула
         -- внимание: «generator» НЕ грузим — энергосистема выведена из игры (v4.12.0)
     end)
 end)
@@ -593,6 +595,7 @@ hook.Add("PostCleanupMap", "P11.PlaceLoad2", function()
         LoadPlaced("bloodlab")  -- v4.12.0 «ОТБОЙ»: стол крови возвращён
         LoadPlaced("labtable")
         LoadPlaced("contract")  -- v4.19.4 «ПОЧЁТ»: интендант-нарядник
+        LoadPlaced("jailnpc")   -- v4.22.0 «ОКОВЫ»: начальник караула
         -- внимание: «generator» НЕ грузим — энергосистема выведена из игры (v4.12.0)
     end)
 end)

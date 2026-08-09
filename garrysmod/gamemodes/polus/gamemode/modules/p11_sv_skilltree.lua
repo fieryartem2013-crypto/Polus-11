@@ -120,10 +120,10 @@ local SCIENCE_KEYS = { blood_test = true, calibrate = true, gen_service = true }
 local XP_KEYS = {
     contract_done = 50, clue_turn = 30, haul = 30,
     blood_test = 25, arrest = 25,
-    heal_player = 20, job_taken = 20,
+    heal_player = 20, -- job_taken вырезан v4.22.0 «ОКОВЫ» (заявка: должность ≠ дело)
     craft_do = 15, calibrate = 15, gen_service = 15, rollcall = 15,
     cook = 10, fed = 10, clean = 10, contract_take = 10,
-    radio = 5, loot_find = 5, shop_buy = 3,
+    loot_find = 5, shop_buy = 3, -- radio вырезана v4.22.0 «ОКОВЫ» (заявка: болтовня ≠ дело)
 }
 
 -- ============ СОСТОЯНИЕ ============

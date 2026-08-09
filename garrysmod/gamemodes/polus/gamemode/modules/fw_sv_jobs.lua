@@ -95,6 +95,11 @@ function P11FW.SetJob(ply, jobId, modelIdx, force)
         if pun == "slavery" then return false, "вы в рабстве — без должности" end
     end
 
+    -- v4.22.0 «ОКОВЫ»: в наручниках должность не меняют — вас ведут под конвоем
+    if not force and POLUS11 and POLUS11.IsCuffed and POLUS11.IsCuffed(ply) then
+        return false, "вы в наручниках — должность не сменить под конвоем"
+    end
+
     -- v3.8.2 → v4.8.8 «ЛИЧИНА»: ИВЕНТОВЫЕ роли (Нечто-формы и пр.) —
     -- только СТАРШАЯ администрация (Куратор+, ранг 12) или движковый
     -- superadmin. Раньше планка была ранг 4 — младшая администрация
