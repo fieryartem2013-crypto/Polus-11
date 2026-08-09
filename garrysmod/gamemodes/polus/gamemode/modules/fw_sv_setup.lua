@@ -207,7 +207,7 @@ net.Receive("P11FW_AdminAction", function(len, ply)
 
     -- ============ БЫСТРЫЕ ДЕЙСТВИЯ С ИГРОКОМ (Админ+) ============
 
-    elseif (act >= 14 and act <= 19 or act == 32) and not P11FW.CanMod(ply, "heal") then
+    elseif (act >= 14 and act <= 19 or act == 32) and not P11FW.CanMod(ply, "heal") then -- v4.30.1 «ДОПУСК»: быстрые действия — с Модератора (3)
         P11FW.Notify(ply, "Быстрые действия доступны Админу и выше.")
 
     elseif act == 14 then -- полное лечение

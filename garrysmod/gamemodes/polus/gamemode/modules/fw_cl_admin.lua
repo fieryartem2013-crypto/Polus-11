@@ -1,6 +1,6 @@
 -- ============================================================
 --  ПОЛЮС FRAMEWORK — АДМИН-МЕНЮ (клиент) v4.4.0
---  Вкладки: ИГРОКИ • МОДЕРАЦИЯ • ДЕЙСТВИЯ • ДОЛЖНОСТИ
+--  Вкладки: ИГРОКИ • МОДЕРАЦИЯ (с Хелпера) • ДЕЙСТВИЯ (с Модератора, v4.30.1) • ДОЛЖНОСТИ
 --  (редактор проф + галочка ВАЙТЛИСТ) • ФРАКЦИИ • УТИЛИТЫ •
 --  АДМИНКИ (все 19 рангов проекта плиткой, выдача в 1 клик) •
 --  ВАЙТЛИСТ (допуски на whitelist-должности — доступен также
@@ -177,7 +177,13 @@ function P11FW.OpenAdminMenu(forceTab)
     f.btnMaxim:SetVisible(false)
     f.btnMinim:SetVisible(false)
 
-    f.ActiveTab = forceTab or "players"
+    -- v4.30.1 «ДОПУСК»: кто ниже уровня выдачи рангов (10) — стартует
+    -- сразу с МОДЕРАЦИИ, а не с закрытых «ИГРОКИ» (Хелпер/Модератор/Админ).
+    local startTab = "players"
+    if P11FW.GetRankLevel(LocalPlayer()) < ((P11FW.Config and P11FW.Config.RankManageLevel) or 10) then
+        startTab = "mod"
+    end
+    f.ActiveTab = forceTab or startTab
 
     function f:Paint(w, h)
         Derma_DrawBackgroundBlur(f, f.P11FW_Start or 0)
@@ -207,8 +213,9 @@ function P11FW.OpenAdminMenu(forceTab)
     local myLevel = P11FW.GetRankLevel(LocalPlayer())
     -- v4.0 (по регламенту владельца): «лишь с ранга Staff Leader — ВСЕ
     -- вкладки; у админов ниже — только банька-телепорты». Уровни:
-    --   2 Helper+      → МОДЕРАЦИЯ (варны/муты/баны)
-    --   4 Admin+       → ДЕЙСТВИЯ (телепорты/лечки/заморозки)
+    --   2 Helper+      → МОДЕРАЦИЯ (варны/муты; сама панель — с v4.30.1 «ДОПУСК»)
+    --   3 Moderator+   → ДЕЙСТВИЯ (телепорты/лечки/заморозки, v4.30.1 «ДОПУСК»)
+    --   4 Admin+       → бан/ПОТОК/ОПОВЕЩЕНИЕ/ИВЕНТ
     --  10 DepStaff+    → ИГРОКИ (выдача рангов, Config.RankManageLevel)
     --  14 StaffLeader+ → ДОЛЖНОСТИ / ФРАКЦИИ / УТИЛИТЫ (всё остальное)
     local canWlTab = P11FW.CanWhitelist and P11FW.CanWhitelist(LocalPlayer())
@@ -216,7 +223,7 @@ function P11FW.OpenAdminMenu(forceTab)
     local tabs = {
         { id = "players",   name = "ИГРОКИ",    minLevel = (P11FW.Config and P11FW.Config.RankManageLevel) or 10 },
         { id = "mod",       name = "МОДЕРАЦИЯ", perm = "warn", badge = "!" },
-        { id = "acts",      name = "ДЕЙСТВИЯ",  minLevel = 4 },
+        { id = "acts",      name = "ДЕЙСТВИЯ",  minLevel = 3 }, -- v4.30.1 «ДОПУСК»: с Модератора (3)
         { id = "flux",      name = "💠 ПОТОК",  minLevel = 4 }, -- v4.14.2: КАЗНА — выдача трёх валют (ПФ/₽/⏱)
         { id = "ann",       name = "ОПОВЕЩЕНИЕ", minLevel = 4 }, -- v4.18.0 «РЕПРОДУКТОР»: плашка всей станции
         { id = "event",     name = "ИВЕНТ НЕЧТО", minLevel = 4 }, -- v4.18.2 «ВЕРБОВКА»: ивент у кадровика своей кнопкой
@@ -1104,7 +1111,7 @@ function P11FW.OpenAdminMenu(forceTab)
                 SendAction(actId, function() net.WriteUInt(idx, 8) end)
             end)
             b:SetSize(180, 44)
-            if not canHeal then -- v1.6: быстрые действия — с ранга Админ (4)
+            if not canHeal then -- v4.30.1 «ДОПУСК»: быстрые действия — с ранга Модератор (3)
                 b.PColor = AC.dim
                 b:SetEnabled(false)
             end

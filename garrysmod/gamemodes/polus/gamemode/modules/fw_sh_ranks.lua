@@ -174,7 +174,8 @@ P11FW.PermLevel = {
     mute    = 2, -- Helper
     arrest  = 3, -- Moderator (арест и рабство)
     kick    = 3, -- Moderator
-    heal    = 4, -- Administrator (быстрые действия: лечить/возродить/тп/заморозить/убить)
+    heal    = 3, -- Moderator (быстрые действия: лечить/возродить/тп/заморозить/убить — v4.30.1 «ДОПУСК»: было Админ 4)
+    cloak   = 2, -- Helper (/cloak — невидимость СЕБЕ, v4.30.1 «ДОПУСК»)
     ban     = 4, -- Administrator
     unban   = 6, -- Super Administrator
 }
@@ -232,16 +233,17 @@ function P11FW.RankRightsInfo(rank)
     end
     if lvl >= 2 then
         out[#out + 1] = "мут до " .. LimitText(lvl, "mute")
-        out[#out + 1] = "варн игрокам (вкладка МОДЕРАЦИЯ)"
+        out[#out + 1] = "варн игрокам (вкладка МОДЕРАЦИЯ, /warn)"
+        out[#out + 1] = "невидимость себе: /cloak (v4.30.1 «ДОПУСК»)"
         out[#out + 1] = "окно репортов /репорты: принять, тп к жалобщику, закрыть"
     end
     if lvl >= 3 then
         out[#out + 1] = "арест/рабство до " .. LimitText(lvl, "arrest")
-        out[#out + 1] = "кик игроков"
+        out[#out + 1] = "кик игроков (/kick)"
+        out[#out + 1] = "быстрые действия: /heal /tp /goto /bring /return /заморозка/убить + вкладка ДЕЙСТВИЯ (v4.30.1: с Модератора)"
     end
     if lvl >= 4 then
-        out[#out + 1] = "бан до " .. LimitText(lvl, "ban")
-        out[#out + 1] = "быстрые действия: /heal /tp /goto /bring /return /заморозка"
+        out[#out + 1] = "бан до " .. LimitText(lvl, "ban") .. " (/ban)"
     end
     if lvl >= 5 then
         out[#out + 1] = "казна: выдача денег !дать <ник> <сумма>"

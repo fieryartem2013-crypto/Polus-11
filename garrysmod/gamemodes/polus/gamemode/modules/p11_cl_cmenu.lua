@@ -721,7 +721,7 @@ function P11.OpenCMenu()
         local qlab = vgui.Create("DLabel", f)
         qlab:SetPos(14, 560) qlab:SetSize(748, 16)
         qlab:SetFont("P11.CM.Small") qlab:SetTextColor(CC.bad)
-        qlab:SetText("⚡ БЫСТРЫЕ КОМАНДЫ: варн/мут — Хелпер+ • кик — Модератор+ • бан/тп — Админ+ (те же, что /warn /ban /kick /tp /bring)")
+        qlab:SetText("⚡ БЫСТРЫЕ КОМАНДЫ: варн — Хелпер+ • кик/тп — Модератор+ (v4.30.1) • бан — Админ+ (те же, что /warn /ban /kick /tp /bring)")
 
         local function QBtn(x, name, desc, col, perm, fn)
             local b = CButton(f, x, 580, 146, 48, name, desc, col, fn)

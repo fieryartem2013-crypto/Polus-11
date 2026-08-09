@@ -3,7 +3,7 @@
 --  /tp <ник> и /goto <ник>  — телепорт СЕБЯ к игроку
 --  /bring <ник>             — притащить игрока К СЕБЕ
 --  /return                  — вернуться туда, откуда тпшило
---  /cloak                   — невидимость вкл/выкл (и оружие тоже)
+--  /cloak                   — невидимость вкл/выкл СЕБЕ (Хелпер+ с v4.30.1 «ДОПУСК»; и оружие тоже)
 --  /warn <ник> <причина>    — быстрый варн (Хелпер+, v4.29.0 «НАДЗОР»)
 --  /ban <ник> <мин 0=перма> [причина] — быстрый бан (v4.30.0):
 --      ворота прав/иерархии/лимиты срока — внутри RequestPunish
@@ -18,7 +18,7 @@
 -- ============================================================
 
 local function CanFast(ply)
-    return P11FW.CanMod(ply, "heal") -- ранг 4+ (Administrator)
+    return P11FW.CanMod(ply, "heal") -- ранг 3+ (Модератор), с v4.30.1 «ДОПУСК» (был Админ 4)
 end
 
 -- найти игрока по части ника
@@ -252,7 +252,17 @@ hook.Add("PlayerSay", "P11.AdminChatCmds", function(ply, text)
         return ""
     end
 
-    -- ниже — быстрые действия (heal, ранг 4+)
+    -- v4.30.1 «ДОПУСК»: /cloak — невидимость СЕБЕ с ранга Хелпер (2+)
+    if cmd == "/cloak" then
+        if not P11FW.CanMod(ply, "cloak") then
+            POLUS11.Notify(ply, "Невидимость — с ранга Хелпер (2) и выше.")
+            return ""
+        end
+        DoCloak(ply)
+        return ""
+    end
+
+    -- ниже — быстрые действия (heal, ранг 3+ Модератор с v4.30.1)
     if not CanFast(ply) then return end -- пропускаем дальше: это не наши команды/прав нет
 
     if cmd == "/tp" or cmd == "/goto" then
@@ -263,9 +273,6 @@ hook.Add("PlayerSay", "P11.AdminChatCmds", function(ply, text)
         return ""
     elseif cmd == "/return" then
         DoReturn(ply)
-        return ""
-    elseif cmd == "/cloak" then
-        DoCloak(ply)
         return ""
     elseif cmd == "/heal" then
         DoHeal(ply, arg)
