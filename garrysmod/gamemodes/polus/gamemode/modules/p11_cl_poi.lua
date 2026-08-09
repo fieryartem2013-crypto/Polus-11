@@ -42,7 +42,6 @@ local POI = {
     polus_p11_storage  = { lbl = "🗄 СЕЙФ",         col = Color(190, 190, 210) },
     polus_p11_kitchen  = { lbl = "🍲 КУХНЯ",        col = Color(255, 180, 120) },
     polus_p11_supply   = { lbl = "📦 СНАБЖЕНИЕ",    col = Color(200, 220, 170) },
-    polus_p11_patrol   = { lbl = "🚩 ПОСТ ПАТРУЛЯ", col = Color(160, 200, 160) },
     -- v4.11.0+ «КУЗНЯ»/«ОТБОЙ»: верстак всегда; лутницы — только ПОЛНЫЕ
     polus11_crafttable = { lbl = "🛠 ВЕРСТАК",      col = Color(185, 220, 255) },
     polus11_lootcrate  = { lbl = "📦 ЯЩИК ЛОМА",    col = Color(215, 195, 140), ready = true },

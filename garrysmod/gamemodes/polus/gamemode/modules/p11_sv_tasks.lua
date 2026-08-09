@@ -70,7 +70,6 @@ POLUS11.TaskDefs = {
 -- кастомы админки) — выдаём дела по её фракции.
 POLUS11.CategoryTaskDefs = {
     rkka = {
-        { key = "patrol_point", name = "Обойди посты патруля (×3)", max = 3 },
         { key = "damage_thing", name = "Нанеси урона Нечто", max = 150 },
         { key = "radio",        name = "Доложи в рацию (×3)", max = 3 },
         { key = "alive",        name = "Пост РККА: 10 мин без смерти", max = 600, time = true },
@@ -226,7 +225,7 @@ timer.Create("P11_TaskTimer", 5, 0, function()
                     end
                 end
             end
-            -- v2.7: доп-задачи-патрули от терминала тоже тикают временем
+            -- v2.7: доп-задачи-вахты от терминала тоже тикают временем
             if ply.P11_XTasks then
                 for _, t in ipairs(ply.P11_XTasks) do
                     if t.key == "alive" and not t.done then

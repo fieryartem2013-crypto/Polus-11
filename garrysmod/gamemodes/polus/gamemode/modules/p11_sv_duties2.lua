@@ -190,7 +190,7 @@ local function SpawnSupply()
     -- точка: улица = виден небосвод; якоримся к постам/генераторам
     local anchors = {}
     -- v4.12.0 «ОТБОЙ»: якорь-генератор вырезан из игры → якоримся к лутницам станции
-    for _, cls in ipairs({ "polus_p11_patrol", "polus11_lootcrate", "polus_fw_jobnpc" }) do
+    for _, cls in ipairs({ "polus11_lootcrate", "polus_fw_jobnpc", "polus_p11_contractnpc" }) do -- v4.19.5 «ДОПРОС»: патруль вырезан — якорь нарядник
         for _, e in ipairs(ents.FindByClass(cls)) do
             if IsValid(e) then anchors[#anchors + 1] = e:GetPos() end
         end

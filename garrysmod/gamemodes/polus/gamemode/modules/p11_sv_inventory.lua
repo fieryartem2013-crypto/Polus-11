@@ -488,7 +488,6 @@ local PLACEABLE = {
     terminal  = "polus11_terminal",
     shopnpc   = "polus_p11_shopnpc",
     storage   = "polus_p11_storage",
-    patrol    = "polus_p11_patrol", -- v4.1: посты патруля
     kitchen   = "polus_p11_kitchen", -- v4.2: полевая кухня повара
     avtosalon = "polus11_avtosalon", -- v4.10.0 «ГАРАЖ»: торговец транспортом LVS
     crafttable = "polus11_crafttable", -- v4.11.0 «КУЗНЯ»: верстак (стол крафтов)
@@ -552,7 +551,6 @@ hook.Add("InitPostEntity", "P11.PlaceLoad", function()
         LoadPlaced("shopnpc")
         LoadPlaced("storage")
         LoadPlaced("terminal")
-        LoadPlaced("patrol")
         LoadPlaced("kitchen")
         LoadPlaced("avtosalon") -- v4.10.0 «ГАРАЖ»
         LoadPlaced("crafttable") -- v4.11.0 «КУЗНЯ»
@@ -566,7 +564,6 @@ hook.Add("InitPostEntity", "P11.PlaceLoad", function()
         LoadPlaced("labtable")
         LoadPlaced("contract")  -- v4.19.4 «ПОЧЁТ»: интендант-нарядник
         -- внимание: «generator» НЕ грузим — энергосистема выведена из игры (v4.12.0)
-        if POLUS11.PatrolSyncAll then timer.Simple(2.5, function() POLUS11.PatrolSyncAll(nil) end) end
     end)
 end)
 hook.Add("PostCleanupMap", "P11.PlaceLoad2", function()
@@ -588,7 +585,6 @@ hook.Add("PostCleanupMap", "P11.PlaceLoad2", function()
         LoadPlaced("labtable")
         LoadPlaced("contract")  -- v4.19.4 «ПОЧЁТ»: интендант-нарядник
         -- внимание: «generator» НЕ грузим — энергосистема выведена из игры (v4.12.0)
-        if POLUS11.PatrolSyncAll then timer.Simple(1.5, function() POLUS11.PatrolSyncAll(nil) end) end
     end)
 end)
 
@@ -628,9 +624,6 @@ net.Receive("P11_PlaceEnt", function(len, ply)
     -- ларёк/сейф — свои place-файлы
     if role ~= "generator" and role ~= "terminal" then
         SavePlaced(role)
-        if role == "patrol" and POLUS11.PatrolSyncAll then
-            timer.Simple(0.5, function() POLUS11.PatrolSyncAll(nil) end)
-        end
     else
         if POLUS11.SaveStation then timer.Simple(1, POLUS11.SaveStation) end
         SavePlaced("terminal") -- и в свой файл, на случай отключённого StationPersist

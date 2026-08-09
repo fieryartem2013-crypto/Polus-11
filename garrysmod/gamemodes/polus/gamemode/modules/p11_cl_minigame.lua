@@ -1,7 +1,7 @@
 -- ============================================================
---  ПОЛЮС-11 — МИНИИГРЫ И ПАТРУЛЬ (client) v4.1
+--  ПОЛЮС-11 — МИНИИГРЫ (client) v4.1; v4.19.5 «ДОПРОС»: патруль вырезан из игры
 --  Окно «нажми клавишу вовремя», маркер следующего поста
---  патруля, счётчик очков науки (RP) у учёных.
+--  счётчик очков науки (RP) у учёных.
 -- ============================================================
 
 surface.CreateFont("P11.Mini.Big",   { font = "Roboto", size = 64, weight = 900, extended = true })
@@ -10,7 +10,6 @@ surface.CreateFont("P11.Mini.Small", { font = "Roboto", size = 15, weight = 500,
 
 P11 = P11 or {}
 P11.Mini = { active = false, title = "", steps = 0, step = 0, letter = "", untilT = 0, window = 2, hits = 0 }
-P11.Patrol = { pts = {}, next = 0 }
 
 local KEY_BY_LETTER = { R = KEY_R, F = KEY_F, T = KEY_T, G = KEY_G }
 
@@ -40,14 +39,6 @@ net.Receive("P11_MiniEnd", function()
     P11.Mini.active = false
     P11.Mini.letter = ""
     surface.PlaySound(ok and "buttons/button15.wav" or "buttons/button10.wav")
-end)
-
-net.Receive("P11_PatrolSync", function()
-    local ok, data = pcall(util.JSONToTable, net.ReadString() or "{}")
-    if ok and istable(data) then
-        P11.Patrol.pts  = data.pts or {}
-        P11.Patrol.next = data.next or 0
-    end
 end)
 
 -- ============ НАЖАТИЯ ============
@@ -134,42 +125,6 @@ local function DrawMini(M, w, h)
     end
 end
 
-local function DrawPatrolHUD(w, h)
-    local P = P11.Patrol
-    if not P or not P.pts or #P.pts == 0 then return end
-
-    -- маркер следующего поста в мире
-    if P.next and P.next ~= 0 then
-        for _, p in ipairs(P.pts) do
-            if p.id == P.next then
-                local pos = Vector(p.x, p.y, p.z) + Vector(0, 0, 60)
-                local scr = pos:ToScreen()
-                if scr.visible then
-                    local dist = math.floor(LocalPlayer():GetPos():Distance(Vector(p.x, p.y, p.z)))
-                    local pulse = 0.6 + math.sin(CurTime() * 4) * 0.4
-                    draw.RoundedBox(6, scr.x - 60, scr.y - 30, 120, 44, Color(10, 14, 20, 200))
-                    surface.SetDrawColor(120, 180, 255, 140 + 90 * pulse)
-                    surface.DrawOutlinedRect(scr.x - 60, scr.y - 30, 120, 44, 1)
-                    draw.SimpleText("🚩 ПОСТ №" .. tostring(p.n), "P11.Mini.Small", scr.x, scr.y - 19,
-                        Color(140, 200, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-                    draw.SimpleText(dist .. " м", "P11.Mini.Small", scr.x, scr.y - 2,
-                        Color(180, 190, 205), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-                end
-                break
-            end
-        end
-    end
-
-    -- строка статуса патруля (для бойцов, чей курс идёт)
-    if (P.next or 0) ~= 0 then
-        local total = #P.pts
-        local passed = 0
-        draw.RoundedBox(6, 16, h - 108, 170, 24, Color(8, 12, 18, 170))
-        draw.SimpleText("ПАТРУЛЬ: постов " .. total .. ", иди к маркеру", "P11.Mini.Small", 26, h - 96,
-            Color(140, 200, 255), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-    end
-end
-
 local function DrawRPBadge(w, h)
     local rp = LocalPlayer():GetNWInt("P11_RP", 0)
     if rp <= 0 then return end
@@ -184,8 +139,7 @@ hook.Add("HUDPaint", "P11.MiniHUD", function()
     if not IsValid(me) or not me:Alive() then return end
 
     if P11.Mini.active then DrawMini(P11.Mini, w, h) end
-    DrawPatrolHUD(w, h)
     DrawRPBadge(w, h)
 end)
 
-print("[POLUS-11] клиент миниигр/патруля загружен")
+print("[POLUS-11] клиент миниигр загружен; v4.19.5 «ДОПРОС»: патруль вырезан")

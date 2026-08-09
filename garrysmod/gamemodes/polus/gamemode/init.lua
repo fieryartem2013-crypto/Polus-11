@@ -64,7 +64,6 @@ local send = {
     "modules/p11_cl_medals.lua",       -- v4.19.4 «ПОЧЁТ»: медали — реестр, надголовье, ТАБ, вручение
     "modules/p11_cl_contracts.lua",    -- v4.19.4 «ПОЧЁТ»: окно нарядника + HUD-виджет контрактов
     "modules/p11_cl_sanity.lua",       -- v4.19.4 «ПОЧЁТ»: рассудок — индикатор + хоррор-слой (клиент)
-    "modules/p11_cl_thingmind.lua",    -- v4.19.4 «ПОЧЁТ»: разум жертвы — метки допуска
 }
 for _, f in ipairs(send) do
     AddCSLuaFile(f)
@@ -123,7 +122,7 @@ local sv = {
     "modules/p11_sv_trade.lua",      -- обмен игрок↔игрок: предметы и рубли лицом к лицу (v4.6.9)
     "modules/p11_sv_wage.lua",       -- оклад службы: казначейство платит по таймеру (v4.6.9)
     "modules/p11_sv_admincmds.lua",  -- /tp /goto /bring /return /cloak /heal /god /ранги (v4.0)
-    "modules/p11_sv_activities.lua", -- сменные дела: миниигры/наука/ТО/грязь/патруль (v4.1)
+    "modules/p11_sv_activities.lua", -- сменные дела: миниигры/наука/ТО/грязь (v4.1; v4.19.5: патруль вырезан)
     "modules/p11_sv_duties2.lua",    -- повар/грузчик/снабжение/досье/скидка/итоги (v4.2)
     "modules/p11_sv_mutations.lua",  -- мутации Нечто за жертв (v4.2)
     "modules/p11_sv_chars.lua",      -- дело бойца: персонажи + сохранение (v4.3.0)

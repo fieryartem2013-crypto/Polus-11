@@ -29,7 +29,7 @@ local cl = {
     "modules/p11_cl_models.lua",   -- браузер внешности (v4.4.0 — с нуля)
     "modules/p11_cl_economy.lua",  -- рубли на HUD / инвентарь / ларёк / сейф / расстановка (v4.0; v4.6.9 — броня+диаг)
     "modules/p11_cl_trade.lua",    -- окно обмена игрок↔игрок + выбор партнёра (v4.6.9)
-    "modules/p11_cl_minigame.lua", -- миниигры дел + патрульные маркеры + RP (v4.1)
+    "modules/p11_cl_minigame.lua", -- миниигры дел + RP (v4.1; v4.19.5: патруль вырезан)
     "modules/p11_cl_duties2.lua",   -- заявки грузчика / досье НКВД (v4.2)
     "modules/p11_cl_mutations.lua", -- HUD мутаций Нечто (v4.2)
     "modules/p11_cl_tutorial.lua",  -- туториал новичка: маяки и подсказки (v4.2)
@@ -53,7 +53,6 @@ local cl = {
     "modules/p11_cl_medals.lua",      -- v4.19.4 «ПОЧЁТ»: медали — надголовье, ТАБ, окно вручения
     "modules/p11_cl_contracts.lua",   -- v4.19.4 «ПОЧЁТ»: нарядник — окно + HUD-виджет
     "modules/p11_cl_sanity.lua",      -- v4.19.4 «ПОЧЁТ»: рассудок — индикатор + хоррор-слой
-    "modules/p11_cl_thingmind.lua",   -- v4.19.4 «ПОЧЁТ»: разум жертвы — метки допуска
     "modules/p11_cl_pchat.lua",       -- v4.14.0 «СВЯЗЬ»: СВОЙ чат станции (заявка «сделай сам свой кастомный чат») — ВСЕГДА ПОСЛЕДНИЙ (его net.Receive побеждает)
 }
 
