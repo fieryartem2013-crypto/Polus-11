@@ -7,7 +7,7 @@ local FACT = {
     eagle = { name = "ОТРЯД «КРАСНЫЙ ОРЁЛ»", col = Color(115, 155, 225) },
 }
 local NEUTRAL = Color(150, 155, 165)
-local RADIUS  = 360
+local RADIUS  = 600  -- v4.24.0 «РУБЕЖ»: радиус увеличен по заявке
 
 local function FactCol(f)
     return (FACT[f] and FACT[f].col) or NEUTRAL
@@ -19,7 +19,7 @@ function ENT:Draw()
     local me = LocalPlayer()
     if not IsValid(me) then return end
     local d2 = me:GetPos():DistToSqr(self:GetPos())
-    if d2 > 700 * 700 then return end
+    if d2 > (RADIUS + 400) * (RADIUS + 400) then return end
 
     local owner = self:GetOwnerFact() or ""
     local cap   = self:GetCapFact() or ""

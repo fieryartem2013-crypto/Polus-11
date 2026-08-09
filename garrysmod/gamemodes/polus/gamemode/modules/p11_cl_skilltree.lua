@@ -1,10 +1,12 @@
 -- ============================================================
---  ПОЛЮС-11 — ДРЕВО СЛУЖБЫ (client) v4.21.0 «ДРЕВО»
---  Окно C-меню → «⭐ ДРЕВО СЛУЖБЫ»: шкала уровня, фракции
---  (РККА / УЧЁНЫЕ — остальные «позже»), база + три пути,
---  открытие узлов, откат ветки за 100 000₽ (опыт цел).
---  Данные: NWInt P11_SkillXP + P11_TreeSync (JSON: xp, trees,
---  reset). Действия: P11_TreeAct (9 resync / 1 unlock / 2 reset).
+--  ПОЛЮС-11 — ДРЕВО СЛУЖБЫ (client) v4.24.0 «РУБЕЖ»
+--  Окно C-меню → «⭐ ДРЕВО СЛУЖБЫ»: НАСТОЯЩЕЕ ДЕРЕВО — ствол
+--  базы снизу, три ветви веером вверх, линии-связи, узлы-кнопки
+--  с состояниями (✓ открыто / золотой доступно / замок / ✕ чужой
+--  путь). Живое обновление по P11_TreeSync (после клика кадр сам
+--  пересобирается — «пункты не выбирались» больше не страшно).
+--  Данные: NWInt P11_SkillXP + P11_TreeSync (JSON), действия:
+--  P11_TreeAct (9 resync / 1 unlock (fac,nodeId) / 2 reset).
 -- ============================================================
 
 surface.CreateFont("P11.TR.Big",   { font = "Roboto", size = 24, weight = 800, extended = true })
@@ -84,160 +86,227 @@ local function LevelOf(xp)
     return lvl
 end
 
+-- живое обновление: после любого синка кадр пересобирается сам
 net.Receive("P11_TreeSync", function()
     local ok, tbl = pcall(util.JSONToTable, net.ReadString() or "{}")
     if not ok or not istable(tbl) then return end
     P11.Tree.xp    = tonumber(tbl.xp) or 0
     P11.Tree.trees = istable(tbl.trees) and tbl.trees or {}
     P11.Tree.reset = tonumber(tbl.reset) or 100000
+    P11.Tree._lastSync = CurTime()
+    if IsValid(P11.TreeFrame) then
+        P11.OpenSkillTree() -- пересборка (ресинк внутри загашен _lastSync)
+    end
 end)
 
--- ============ ОКНО ============
+-- ============ СОСТОЯНИЕ УЗЛА ============
 
-local function NodeCard(parent, fac, pathId, node, branchState, myLvl, isBase)
-    local opened = branchState.nodes and branchState.nodes[node.id]
-    local pathChosen = tostring(branchState.path or "")
-
-    local card = vgui.Create("DPanel", parent)
-    card:Dock(TOP) card:DockMargin(0, 0, 0, 6) card:SetTall(node.perk and 66 or 52)
-
-    -- состояние
-    local state, note = "lock", ""
-    if opened then
-        state = "done"
-    elseif isBase then
-        if myLvl >= (node.lvl or 0) then state, note = "base", "по уровню" else note = "нужен ур. " .. (node.lvl or 0) end
-    elseif myLvl < (node.lvl or 0) then
-        note = "нужен ур. " .. (node.lvl or 0)
-    elseif pathChosen ~= "" and pathChosen ~= pathId then
-        state, note = "dead", "чужой путь"
-    elseif pathId and TR[fac].paths[pathId] then
-        -- лесенка: предыдущий узел ветки должен быть открыт
-        local nodes = TR[fac].paths[pathId].nodes
-        for i, n in ipairs(nodes) do
+local function NodeState(fac, pathId, node, branch, myLvl, isBase)
+    if branch.nodes and branch.nodes[node.id] then return "done", "" end
+    local chosen = tostring(branch.path or "")
+    if isBase then
+        if myLvl >= (node.lvl or 0) then return "base", "по уровню" end
+        return "lock", "нужен ур. " .. (node.lvl or 0)
+    end
+    if myLvl < (node.lvl or 0) then return "lock", "нужен ур. " .. (node.lvl or 0) end
+    if chosen ~= "" and chosen ~= pathId then return "dead", "чужой путь" end
+    local pdef = pathId and TR[fac].paths[pathId]
+    if pdef then
+        for i, n in ipairs(pdef.nodes) do
             if n.id == node.id and i > 1 then
-                local prev = nodes[i - 1]
-                if not (branchState.nodes and branchState.nodes[prev.id]) then
-                    note = "сначала узел выше"
+                local prev = pdef.nodes[i - 1]
+                if not (branch.nodes and branch.nodes[prev.id]) then
+                    return "lock", "сначала узел ниже"
                 end
                 break
             end
         end
-        if note == "" then state = "open" end
     end
+    return "open", ""
+end
 
-    card.Paint = function(s, w, h)
-        local edge = TR_DIM
-        if state == "done" then edge = TR_OK
-        elseif state == "open" then edge = TR_GOLD
-        elseif state == "base" then edge = TR_ACC
-        elseif state == "dead" then edge = Color(80, 60, 60) end
-        draw.RoundedBox(6, 0, 0, w, h, TR_PANE)
-        surface.SetDrawColor(edge.r, edge.g, edge.b, state == "dead" and 90 or 160)
-        surface.DrawOutlinedRect(0, 0, w, h, 1)
+-- ============ ДЕРЕВО (канва с линиями) ============
 
-        local nm = node.name
-        if state == "dead" then nm = "✕ " .. nm end
-        draw.SimpleText(nm, "P11.TR.Mid", 10, 8,
-            state == "done" and TR_OK or (state == "dead" and Color(110, 100, 100) or TR_TEXT))
-        if node.perk then
-            draw.SimpleText("ПЕРК: " .. node.perk, "P11.TR.Small", 10, 30, TR_DIM)
-            draw.SimpleText("ур. " .. (node.lvl or 0), "P11.TR.Small", w - 10, 8, TR_ACC, TEXT_ALIGN_RIGHT)
+local function BuildTreeCanvas(f, fac)
+    local def = TR[fac]
+    if not def then return end
+    local myLvl = LevelOf(tonumber(LocalPlayer():GetNWInt("P11_SkillXP", P11.Tree.xp)) or 0)
+    local branch = istable(P11.Tree.trees[fac]) and P11.Tree.trees[fac] or { path = "", nodes = {} }
+
+    local cv = vgui.Create("DScrollPanel", f)
+    cv:SetPos(14, 112) cv:SetSize(852, 470)
+    cv:GetVBar():SetWide(5)
+
+    local CW, CH = 828, 760
+    local paper = vgui.Create("DPanel", cv)
+    paper:SetSize(CW, CH)
+    paper:SetPaintBackground(false)
+
+    -- раскладка: ствол базы снизу, ветви веером вверх
+    local NCX = { ["1"] = CW / 2, ["2"] = CW / 2 - 250, ["3"] = CW / 2 + 250 } -- по индексу пути преобразуем ниже
+    local trunkX = CW / 2
+    local baseY0 = 660          -- первый узел базы (низ ствола)
+    local gapBase = 64
+    local junctionGap = 96      -- расстояние от верха ствола до развилки
+    local gapPath = 92
+
+    local centers = {} -- [nodeId] = {x,y}
+    local lines   = {} -- {fromId, toId}
+
+    -- база
+    local baseNodes = def.base or {}
+    for i, n in ipairs(baseNodes) do
+        centers[n.id] = { x = trunkX, y = baseY0 - (i - 1) * gapBase }
+        if i > 1 then lines[#lines + 1] = { baseNodes[i - 1].id, n.id } end
+    end
+    local topBase = baseNodes[#baseNodes]
+    local junctionY = (topBase and centers[topBase.id].y or baseY0) - junctionGap
+
+    -- пути: центры колонок 1..N
+    local pids = def.pathOrder or {}
+    local pathX = {}
+    local total = #pids
+    for i, pid in ipairs(pids) do
+        if total == 3 then
+            pathX[pid] = (i == 1) and (CW / 2 - 250) or (i == 2) and (CW / 2) or (CW / 2 + 250)
+        elseif total == 2 then
+            pathX[pid] = (i == 1) and (CW / 2 - 180) or (CW / 2 + 180)
         else
-            draw.SimpleText((isBase and "база" or "должность") .. " · ур. " .. (node.lvl or 0),
-                "P11.TR.Small", 10, 30, TR_DIM)
-        end
-        if state == "done" then
-            draw.SimpleText("✓ ОТКРЫТО", "P11.TR.Small", w - 10, h - 22, TR_OK, TEXT_ALIGN_RIGHT)
-        elseif note ~= "" then
-            draw.SimpleText(note, "P11.TR.Small", w - 10, h - 22, TR_DIM, TEXT_ALIGN_RIGHT)
+            pathX[pid] = CW / 2
         end
     end
 
-    if state == "open" then
-        local b = vgui.Create("DButton", card)
-        b:SetPos(140, 0) b:SetSize(90, 52) b:SetText("")
+    for _, pid in ipairs(pids) do
+        local pdef = def.paths[pid]
+        if not pdef then break end
+        local px = pathX[pid]
+        for j, n in ipairs(pdef.nodes) do
+            centers[n.id] = { x = px, y = junctionY - (j - 1) * gapPath - ((j == 1) and 70 or 0) }
+            if j == 1 then
+                lines[#lines + 1] = { topBase.id, n.id }
+            else
+                lines[#lines + 1] = { pdef.nodes[j - 1].id, n.id }
+            end
+        end
+    end
+
+    -- линии рисуются под узлами
+    paper.Paint = function(_, w, h)
+        -- мягкая развилка-основа
+        surface.SetDrawColor(70, 80, 95, 120)
+        for _, ln in ipairs(lines) do
+            local a, b = centers[ln[1]], centers[ln[2]]
+            if a and b then
+                local done = branch.nodes and branch.nodes[ln[2]]
+                if done then surface.SetDrawColor(TR_OK.r, TR_OK.g, TR_OK.b, 200)
+                else surface.SetDrawColor(70, 80, 95, 120) end
+                surface.DrawLine(a.x, a.y, b.x, b.y)
+                surface.DrawLine(a.x + 1, a.y, b.x + 1, b.y) -- жирнее
+            end
+        end
+    end
+
+    -- заголовки ветвей
+    local chosen = tostring(branch.path or "")
+    for _, pid in ipairs(pids) do
+        local pdef = def.paths[pid]
+        if not pdef then break end
+        local dead = chosen ~= "" and chosen ~= pid
+        local mine = chosen == pid
+        local px = pathX[pid]
+        local topNode = pdef.nodes[#pdef.nodes]
+        local ty = centers[topNode.id] and centers[topNode.id].y or junctionY
+        local hd = vgui.Create("DLabel", paper)
+        hd:SetPos(px - 110, ty - 86) hd:SetSize(220, 30)
+        hd:SetFont("P11.TR.Mid")
+        hd:SetTextColor(dead and Color(100, 92, 92) or (mine and TR_GOLD or TR_TEXT))
+        hd:SetText(pdef.name .. (mine and " ●" or dead and " ✕" or ""))
+        hd:SetContentAlignment(5)
+    end
+
+    -- узлы-кнопки
+    local function SpawnNode(node, x, y, isBase, pathId)
+        local state, note = NodeState(fac, pathId, node, branch, myLvl, isBase)
+        local W, H = 196, 54
+        local b = vgui.Create("DButton", paper)
+        b:SetPos(x - W / 2, y - H / 2) b:SetSize(W, H)
+        b:SetText("")
         b.Paint = function(s, w, h)
-            draw.RoundedBox(6, w - 90, 6, 84, h - 12,
-                s:IsHovered() and Color(255, 205, 100, 240) or Color(150, 120, 55, 220))
-            draw.SimpleText("ОТКРЫТЬ", "P11.TR.Mid", w - 48, h / 2, Color(20, 22, 26),
-                TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+            local edge, fill = TR_DIM, TR_PANE
+            if state == "done" then edge, fill = TR_OK, Color(22, 48, 32)
+            elseif state == "open" then edge, fill = TR_GOLD, Color(58, 44, 16)
+            elseif state == "base" then edge, fill = TR_ACC, Color(18, 34, 50)
+            elseif state == "dead" then edge, fill = Color(80, 60, 60), Color(26, 20, 20) end
+            if state == "open" and s:IsHovered() then fill = Color(84, 64, 20) end
+            draw.RoundedBox(7, 0, 0, w, h, fill)
+            surface.SetDrawColor(edge.r, edge.g, edge.b, (state == "dead" or state == "lock") and 100 or 200)
+            surface.DrawOutlinedRect(0, 0, w, h, 1)
+            local nm = node.name
+            if state == "dead" then nm = "✕ " .. nm end
+            draw.SimpleText(nm, "P11.TR.Tx", 10, 7,
+                state == "done" and TR_OK or (state == "dead" and Color(120, 105, 105) or TR_TEXT))
+            local sub = node.perk and ("ПЕРК: " .. node.perk)
+                or ((isBase and "база" or "должность") .. " · ур. " .. (node.lvl or 0))
+            draw.SimpleText(sub, "P11.TR.Small", 10, 28,
+                state == "done" and Color(140, 200, 160) or TR_DIM)
+            if state == "done" then
+                draw.SimpleText("✓", "P11.TR.Mid", w - 12, 8, TR_OK, TEXT_ALIGN_RIGHT)
+            elseif state == "open" then
+                draw.SimpleText("ОТКРЫТЬ ▸", "P11.TR.Small", w - 10, h - 20,
+                    s:IsHovered() and TR_GOLD or Color(190, 160, 90), TEXT_ALIGN_RIGHT)
+            elseif note ~= "" then
+                draw.SimpleText(note, "P11.TR.Small", w - 10, h - 20, Color(130, 126, 120), TEXT_ALIGN_RIGHT)
+            end
         end
         b.DoClick = function()
+            if state ~= "open" then
+                surface.PlaySound("buttons/button10.wav")
+                return
+            end
             net.Start("P11_TreeAct")
                 net.WriteUInt(1, 4)
                 net.WriteString(fac)
                 net.WriteString(node.id)
             net.SendToServer()
             surface.PlaySound("buttons/button15.wav")
-            timer.Simple(0.45, function()
-                if IsValid(P11.TreeFrame) then P11.TreeFrame:Remove() end
-                P11.OpenSkillTree()
+            -- страховочный ресинк, если серверный синк опоздает
+            timer.Simple(0.7, function()
+                net.Start("P11_TreeAct")
+                    net.WriteUInt(9, 4)
+                net.SendToServer()
             end)
         end
-        -- кнопку в правый край карточки
-        card.PerformLayout = function(s, w, h)
-            b:SetPos(w - 96, 0) b:SetSize(92, h)
-        end
-    end
-end
-
-local function BuildTreeBody(f, fac)
-    local def = TR[fac]
-    if not def then return end
-    local myLvl = LevelOf(tonumber(LocalPlayer():GetNWInt("P11_SkillXP", P11.Tree.xp)) or 0)
-    local branch = istable(P11.Tree.trees[fac]) and P11.Tree.trees[fac] or { path = "", nodes = {} }
-
-    -- БАЗА
-    local bl = vgui.Create("DLabel", f)
-    bl:SetPos(16, 118) bl:SetSize(200, 18)
-    bl:SetFont("P11.TR.Mid") bl:SetTextColor(def.col)
-    bl:SetText("БАЗА (без пути):")
-    local bx = vgui.Create("DPanel", f)
-    bx:SetPos(16, 140) bx:SetSize(200, 380)
-    bx.Paint = function() end
-    for _, n in ipairs(def.base) do
-        NodeCard(bx, fac, nil, n, branch, myLvl, true)
     end
 
-    -- ТРИ ПУТИ
-    local chosen = tostring(branch.path or "")
-    for i, pid in ipairs(def.pathOrder or {}) do
+    for _, n in ipairs(baseNodes) do
+        local c = centers[n.id]
+        SpawnNode(n, c.x, c.y, true, nil)
+    end
+    for _, pid in ipairs(pids) do
         local pdef = def.paths[pid]
-        local x = 232 + (i - 1) * 216
-        local dead = chosen ~= "" and chosen ~= pid
-        local mine = chosen == pid
-
-        local pl = vgui.Create("DLabel", f)
-        pl:SetPos(x, 118) pl:SetSize(200, 18)
-        pl:SetFont("P11.TR.Mid")
-        pl:SetTextColor(dead and Color(100, 92, 92) or (mine and TR_GOLD or TR_TEXT))
-        pl:SetText(pdef.name .. (mine and " ●" or dead and " ✕" or ""))
-        local hint = vgui.Create("DLabel", f)
-        hint:SetPos(x, 150 - 14) hint:SetSize(200, 14)
-        hint:SetFont("P11.TR.Small") hint:SetTextColor(TR_DIM)
-        hint:SetText(dead and "закрыт выбором пути" or mine and "твой путь" or "первый узел выберет путь")
-
-        local col = vgui.Create("DPanel", f)
-        col:SetPos(x, 160) col:SetSize(200, 360)
-        col.Paint = function() end
+        if not pdef then break end
         for _, n in ipairs(pdef.nodes) do
-            NodeCard(col, fac, pid, n, branch, myLvl, false)
+            local c = centers[n.id]
+            if c then SpawnNode(n, c.x, c.y, false, pid) end
         end
     end
 end
+
+-- ============ ОКНО ============
 
 function P11.OpenSkillTree()
     if IsValid(P11.TreeFrame) then P11.TreeFrame:Remove() end
 
-    -- живой ресинк при открытии
-    net.Start("P11_TreeAct")
-        net.WriteUInt(9, 4)
-    net.SendToServer()
+    -- живой ресинк при открытии (но не чаще раза в секунду — анти-петля)
+    if CurTime() - (P11.Tree._lastSync or 0) > 1 then
+        net.Start("P11_TreeAct")
+            net.WriteUInt(9, 4)
+        net.SendToServer()
+    end
 
     local f = vgui.Create("DFrame")
     P11.TreeFrame = f
-    f:SetSize(880, 600)
+    f:SetSize(880, 646)
     f:Center()
     f:SetTitle("")
     f:MakePopup()
@@ -251,7 +320,6 @@ function P11.OpenSkillTree()
         surface.SetDrawColor(TR_GOLD)
         surface.DrawRect(0, 56, w, 2)
         draw.SimpleText("⭐ ДРЕВО СЛУЖБЫ", "P11.TR.Big", 16, 6, TR_GOLD)
-        -- шкала уровня
         local xp = tonumber(LocalPlayer():GetNWInt("P11_SkillXP", P11.Tree.xp)) or 0
         local lvl = LevelOf(xp)
         local nxt = (lvl < 10) and TR_XP[lvl + 1] or TR_XP[10]
@@ -265,7 +333,7 @@ function P11.OpenSkillTree()
         draw.SimpleText("УРОВЕНЬ " .. lvl .. (lvl >= 10 and " (МАКС)" or "") ..
             " · " .. math.floor(xp) .. (lvl < 10 and ("/" .. nxt) or "") .. " опыта",
             "P11.TR.Small", w - 16 - bw / 2, 19, Color(22, 22, 24), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-        draw.SimpleText("опыт — за дела смены/наряды/анализы/груз · ранг Staff Leader+ вне древа",
+        draw.SimpleText("ствол — база по уровню · ветви вверх — три пути · клик по золотому узлу открывает",
             "P11.TR.Small", 18, 38, TR_DIM)
     end
     f.OnKeyCodePressed = function(s, key)
@@ -285,7 +353,7 @@ function P11.OpenSkillTree()
     local order = { "rkka", "science" }
     for i, fac in ipairs(order) do
         local tb = vgui.Create("DButton", f)
-        tb:SetPos(16 + (i - 1) * 150, 58 + 4) tb:SetSize(140, 40) tb:SetText("")
+        tb:SetPos(16 + (i - 1) * 150, 62) tb:SetSize(140, 40) tb:SetText("")
         tb.Paint = function(s, w, h)
             local sel = P11.Tree.fac == fac
             draw.RoundedBox(6, 0, 0, w, h, sel and TR[fac].col or TR_PANE)
@@ -298,19 +366,18 @@ function P11.OpenSkillTree()
             P11.OpenSkillTree()
         end
     end
-    -- заглушки будущих фракций
     local soon = vgui.Create("DLabel", f)
-    soon:SetPos(330, 62) soon:SetSize(300, 34)
+    soon:SetPos(330, 68) soon:SetSize(300, 30)
     soon:SetFont("P11.TR.Small") soon:SetTextColor(TR_DIM)
     soon:SetText("НКВД · Красный Орёл · персонал — ветви позже")
 
-    -- тело дерева
-    local ok, err = pcall(BuildTreeBody, f, P11.Tree.fac)
+    -- тело: настоящее дерево
+    local ok, err = pcall(BuildTreeCanvas, f, P11.Tree.fac)
     if not ok then print("[POLUS][ERROR] древо: " .. tostring(err)) end
 
     -- откат
     local reset = vgui.Create("DButton", f)
-    reset:SetPos(232, 536) reset:SetSize(632, 46) reset:SetText("")
+    reset:SetPos(14, 590) reset:SetSize(852, 46) reset:SetText("")
     reset.Paint = function(s, w, h)
         draw.RoundedBox(6, 0, 0, w, h, s:IsHovered() and Color(90, 30, 28) or Color(60, 26, 24))
         draw.SimpleText("ОТКАТИТЬ ВЕТКИ «" .. (TR[P11.Tree.fac] and TR[P11.Tree.fac].name or "") ..
@@ -325,13 +392,7 @@ function P11.OpenSkillTree()
             net.WriteString(P11.Tree.fac)
         net.SendToServer()
         surface.PlaySound("ambient/alarms/warningbell1.wav")
-        timer.Simple(0.5, function()
-            if IsValid(P11.TreeFrame) then P11.TreeFrame:Remove() end
-            P11.OpenSkillTree()
-        end)
     end
-
-    surface.PlaySound("buttons/button14.wav")
 end
 
-print("[POLUS-11] ДРЕВО СЛУЖБЫ (client): окно C-меню «⭐ ДРЕВО СЛУЖБЫ» — уровень, 3 пути, откат")
+print("[POLUS-11] ДРЕВО СЛУЖБЫ (client) v4.24.0 «РУБЕЖ»: настоящее дерево — ствол/ветви/линии, живое обновление по синку")

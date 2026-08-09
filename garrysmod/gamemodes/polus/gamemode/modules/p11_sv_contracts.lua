@@ -301,12 +301,12 @@ local function DailyComplete(ply)
     ply:EmitSound("buttons/button15.wav", 75, 100)
     ply:EmitSound("ambient/alarms/warningbell1.wav", 55, 130)
     local tr = DAY_TIERS[tier] or DAY_TIERS[1]
-    local extra = (gold and " · ЗОЛОТОЙ ×2" or "") .. (mult > 1 and " · ЛЕДОКОЛ +20%" or "")
+    local extra = (gold and " · ЗОЛОТОЙ ×2" or "") .. (mult > 1 and " · БОНУС ФРАКЦИИ +20%" or "")
     ContractAnnounce(ply:Nick() .. " закрыл НАРЯД СУТОК «" .. t.name .. "» [" .. tr.name .. "] +" ..
         pay .. "₽ (стрик " .. newStreak .. extra .. ")")
     POLUS11.Log("НАРЯД СУТОК ЗАКРЫТ: " .. ply:Nick() .. " «" .. t.name .. "» [" .. tr.tag .. "] +" ..
         pay .. "₽, стрик " .. newStreak)
-    if POLUS11.TaskEvent then POLUS11.TaskEvent(ply, "contract_done") end -- ЛЕДОКОЛ/онбординг
+    if POLUS11.TaskEvent then POLUS11.TaskEvent(ply, "contract_done") end -- онбординг
     POLUS11.ContractSync(ply)
 end
 
@@ -363,21 +363,21 @@ local function ContractComplete(ply, tplId)
     mine.p = t.need
     ContrSave()
 
-    -- v4.20.0 «СЛЕД»: бафф ЛЕДОКОЛА (+20% фракции-победителю недели)
+    -- v4.24.0 «РУБЕЖ»: гонка фракций вырезана — множитель мёртв (всегда 1), крюк оставлен
     local pay = tonumber(t.pay) or 0
     local mult = (POLUS11.RaceBuffMult and POLUS11.RaceBuffMult(ply)) or 1
     if mult > 1 then pay = math.floor(pay * mult) end
     if POLUS11.AddMoney then
-        POLUS11.AddMoney(ply, pay, "контракт: " .. t.name .. (mult > 1 and " [ЛЕДОКОЛ +20%]" or ""))
+        POLUS11.AddMoney(ply, pay, "контракт: " .. t.name .. (mult > 1 and " [БОНУС ФРАКЦИИ +20%]" or ""))
     else
         POLUS11.Notify(ply, "Казна молчит — деньги начислит Глава вручную!")
     end
     ply:EmitSound("buttons/button15.wav", 75, 100)
     ply:EmitSound("ambient/alarms/warningbell1.wav", 55, 130)
     ContractAnnounce(ply:Nick() .. " выполнил контракт «" .. t.name .. "» (+" .. pay .. "₽" ..
-        (mult > 1 and ", ЛЕДОКОЛ ×1.2" or "") .. ")")
+        (mult > 1 and ", бонус ×1.2" or "") .. ")")
     POLUS11.Log("НАРЯД ЗАКРЫТ: " .. ply:Nick() .. " «" .. t.name .. "» +" .. pay .. "₽")
-    if POLUS11.TaskEvent then POLUS11.TaskEvent(ply, "contract_done") end -- v4.20.0: ЛЕДОКОЛ/онбординг
+    if POLUS11.TaskEvent then POLUS11.TaskEvent(ply, "contract_done") end -- v4.20.0: онбординг
     POLUS11.ContractSync(ply)
 end
 
@@ -539,4 +539,4 @@ net.Receive("P11_ContractAct", function(_, ply)
     POLUS11.ContractSync(ply)
 end)
 
-print("[POLUS-11] контракты «НАРЯДНИК» v4.20.0 «СЛЕД»: 7 часовых + НАРЯД СУТОК (Л/Т/С, стрик 5 дней = ЗОЛОТОЙ ×2), бафф ЛЕДОКОЛА +20%, сейв читается")
+print("[POLUS-11] контракты «НАРЯДНИК» v4.24.0 «РУБЕЖ»: 7 часовых + НАРЯД СУТОК (Л/Т/С, стрик 5 дней = ЗОЛОТОЙ ×2), сейв читается")

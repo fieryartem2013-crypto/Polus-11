@@ -494,6 +494,8 @@ local PLACEABLE = {
     flag      = "polus11_cappoint",   -- v4.16.0 «ЗАХВАТ»: точка захвата РККА ↔ Орёл (шкала/оклад)
     contract  = "polus_p11_contractnpc", -- v4.19.4 «ПОЧЁТ»: интендант-нарядник (контракты часа)
     jailnpc   = "polus_p11_jailnpc",    -- v4.22.0 «ОКОВЫ»: начальник караула (оформляет арест конвою)
+    stashnpc  = "polus_p11_stashnpc",   -- v4.24.0 «РУБЕЖ»: связной (криминал-кладмен)
+    raidterm  = "polus_p11_raidterm",   -- v4.24.0 «РУБЕЖ»: терминал рейда (командиры)
 }
 
 local function PlaceFile(role)
@@ -554,6 +556,8 @@ hook.Add("InitPostEntity", "P11.PlaceLoad", function()
         LoadPlaced("labtable")
         LoadPlaced("contract")  -- v4.19.4 «ПОЧЁТ»: интендант-нарядник
         LoadPlaced("jailnpc")   -- v4.22.0 «ОКОВЫ»: начальник караула
+        LoadPlaced("stashnpc")  -- v4.24.0 «РУБЕЖ»: связной (криминал-кладмен)
+        LoadPlaced("raidterm")  -- v4.24.0 «РУБЕЖ»: терминал рейда
         -- внимание: «generator» НЕ грузим — энергосистема выведена из игры (v4.12.0)
     end)
 end)
@@ -562,7 +566,6 @@ hook.Add("PostCleanupMap", "P11.PlaceLoad2", function()
         LoadPlaced("shopnpc")
         LoadPlaced("storage")
         LoadPlaced("terminal")
-        LoadPlaced("patrol")
         LoadPlaced("kitchen")
         LoadPlaced("avtosalon") -- v4.10.0 «ГАРАЖ»
         LoadPlaced("crafttable") -- v4.11.0 «КУЗНЯ»
@@ -576,6 +579,8 @@ hook.Add("PostCleanupMap", "P11.PlaceLoad2", function()
         LoadPlaced("labtable")
         LoadPlaced("contract")  -- v4.19.4 «ПОЧЁТ»: интендант-нарядник
         LoadPlaced("jailnpc")   -- v4.22.0 «ОКОВЫ»: начальник караула
+        LoadPlaced("stashnpc")  -- v4.24.0 «РУБЕЖ»: связной (криминал-кладмен)
+        LoadPlaced("raidterm")  -- v4.24.0 «РУБЕЖ»: терминал рейда
         -- внимание: «generator» НЕ грузим — энергосистема выведена из игры (v4.12.0)
     end)
 end)
