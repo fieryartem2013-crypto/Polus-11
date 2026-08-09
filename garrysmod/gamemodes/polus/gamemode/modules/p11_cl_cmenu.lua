@@ -1,5 +1,11 @@
 -- ============================================================
---  ПОЛЮС-11 — С-МЕНЮ ИГРОКА (client) v5.0 «ПУЛЬТ СМЕНЫ» (v4.26.0 «СИЯНИЕ»)
+--  ПОЛЮС-11 — С-МЕНЮ ИГРОКА (client) v5.1 «КОМАНДОР» (v4.30.0)
+--  v5.1: стаффу (Хелпер+) меню ВЫШЕ на полосу «БЫСТРЫЕ КОМАНДЫ» —
+--  пять кнопок: ВАРН/БАН/КИК/К НЕМУ/К СЕБЕ. Клик → выбор бойца
+--  списком → причина/срок (своё окно P11.StringRequest) → штатный
+--  пакет P11FW_AdminAction. Права/лимиты — на сервере, кнопки без
+--  прав серые. Исходный набор команд: /warn /ban /kick /mute /unmute
+--  (см. p11_sv_admincmds).
 --  Зажал C → станционное меню: ЖЕСТЫ, БЫСТРЫЕ ДЕЙСТВИЯ, персонаж,
 --  браузер внешности, админ-панель / вайтлист-панель для рангов.
 --
@@ -329,6 +335,188 @@ function P11.OpenRankTable()
 end
 
 -- ============================================================
+--  v4.30.0 «КОМАНДОР»: ПЯТЁРКА БЫСТРЫХ КОМАНД СТАФФА
+--  Выбор бойца списком (не прицелом — так не промахнёшься) и
+--  отправка штатных актов 25/29/28/17/16 (варн/бан/кик/тп/притащить).
+-- ============================================================
+
+-- выбрать бойца из списка (себя в списке нет — все пять команд про других)
+function P11.QuickPickPlayers(title, onPick)
+    if IsValid(P11.QPick) then P11.QPick:Remove() end
+    local me = LocalPlayer()
+
+    local f = vgui.Create("DFrame")
+    P11.QPick = f
+    f:SetSize(340, 420)
+    f:Center()
+    f:SetTitle("")
+    f:SetDraggable(false)
+    f:MakePopup()
+    f:SetDeleteOnClose(true)
+    f.OnRemove = function() if P11.QPick == f then P11.QPick = nil end end
+    f.Paint = function(s2, w, h)
+        if P11.DrawDim then P11.DrawDim(s2, 120) end
+        draw.RoundedBox(8, 0, 0, w, h, CC.bg)
+        draw.RoundedBoxEx(8, 0, 0, w, 36, CC.panel, true, true, false, false)
+        surface.SetDrawColor(CC.gold.r, CC.gold.g, CC.gold.b, 140)
+        surface.DrawRect(0, 36, w, 1)
+        draw.SimpleText(title or "ВЫБОР БОЙЦА", "P11.CM.Text", 14, 18, CC.gold, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+    end
+
+    local xb = vgui.Create("DButton", f)
+    xb:SetPos(340 - 34, 7) xb:SetSize(24, 22)
+    xb:SetText("")
+    xb.Paint = function(s2, w, h)
+        draw.RoundedBox(4, 0, 0, w, h, s2:IsHovered() and Color(120, 40, 36) or Color(60, 30, 28))
+        draw.SimpleText("✕", "P11.CM.Small", w / 2, h / 2 - 1, Color(240, 200, 195), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+    end
+    xb.DoClick = function() surface.PlaySound("buttons/button10.wav") f:Remove() end
+
+    local list = {}
+    for _, p in ipairs(player.GetAll()) do
+        if p ~= me then list[#list + 1] = p end
+    end
+    table.sort(list, function(a, b)
+        return string.lower(a:Nick()) < string.lower(b:Nick())
+    end)
+
+    local sc = vgui.Create("DScrollPanel", f)
+    sc:SetPos(8, 44) sc:SetSize(324, 368)
+    local sb = sc:GetVBar()
+    sb:SetWide(5)
+    sb.Paint = function(s2, w, h) draw.RoundedBox(2, 0, 0, w, h, Color(255, 255, 255, 18)) end
+    sb.btnGrip.Paint = function(s2, w, h) draw.RoundedBox(2, 0, 0, w, h, CC.gold) end
+
+    if #list == 0 then
+        local none = sc:Add("DLabel")
+        none:Dock(TOP) none:DockMargin(6, 10, 6, 0)
+        none:SetFont("P11.CM.Small") none:SetTextColor(CC.dim)
+        none:SetText("Кроме тебя на станции никого.")
+        return f
+    end
+
+    for _, p in ipairs(list) do
+        local row = sc:Add("DButton")
+        row:Dock(TOP) row:DockMargin(2, 2, 6, 3)
+        row:SetTall(38)
+        row:SetText("")
+        row.PTarget = p
+        row.Paint = function(s2, w, h)
+            local ply = s2.PTarget
+            if not IsValid(ply) then
+                draw.RoundedBox(6, 0, 0, w, h, Color(40, 24, 24, 255))
+                draw.SimpleText("вышел со станции", "P11.CM.Small", 10, h / 2, CC.bad, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+                return
+            end
+            local hov = s2:IsHovered()
+            draw.RoundedBox(6, 0, 0, w, h, hov and Color(255, 255, 255, 20) or CC.panel)
+            draw.SimpleText(ply:Nick(), "P11.CM.Text", 10, h / 2, CC.text, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+            local jn = P11FW.GetJobName and P11FW.GetJobName(ply) or ""
+            draw.SimpleText(jn, "P11.CM.Small", w - 8, h / 2, CC.dim, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
+            if hov then
+                surface.SetDrawColor(CC.gold.r, CC.gold.g, CC.gold.b, 150)
+                surface.DrawOutlinedRect(0, 0, w, h, 1)
+                s2:SetCursor("hand")
+            end
+        end
+        row.DoClick = function(s2)
+            local ply = s2.PTarget
+            if not IsValid(ply) then surface.PlaySound("buttons/button10.wav") return end
+            surface.PlaySound("buttons/button9.wav")
+            f:Remove()
+            onPick(ply)
+        end
+    end
+
+    f.OnKeyCodePressed = function(s2, key)
+        if key == KEY_ESCAPE then f:Remove() end
+    end
+    return f
+end
+
+-- отправка акта в штатный приёмник P11FW_AdminAction (тот же, что у админки)
+local function QAct(act, writer)
+    net.Start("P11FW_AdminAction")
+        net.WriteUInt(act, 6)
+        if writer then writer() end
+    net.SendToServer()
+end
+
+local function QuickBan()
+    P11.CloseCMenu()
+    P11.QuickPickPlayers("■ БАН — КОГО?", function(p)
+        if not IsValid(p) then return end
+        P11.StringRequest("■ БАН: " .. p:Nick(),
+            "Срок в МИНУТАХ (0 = навсегда; лимит твоего ранга урежет сам).", "30", function(mtxt)
+                local mins = tonumber(string.match(mtxt or "", "%d+"))
+                if not mins then surface.PlaySound("buttons/button10.wav") return end
+                mins = math.min(mins, 525600)
+                P11.StringRequest("■ БАН: " .. p:Nick(),
+                    "Причина бана (видит журнал модерации). Срок: " .. mins .. " мин.", "", function(txt)
+                        txt = string.Trim(txt or "")
+                        if txt == "" then return end
+                        if not IsValid(p) then surface.PlaySound("buttons/button10.wav") return end
+                        QAct(29, function()
+                            net.WriteUInt(p:EntIndex(), 8)
+                            net.WriteUInt(mins, 20)
+                            net.WriteString(txt)
+                        end)
+                    end)
+            end)
+    end)
+end
+
+local function QuickWarn()
+    P11.CloseCMenu()
+    P11.QuickPickPlayers("▲ ВАРН — КОМУ?", function(p)
+        if not IsValid(p) then return end
+        P11.StringRequest("▲ ВАРН: " .. p:Nick(),
+            "Причина предупреждения (3-й варн = автокик).", "", function(txt)
+                txt = string.Trim(txt or "")
+                if txt == "" then return end
+                if not IsValid(p) then surface.PlaySound("buttons/button10.wav") return end
+                QAct(25, function()
+                    net.WriteUInt(p:EntIndex(), 8)
+                    net.WriteString(txt)
+                end)
+            end)
+    end)
+end
+
+local function QuickKick()
+    P11.CloseCMenu()
+    P11.QuickPickPlayers("● КИК — КОГО?", function(p)
+        if not IsValid(p) then return end
+        P11.StringRequest("● КИК: " .. p:Nick(),
+            "Причина кика (видна кикнутому и в журнале).", "", function(txt)
+                txt = string.Trim(txt or "")
+                if txt == "" then return end
+                if not IsValid(p) then surface.PlaySound("buttons/button10.wav") return end
+                QAct(28, function()
+                    net.WriteUInt(p:EntIndex(), 8)
+                    net.WriteString(txt)
+                end)
+            end)
+    end)
+end
+
+local function QuickGoto()
+    P11.CloseCMenu()
+    P11.QuickPickPlayers("► ТЕЛЕПОРТ — К КОМУ?", function(p)
+        if not IsValid(p) then return end
+        QAct(17, function() net.WriteUInt(p:EntIndex(), 8) end)
+    end)
+end
+
+local function QuickBring()
+    P11.CloseCMenu()
+    P11.QuickPickPlayers("◄ ПРИТАЩИТЬ — КОГО?", function(p)
+        if not IsValid(p) then return end
+        QAct(16, function() net.WriteUInt(p:EntIndex(), 8) end)
+    end)
+end
+
+-- ============================================================
 --  ПАНЕЛЬ C-МЕНЮ
 -- ============================================================
 
@@ -338,11 +526,14 @@ function P11.OpenCMenu()
     local me = LocalPlayer()
     local isAdmin = P11FW.Config and P11FW.Config.Admin(me)
     local canWl = (not isAdmin) and P11FW.CanWhitelist and P11FW.CanWhitelist(me)
+    -- v4.30.0 «КОМАНДОР»: стаффу (Хелпер+, ранг 2+) меню ВЫШЕ — полоса быстрых команд
+    local isStaff = (P11FW.GetRankLevel and P11FW.GetRankLevel(me) or 0) >= 2
 
     local f = vgui.Create("DPanel")
     P11.CMenu = f
     f.T0 = SysTime()
-    f:SetSize(math.min(780, ScrW() - 40), math.min(600, ScrH() - 40)) -- v4.6.2: C-меню КРУПНЕЕ
+    f.PStaff = isStaff
+    f:SetSize(math.min(780, ScrW() - 40), math.min(isStaff and 678 or 600, ScrH() - 40)) -- v4.30.0: расширено для стаффа
     f:Center()
     f:MakePopup()
     f:SetKeyboardInputEnabled(true)
@@ -384,6 +575,11 @@ function P11.OpenCMenu()
         -- секции-панели под колонками кнопок
         draw.RoundedBox(8, 8, 78, 504, 366, Color(255, 255, 255, 5))
         draw.RoundedBox(8, 526, 78, 240, 366, Color(255, 255, 255, 5))
+        if s.PStaff then -- v4.30.0 «КОМАНДОР»: подложка полосы быстрых команд
+            draw.RoundedBox(8, 8, 556, 764, 84, Color(255, 255, 255, 5))
+            surface.SetDrawColor(CC.bad.r, CC.bad.g, CC.bad.b, 60)
+            surface.DrawOutlinedRect(8, 556, 764, 84, 1)
+        end
         surface.SetAlphaMultiplier(1)
     end
 
@@ -519,9 +715,33 @@ function P11.OpenCMenu()
             if P11.OpenOps then P11.OpenOps() end
         end, true) -- v4.26.0: баннер-режим
 
+    -- v4.30.0 «КОМАНДОР»: ПЯТЁРКА БЫСТРЫХ КОМАНД (Хелпер+).
+    -- Клик → список бойцов → причина/срок → пакет админки. Без прав — серая.
+    if isStaff then
+        local qlab = vgui.Create("DLabel", f)
+        qlab:SetPos(14, 560) qlab:SetSize(748, 16)
+        qlab:SetFont("P11.CM.Small") qlab:SetTextColor(CC.bad)
+        qlab:SetText("⚡ БЫСТРЫЕ КОМАНДЫ: варн/мут — Хелпер+ • кик — Модератор+ • бан/тп — Админ+ (те же, что /warn /ban /kick /tp /bring)")
+
+        local function QBtn(x, name, desc, col, perm, fn)
+            local b = CButton(f, x, 580, 146, 48, name, desc, col, fn)
+            if perm and not (P11FW.CanMod and P11FW.CanMod(me, perm)) then
+                b:SetEnabled(false)
+                b.PCol = CC.dim
+                b.PDesc = "нужен ранг выше"
+            end
+            return b
+        end
+        QBtn(9,   "▲ Варн",   "предупреждение",  CC.gold,             "warn",  QuickWarn)
+        QBtn(163, "■ Бан",    "срок / навсегда", CC.bad,              "ban",   QuickBan)
+        QBtn(317, "● Кик",    "выкинуть",        Color(240, 105, 95), "kick",  QuickKick)
+        QBtn(471, "► К нему", "телепорт к нему", CC.cyan,             "heal",  QuickGoto)
+        QBtn(625, "◄ К себе", "притащить",       CC.cyan,             "heal",  QuickBring)
+    end
+
     -- низ: подсказка
     local foot = vgui.Create("DLabel", f)
-    foot:SetPos(14, 556) foot:SetSize(748, 20)
+    foot:SetPos(14, isStaff and 646 or 556) foot:SetSize(748, 20)
     foot:SetFont("P11.CM.Small") foot:SetTextColor(CC.dim)
     local rk = P11FW.GetRankName and P11FW.GetRankName(me) or "User"
     foot:SetText("Ты — " .. rk .. " • F6 — поддержка станции • документы и пустые руки уже в снаряжении • C закроет это меню")
@@ -639,4 +859,4 @@ hook.Add("OnPlayerChat", "P11.CMenuChat", function(ply, text)
     end
 end)
 
-print("[POLUS-11] С-меню v5.0 «ПУЛЬТ СМЕНЫ» загружено (клавиша C • p11_cmenu • !меню • кнопки-карточки v4.26.0)")
+print("[POLUS-11] С-меню v5.1 «КОМАНДОР» загружено (клавиша C • p11_cmenu • !меню • пятёрка быстрых команд стаффа v4.30.0)")

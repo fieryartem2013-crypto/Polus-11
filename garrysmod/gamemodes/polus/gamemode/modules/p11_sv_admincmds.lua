@@ -1,10 +1,15 @@
 -- ============================================================
---  ПОЛЮС-11 — АДМИН-ЧАТ-КОМАНДЫ (server) v4.0
+--  ПОЛЮС-11 — АДМИН-ЧАТ-КОМАНДЫ (server) v4.1 «КОМАНДОР»
 --  /tp <ник> и /goto <ник>  — телепорт СЕБЯ к игроку
 --  /bring <ник>             — притащить игрока К СЕБЕ
 --  /return                  — вернуться туда, откуда тпшило
 --  /cloak                   — невидимость вкл/выкл (и оружие тоже)
 --  /warn <ник> <причина>    — быстрый варн (Хелпер+, v4.29.0 «НАДЗОР»)
+--  /ban <ник> <мин 0=перма> [причина] — быстрый бан (v4.30.0):
+--      ворота прав/иерархии/лимиты срока — внутри RequestPunish
+--  /kick <ник> [причина]    — быстрый кик (Модератор+, внутри Kick)
+--  /mute <ник> <мин> [причина] — мут чата (Хелпер+, лимит внутри Mute)
+--  /unmute <ник>            — снять мут (Хелпер+)
 --  /heal [ник]              — полечить (без ника — себя)
 --  /god                     — бессмертие вкл/выкл
 --  /ранги, /ranks           — открыть меню выдачи рангов
@@ -157,6 +162,93 @@ hook.Add("PlayerSay", "P11.AdminChatCmds", function(ply, text)
         end
         local ok, err = P11FW.Warn(ply, target, reason) -- ворота/тост/журнал/автокик — внутри
         if not ok then POLUS11.Notify(ply, "ОТКАЗ: " .. tostring(err)) end
+        return ""
+    end
+
+    -- ============ v4.30.0 «КОМАНДОР»: БЫСТРЫЕ НАКАЗАНИЯ ИЗ ЧАТА ============
+    -- Стоят ДО ворот CanFast: каждая команда гейтится СВОИМ API
+    -- (варн/мут — Хелпер+, кик — Модератор+, бан — Админ+ + лимит срока).
+
+    -- /ban <ник> <минуты 0=перма> [причина]
+    if cmd == "/ban" or cmd == "/бан" then
+        local name, minsS, reason = string.match(arg, "^(%S+)%s+(%d+)%s*(.-)%s*$")
+        if not minsS then
+            POLUS11.Notify(ply, "Формат: /ban <ник> <минуты 0=перма> [причина]")
+            return ""
+        end
+        local target = FindByArg(name)
+        if not IsValid(target) then
+            POLUS11.Notify(ply, "Игрок не найден: " .. name)
+            return ""
+        end
+        if target == ply then
+            POLUS11.Notify(ply, "Сам себя не забанишь.")
+            return ""
+        end
+        local mins = math.min(tonumber(minsS) or 0, 525600) -- потолок: год
+        local ok, err = P11FW.RequestPunish(ply, target, "ban", mins,
+            (reason and reason ~= "") and reason or nil)
+        POLUS11.Notify(ply, ok and "Бан поставлен." or ("ОТКАЗ: " .. tostring(err)))
+        return ""
+    end
+
+    -- /kick <ник> [причина]
+    if cmd == "/kick" or cmd == "/кик" then
+        local name, reason = string.match(arg, "^(%S+)%s*(.-)%s*$")
+        if not name or name == "" then
+            POLUS11.Notify(ply, "Формат: /kick <ник> [причина]")
+            return ""
+        end
+        local target = FindByArg(name)
+        if not IsValid(target) then
+            POLUS11.Notify(ply, "Игрок не найден: " .. name)
+            return ""
+        end
+        if target == ply then
+            POLUS11.Notify(ply, "Сам себя не кикнешь.")
+            return ""
+        end
+        local ok, err = P11FW.Kick(ply, target, (reason and reason ~= "") and reason or nil)
+        POLUS11.Notify(ply, ok and ("Кикнут: " .. target:Nick()) or ("ОТКАЗ: " .. tostring(err)))
+        return ""
+    end
+
+    -- /mute <ник> <минуты> [причина]
+    if cmd == "/mute" or cmd == "/мут" then
+        local name, minsS, reason = string.match(arg, "^(%S+)%s+(%d+)%s*(.-)%s*$")
+        if not minsS then
+            POLUS11.Notify(ply, "Формат: /mute <ник> <минуты> [причина]")
+            return ""
+        end
+        local target = FindByArg(name)
+        if not IsValid(target) then
+            POLUS11.Notify(ply, "Игрок не найден: " .. name)
+            return ""
+        end
+        if target == ply then
+            POLUS11.Notify(ply, "Сам себя не заглушишь.")
+            return ""
+        end
+        local ok, err = P11FW.Mute(ply, target, tonumber(minsS) or 5,
+            (reason and reason ~= "") and reason or nil) -- свой тост/журнал/урезка лимита внутри
+        if not ok then POLUS11.Notify(ply, "ОТКАЗ: " .. tostring(err)) end
+        return ""
+    end
+
+    -- /unmute <ник>
+    if cmd == "/unmute" or cmd == "/размут" then
+        local name = string.match(arg, "^(%S+)")
+        if not name then
+            POLUS11.Notify(ply, "Формат: /unmute <ник>")
+            return ""
+        end
+        local target = FindByArg(name)
+        if not IsValid(target) then
+            POLUS11.Notify(ply, "Игрок не найден: " .. name)
+            return ""
+        end
+        local ok, err = P11FW.Unmute(ply, target)
+        POLUS11.Notify(ply, ok and ("Мут снят: " .. target:Nick()) or ("ОТКАЗ: " .. tostring(err)))
         return ""
     end
 
