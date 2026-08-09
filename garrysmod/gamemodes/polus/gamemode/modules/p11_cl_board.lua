@@ -545,6 +545,11 @@ hook.Add("ScoreboardShow", "P11.Board", function()
     if DarkRP then return end
     if POLUS11 and POLUS11.Config and POLUS11.Config.CustomScoreboard == false then return end
     P11B.open   = true
+    -- v4.31.0 «КРЫЛО»: пересинк медалей при каждом открытии TAB (act 9 —
+    -- сервер шлёт свежий реестр; страховка от пустых лент/планки)
+    net.Start("P11_MedalAct")
+        net.WriteUInt(9, 4)
+    net.SendToServer()
     P11B.fails  = 0
     P11B.scroll = 0
     P11B.openT  = CurTime()
@@ -675,11 +680,25 @@ local function OpenPlayerMini(d)
     local ply = d.ply
     CloseMini()
 
+    -- v4.31.0 «КРЫЛО»: НАГРАДНАЯ КАРТОЧКА ПОД БОЙЦОМ — считаем медали
+    -- ЗАРАНЕЕ: от их числа растёт высота окна (фишки-знаки + каждая
+    -- медаль строкой «знак · название — за что»)
+    local mCells, mTotal = {}, 0
+    if P11 and P11.MedalCells then
+        local okM, cells, total = pcall(P11.MedalCells, ply, 10)
+        if okM and cells then mCells, mTotal = cells, total end
+    end
+    local medOff = 0
+    if #mCells > 0 then
+        medOff = (82 + #mCells * 15 + 10) - 94 -- низ списка − старая первая кнопка
+    end
+    local fH = 292 + math.max(0, medOff)
+
     local f = vgui.Create("DFrame")
     P11B.mini = f
-    f:SetSize(280, 292)
+    f:SetSize(280, fH)
     local mx, my = gui.MouseX(), gui.MouseY()
-    f:SetPos(math.Clamp(mx + 10, 4, ScrW() - 292), math.Clamp(my + 10, 4, ScrH() - 260))
+    f:SetPos(math.Clamp(mx + 10, 4, ScrW() - 292), math.Clamp(my + 10, 4, ScrH() - fH - 8))
     f:SetTitle("")
     f:ShowCloseButton(false)
     f:MakePopup()
@@ -696,25 +715,33 @@ local function OpenPlayerMini(d)
             "P11B.MiniT", 14, 12, Color(235, 240, 248), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
         draw.SimpleText((d.job ~= "" and d.job or "без должности") .. " · " .. (IsValid(ply) and ply:SteamID() or "?"),
             "P11B.Mini", 14, 34, Color(150, 165, 180), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
-        -- v4.27.0 «ОРДЕН»: медали бойца в карточке — фишками цвета знака
-        if P11 and P11.MedalCells then
-            local okM, cells, total = pcall(P11.MedalCells, ply, 9)
-            if okM and cells and #cells > 0 then
-                for i, c in ipairs(cells) do
-                    local bx = 14 + (i - 1) * 22
-                    draw.RoundedBox(4, bx, 42, 20, 20, Color(c.col.r, c.col.g, c.col.b, 36))
-                    draw.RoundedBoxEx(4, bx, 42, 20, 3, Color(c.col.r, c.col.g, c.col.b, 190), true, true, false, false)
-                    surface.SetDrawColor(c.col.r, c.col.g, c.col.b, 150)
-                    surface.DrawOutlinedRect(bx, 42, 20, 20, 1)
-                    draw.SimpleText(c.g, "P11B.Mini", bx + 10, 52, c.col, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-                end
-                draw.SimpleText("медалей: " .. total, "P11B.Mini", 14, 68,
-                    Color(255, 205, 100, 220), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+        -- v4.31.0 «КРЫЛО»: НАГРАДНАЯ КОЛОДКА — фишки + полный список
+        -- «знак · имя — за что» (до 10 знаков, счётчик медалей в заголовке)
+        if #mCells > 0 then
+            for i, c in ipairs(mCells) do
+                local bx = 14 + (i - 1) * 22
+                if bx > 250 then break end
+                draw.RoundedBox(4, bx, 42, 20, 20, Color(c.col.r, c.col.g, c.col.b, 36))
+                draw.RoundedBoxEx(4, bx, 42, 20, 3, Color(c.col.r, c.col.g, c.col.b, 190), true, true, false, false)
+                surface.SetDrawColor(c.col.r, c.col.g, c.col.b, 150)
+                surface.DrawOutlinedRect(bx, 42, 20, 20, 1)
+                draw.SimpleText(c.g, "P11B.Mini", bx + 10, 52, c.col, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
             end
+            draw.SimpleText("★ НАГРАДНАЯ КОЛОДКА · медалей: " .. mTotal, "P11B.Mini", 14, 66,
+                Color(255, 205, 100, 235), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+            for i, c in ipairs(mCells) do
+                local line = c.g .. " " .. c.name .. (c.desc ~= "" and (" — " .. c.desc) or "")
+                draw.SimpleText(FitText and FitText(line, "P11B.Mini", 248) or line,
+                    "P11B.Mini", 14, 82 + (i - 1) * 15,
+                    Color(c.col.r, c.col.g, c.col.b, 235), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+            end
+        else
+            draw.SimpleText("медалей пока нет — грудь ждёт первую звезду", "P11B.Mini", 14, 66,
+                Color(150, 160, 175, 190), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
         end
     end
 
-    MiniBtn(f, 94, "Открыть Steam-профиль", Color(70, 120, 180), function()
+    MiniBtn(f, 94 + medOff, "Открыть Steam-профиль", Color(70, 120, 180), function()
         local id64 = ply:SteamID64()
         if isstring(id64) and id64 ~= "" and id64 ~= "0" then
             gui.OpenURL("https://steamcommunity.com/profiles/" .. id64)
@@ -723,15 +750,15 @@ local function OpenPlayerMini(d)
             MiniNote("SteamID64 неизвестен (стим/бот) — профиль не открыть.")
         end
     end)
-    MiniBtn(f, 130, "Копировать SteamID", Color(90, 140, 200), function()
+    MiniBtn(f, 130 + medOff, "Копировать SteamID", Color(90, 140, 200), function()
         SetClipboardText(tostring(ply:SteamID() or "?"))
         MiniNote("SteamID скопирован: " .. tostring(ply:SteamID()))
     end)
-    MiniBtn(f, 166, "Копировать ник (позывной)", Color(120, 165, 210), function()
+    MiniBtn(f, 166 + medOff, "Копировать ник (позывной)", Color(120, 165, 210), function()
         SetClipboardText(tostring(d.name))
         MiniNote("Ник скопирован: " .. tostring(d.name))
     end)
-    MiniBtn(f, 202, "Копировать Steam-ник", Color(150, 190, 220), function()
+    MiniBtn(f, 202 + medOff, "Копировать Steam-ник", Color(150, 190, 220), function()
         SetClipboardText(tostring(d.real))
         MiniNote("Steam-ник скопирован: " .. tostring(d.real))
     end)
@@ -739,13 +766,13 @@ local function OpenPlayerMini(d)
     local meL = LocalPlayer()
     local scopeL = (P11 and P11.MedalScopeLocal) and P11.MedalScopeLocal() or nil
     if scopeL == "full" or (scopeL == "dept" and IsValid(meL) and meL ~= ply) then
-        MiniBtn(f, 238, "★ Вручить медаль (ПОЧЁТ)", Color(190, 150, 55), function()
+        MiniBtn(f, 238 + medOff, "★ Вручить медаль (ПОЧЁТ)", Color(190, 150, 55), function()
             if P11 and P11.MedalAwardMenu then
                 P11.MedalAwardMenu(ply)
             end
         end)
     end
-    MiniBtn(f, 256, "Закрыть", Color(130, 60, 55), function()
+    MiniBtn(f, 256 + medOff, "Закрыть", Color(130, 60, 55), function()
         f:Remove()
     end)
 

@@ -211,12 +211,19 @@ concommand.Add("p11_flagclear", function(ply)
     if IsValid(ply) and not (P11FW and P11FW.Config and P11FW.Config.Admin(ply)) then
         return
     end
-    local n = 0
+    local n, spared = 0, 0
     for _, e in ipairs(ents.FindByClass("polus11_cappoint")) do
-        if IsValid(e) then e:Remove() n = n + 1 end
+        if IsValid(e) then
+            if e.P11_OpPoint or e.P11_RaidPoint or e:GetNWBool("P11_OpPoint", false) then
+                spared = spared + 1 -- v4.31.0 «КРЫЛО»: флаги живой операции/рейда не трогаем
+            else
+                e:Remove() n = n + 1
+            end
+        end
     end
     if POLUS11 and POLUS11.PlaceSave then POLUS11.PlaceSave("flag") end
     local msg = "[ЗАХВАТ] Точек снесено: " .. n .. ". Сейв карты очищен."
+        .. (spared > 0 and (" Ивентовых пощажено: " .. spared .. " (идёт бой).") or "")
     if IsValid(ply) then ply:PrintMessage(HUD_PRINTCONSOLE, msg)
         if POLUS11 and POLUS11.Notify then POLUS11.Notify(ply, "🚩 Точек захвата снесено: " .. n) end
     else print(msg) end

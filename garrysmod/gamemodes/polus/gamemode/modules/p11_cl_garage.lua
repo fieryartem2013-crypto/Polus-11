@@ -65,8 +65,8 @@ local function OpenGarageWindow()
         draw.RoundedBox(12, 0, 0, w, h, C.bg)
         draw.RoundedBoxEx(12, 0, 0, w, 74, C.panel, true, true, false, false)
         surface.SetDrawColor(C.line) surface.DrawRect(0, 74, w, 1)
-        draw.SimpleText("🚗 ГАРАЖ «ПОЛЮС-АВТО»", "P11G.Title", 18, 22, C.gold, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-        draw.SimpleText("транспорт с конвейера — выдача на площадке у торговца", "P11G.Small", 18, 52, C.dim, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        draw.SimpleText(P11G.Shop or "🚗 ГАРАЖ «ПОЛЮС-АВТО»", "P11G.Title", 18, 22, C.gold, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        draw.SimpleText(P11G.Sub or "транспорт с конвейера — выдача на площадке у торговца", "P11G.Small", 18, 52, C.dim, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
         draw.SimpleText(string.Comma(money) .. " ₽", "P11G.Big", w - 56, 38, C.ok, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
     end
 
@@ -132,8 +132,17 @@ local function OpenGarageWindow()
 end
 
 net.Receive("P11_GarageOpen", function()
-    local cat = util.JSONToTable(net.ReadString() or "") or {}
-    P11G.Cat = cat
+    local tbl = util.JSONToTable(net.ReadString() or "") or {}
+    -- v4.31.0 «КРЫЛО»: пакет стал объектом {shop, sub, items}; массив — тоже примем
+    if istable(tbl) and istable(tbl.items) then
+        P11G.Cat = tbl.items
+        P11G.Shop = tbl.shop or "🚗 ГАРАЖ «ПОЛЮС-АВТО»"
+        P11G.Sub  = tbl.sub  or "транспорт с конвейера — выдача на площадке у торговца"
+    else
+        P11G.Cat = tbl
+        P11G.Shop = "🚗 ГАРАЖ «ПОЛЮС-АВТО»"
+        P11G.Sub  = "транспорт с конвейера — выдача на площадке у торговца"
+    end
     OpenGarageWindow()
 end)
 

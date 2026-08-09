@@ -57,7 +57,14 @@ local function MedalLoad()
     local raw = file.Read(FILE, "DATA")
     if not raw then return end
     local ok, tbl = pcall(util.JSONToTable, raw)
-    if ok and istable(tbl) then POLUS11.Medals = tbl end
+    if ok and istable(tbl) then
+        POLUS11.Medals = tbl
+        -- v4.31.0 «КРЫЛО»: сразу после чтения реестра — РАЗОСЛАТЬ ВСЕМ.
+        -- До этого: реестр читался ПОСЛЕ того, как зашедшие получили пустой
+        -- пакет по таймеру входа → колодки (планка над ником/лента TAB)
+        -- пустели до первой выдачи («медали не показываются»).
+        timer.Simple(0.5, function() POLUS11.MedalPush(nil) end)
+    end
 end
 
 hook.Add("InitPostEntity", "P11.MedalLoad", function()

@@ -490,6 +490,7 @@ local PLACEABLE = {
     labtable  = "polus11_labtable",   -- v4.12.0 «ОТБОЙ»: лабораторный стол (тест крови)
     food      = "polus11_lootfood",   -- v4.15.0 «УГЛИ»: продовольственный ящик (лут, восполняется)
     arm       = "polus11_lootarm",    -- v4.15.0 «УГЛИ»: армейский контейнер (лут, восполняется)
+    usasalon  = "polus_p11_usasalon", -- v4.31.0 «КРЫЛО»: транспортник США «ЯНКИ-АВТО» (свой файл сейва)
     hearth    = "polus11_hearth",     -- v4.15.0 «УГЛИ»: буржуйка — топливо из 🎒 → жар греет станцию
     flag      = "polus11_cappoint",   -- v4.16.0 «ЗАХВАТ»: точка захвата РККА ↔ Орёл (шкала/оклад)
     contract  = "polus_p11_contractnpc", -- v4.19.4 «ПОЧЁТ»: интендант-нарядник (контракты часа)
@@ -502,10 +503,18 @@ local function PlaceFile(role)
     return "polus_framework/place_" .. role .. "_" .. game.GetMap() .. ".json"
 end
 
+-- v4.31.0 «КРЫЛО»: ивент-точки (флаги ОПЕРАЦИИ/РЕЙДА) в сейв карты НЕ пишем —
+-- иначе место боя навсегда въедалось в flag.json и воскресало обычным флагом.
+local function IsEventEnt(e)
+    return IsValid(e) and (e.P11_OpPoint or e.P11_RaidPoint
+        or e:GetNWBool("P11_OpPoint", false) or e:GetNWBool("P11_RaidPoint", false))
+end
+POLUS11.IsEventPlaced = IsEventEnt
+
 local function SavePlaced(role)
     local out = {}
     for _, e in ipairs(ents.FindByClass(PLACEABLE[role])) do
-        if IsValid(e) then
+        if IsValid(e) and not IsEventEnt(e) then
             out[#out + 1] = { pos = e:GetPos(), ang = e:GetAngles() }
         end
     end
@@ -518,7 +527,12 @@ local function LoadPlaced(role)
     if not raw then return end
     local tbl = util.JSONToTable(raw)
     if not istable(tbl) then return end
-    for _, e in ipairs(ents.FindByClass(PLACEABLE[role])) do e:Remove() end -- антидубль
+    -- v4.31.0 «КРЫЛО»: антидубль трогает ТОЛЬКО карточные — ЖИВЫЕ флаги
+    -- операции/рейда не сносим (баг владельца «может быть 3, а не 4 точки»:
+    -- cleanup карты во время боя убивал точку, комплект рушился)
+    for _, e in ipairs(ents.FindByClass(PLACEABLE[role])) do
+        if not IsEventEnt(e) then e:Remove() end
+    end
     for _, d in ipairs(tbl) do
         if isvector and isvector(d.pos) then
             local e = ents.Create(PLACEABLE[role])
@@ -545,6 +559,7 @@ hook.Add("InitPostEntity", "P11.PlaceLoad", function()
         LoadPlaced("terminal")
         LoadPlaced("kitchen")
         LoadPlaced("avtosalon") -- v4.10.0 «ГАРАЖ»
+        LoadPlaced("usasalon")  -- v4.31.0 «КРЫЛО»: транспортник США
         LoadPlaced("crafttable") -- v4.11.0 «КУЗНЯ»
         LoadPlaced("crate")
         LoadPlaced("barrel")
@@ -568,6 +583,7 @@ hook.Add("PostCleanupMap", "P11.PlaceLoad2", function()
         LoadPlaced("terminal")
         LoadPlaced("kitchen")
         LoadPlaced("avtosalon") -- v4.10.0 «ГАРАЖ»
+        LoadPlaced("usasalon")  -- v4.31.0 «КРЫЛО»: транспортник США
         LoadPlaced("crafttable") -- v4.11.0 «КУЗНЯ»
         LoadPlaced("crate")
         LoadPlaced("barrel")

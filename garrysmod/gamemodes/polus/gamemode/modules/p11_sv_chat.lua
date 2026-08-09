@@ -184,6 +184,22 @@ local function ChatCore(ply, text)
     if raw == "" then return "" end
     local low = string.lower(raw)
 
+    -- v4.31.0 «КРЫЛО»: МУТ — ПЕРВОЙ СТРОКОЙ. До этого «!восклицания»
+    -- улетали в OOC МИМО проверки (она стояла ниже), а голый «return»
+    -- без «""» отдавал текст движку, если соседний хук проспал — отсюда
+    -- «мут не работает».
+    local muted = P11FW.IsMuted and P11FW.IsMuted(ply)
+    local isReport = string.StartWith(low, "/report") or string.StartWith(low, "/репорт")
+    if muted and not isReport then
+        Trace("ОТКЛОНЕНО мутом: " .. ply:Nick() .. " | «" .. string.sub(raw, 1, 40) .. "»")
+        ply.P11_MuteNoteT = ply.P11_MuteNoteT or 0
+        if CurTime() >= ply.P11_MuteNoteT then
+            ply.P11_MuteNoteT = CurTime() + 5
+            ply:ChatPrint("[ПОЛЮС-11] Ты в муте ещё " .. P11FW.FmtMinutes(P11FW.MuteLeftMin(ply)) .. " — сообщения не доходят.")
+        end
+        return ""
+    end
+
     if string.StartWith(low, "!") then
         local first = string.match(low, "^(%S+)") or ""
         if BANG_SERVER[first] or BANG_CLIENT[first]
@@ -194,12 +210,6 @@ local function ChatCore(ply, text)
         ChatSend(POLUS11.ChatCh.OOC, NameOf(ply), raw, nil, ColorOf(ply))
         return ""
     end
-
-    local muted = P11FW.IsMuted and P11FW.IsMuted(ply)
-    local isReport = string.StartWith(low, "/report") or string.StartWith(low, "/репорт")
-    if muted and not isReport then
-        Trace("ОТКЛОНЕНО мутом: " .. ply:Nick() .. " | «" .. string.sub(raw, 1, 40) .. "»")
-        return end
 
     if isReport then
         local pfx = string.StartWith(low, "/report") and "/report" or "/репорт"

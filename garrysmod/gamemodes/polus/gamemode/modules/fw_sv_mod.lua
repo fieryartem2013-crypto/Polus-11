@@ -276,6 +276,12 @@ hook.Add("PlayerSay", "P11FW.MuteGate", function(ply, text)
     return ""
 end)
 
+-- v4.31.0 «КРЫЛО»: мут глушит и ГОЛОС (микрофон), не только текст —
+-- замученный в эфире молчит для всех
+hook.Add("PlayerCanHearPlayersVoice", "P11FW.MuteVoice", function(listener, speaker)
+    if P11FW.IsMuted and P11FW.IsMuted(speaker) then return false end
+end)
+
 -- реапплай мута при входе
 hook.Add("PlayerInitialSpawn", "P11FW.MuteJoin", function(ply)
     timer.Simple(2.5, function()

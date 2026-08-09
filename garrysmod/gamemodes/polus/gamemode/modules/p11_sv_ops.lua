@@ -24,6 +24,9 @@ local RECRUIT_T = 45          -- запись сторон
 local BATTLE_T  = 30 * 60     -- бой
 local HOLD_WIN  = 3 * 60      -- держать ВСЕ точки столько подряд (v4.28.0 «МЕТЕО»: 3 мин по заявке)
 local POINTS_N  = 4           -- точек на карте
+-- v4.31.0 «КРЫЛО»: комплект строго А–Г + страховка «ровно 4» (баг владельца
+-- «может быть 3, а не 4 точки, что всё руинет») + спавны НЕ у флагов
+local OP_LETTERS = { "А", "Б", "В", "Г" }
 local WIN_PAY, LOSE_PAY, DRAW_PAY = 5000, 1000, 2500
 
 POLUS11.Op = POLUS11.Op or {}
@@ -39,6 +42,7 @@ local function OpResetAll()
     Op.endT   = 0
     Op.recruitEnd = 0
     Op.endUntil = 0
+    Op.healT  = 0   -- v4.31.0 «КРЫЛО»: антиспам самолечения точек
 end
 OpResetAll()
 
@@ -124,19 +128,48 @@ local function PickOpSpots(n)
     return picked
 end
 
+-- v4.31.0 «КРЫЛО»: фабрика флага (буква — строго из комплекта А–Г)
+local function OpPointMake(p, name)
+    local e = ents.Create("polus11_cappoint")
+    if not IsValid(e) then return nil end
+    e:SetPos(p)
+    e:SetAngles(Angle(0, math.random(0, 359), 0))
+    e:Spawn()
+    e:Activate()
+    e.P11_OpPoint = true
+    e:SetNWBool("P11_OpPoint", true)  -- v4.24.1 «МАЯК»: маяки мест точек на HUD
+    if name and e.SetPointName then e:SetPointName(name) end
+    return e
+end
+
+-- свободная площадка: не ближе 700 к уже стоящим флагам опы
+local function OpFarEnough(p)
+    for _, e in ipairs(Op.points or {}) do
+        if IsValid(e) and p:DistToSqr(e:GetPos()) < 700 * 700 then return false end
+    end
+    return true
+end
+
 local function OpPointsSpawn()
     Op.points = {}
-    for _, p in ipairs(PickOpSpots(POINTS_N)) do
-        local e = ents.Create("polus11_cappoint")
-        if IsValid(e) then
-            e:SetPos(p)
-            e:SetAngles(Angle(0, math.random(0, 359), 0))
-            e:Spawn()
-            e:Activate()
-            e.P11_OpPoint = true
-            e:SetNWBool("P11_OpPoint", true)  -- v4.24.1 «МАЯК»: маяки мест точек на HUD
-            Op.points[#Op.points + 1] = e
+    for i, p in ipairs(PickOpSpots(POINTS_N)) do
+        local e = OpPointMake(p, OP_LETTERS[i])
+        if IsValid(e) then Op.points[#Op.points + 1] = e end
+    end
+    -- v4.31.0 «КРЫЛО»: страховка «РОВНО 4» — энтити не встала → добиваем добором
+    local guard = 0
+    while #Op.points < POINTS_N and guard < 8 do
+        guard = guard + 1
+        for _, p2 in ipairs(PickOpSpots(POINTS_N)) do
+            if #Op.points >= POINTS_N then break end
+            if OpFarEnough(p2) then
+                local e2 = OpPointMake(p2, OP_LETTERS[#Op.points + 1])
+                if IsValid(e2) then Op.points[#Op.points + 1] = e2 end
+            end
         end
+    end
+    if POLUS11.Log then
+        POLUS11.Log("ОПЕРАЦИЯ: точек встало " .. #Op.points .. "/" .. POINTS_N)
     end
 end
 
@@ -149,26 +182,42 @@ end
 
 -- ============ СТОРОНЫ ============
 
--- ============ v4.28.0 «МЕТЕО»: СЛУЧАЙНЫЕ СПАВНЫ НА ОПЕРАЦИИ ============
--- Боец появляется у СЛУЧАЙНОЙ точки захвата: сперва пробуем точку своей
--- стороны (её и оборонять), иначе — любую живую на карте.
+-- ============ v4.31.0 «КРЫЛО»: СПАВНЫ НА ОПЕРАЦИИ — СЛУЧАЙНЫЕ, НЕ У ФЛАГОВ ============
+-- Заявка владельца: «спавны должны быть случайные, а не у точек, а то анлак
+-- последнюю захватить». Боец встаёт на СЛУЧАЙНОМ якоре станции (объект/спавн
+-- карты), но дальше 650 юн от ЛЮБОГО флага (и опы, и карточного): точки
+-- берутся боем, а не респавном на них. Пусто — кольцо 500–800 вокруг
+-- случайного флага опы (не на нём самом).
 local function OpRandomSpawnPos(ply)
-    local mine = Op.side and Op.side[ply] or nil
-    local own, other = {}, {}
-    for _, e in ipairs(Op.points or {}) do
-        if IsValid(e) then
-            local ow = e.GetOwnerFact and e:GetOwnerFact() or ""
-            if mine and ow == mine then
-                own[#own + 1] = e:GetPos()
-            else
-                other[#other + 1] = e:GetPos()
-            end
+    local flags = {}
+    for _, e in ipairs(ents.FindByClass("polus11_cappoint")) do
+        if IsValid(e) then flags[#flags + 1] = e:GetPos() end
+    end
+    local pool = AnchorSpots()
+    for i = #pool, 2, -1 do -- тасуем якоря
+        local j = math.random(i)
+        pool[i], pool[j] = pool[j], pool[i]
+    end
+    for _, p in ipairs(pool) do
+        local ok = true
+        for _, q in ipairs(flags) do
+            if p:DistToSqr(q) < 650 * 650 then ok = false break end
+        end
+        if ok then
+            return p + Vector(math.random(-120, 120), math.random(-120, 120), 6)
         end
     end
-    local pool = (#own > 0) and own or other
-    if #pool == 0 then return nil end
-    local base = pool[math.random(#pool)]
-    return base + Vector(math.random(-260, 260), math.random(-260, 260), 8)
+    local ops = {}
+    for _, e in ipairs(Op.points or {}) do
+        if IsValid(e) then ops[#ops + 1] = e:GetPos() end
+    end
+    if #ops > 0 then
+        local b = ops[math.random(#ops)]
+        local a = math.random() * math.pi * 2
+        local r = 500 + math.random() * 300
+        return b + Vector(math.cos(a) * r, math.sin(a) * r, 10)
+    end
+    return nil
 end
 
 local function OpTeleportRandom(ply, delay)
@@ -196,7 +245,7 @@ local function OpAssign(ply, fac)
     -- рация стороны: ★ СССР / ★ США — закреплена до финала
     local ch = (fac == "eagle") and "op_usa" or "op_sssr"
     ply:SetNWString("P11_RadioCh", ch)
-    -- v4.28.0 «МЕТЕО»: вступил в горячий бой — сразу у случайной точки
+    -- v4.31.0 «КРЫЛО»: вступил в горячий бой — в случайном месте (не у флага)
     if Op.phase == "battle" then
         OpTeleportRandom(ply, 0.8)
     end
@@ -235,6 +284,11 @@ function POLUS11.OpStart(by)
     if POLUS11.Raid and POLUS11.Raid.phase and POLUS11.Raid.phase ~= "idle" then
         if IsValid(by) then POLUS11.Notify(by, "Идёт РЕЙД — операцию объявишь после его финала.") end
         return
+    end
+    -- v4.31.0 «КРЫЛО»: сносим ошмётки прошлых операций (после краша могли
+    -- остаться «лишние» флаги — отсюда счёт 5/3 вместо ровно 4)
+    for _, e in ipairs(ents.FindByClass("polus11_cappoint")) do
+        if IsValid(e) and (e.P11_OpPoint or e:GetNWBool("P11_OpPoint", false)) then e:Remove() end
     end
     OpResetAll()
     Op.phase = "recruit"
@@ -277,7 +331,7 @@ local function OpBattleStart()
         end
     end
     OpPointsSpawn()
-    -- v4.28.0 «МЕТЕО»: стороны разбросаны по СЛУЧАЙНЫМ точкам карты
+    -- v4.31.0 «КРЫЛО»: стороны разбросаны по СЛУЧАЙНЫМ местам карты (не у флагов)
     for ply2 in pairs(Op.side) do
         OpTeleportRandom(ply2, 1.0 + math.random() * 1.5)
     end
@@ -364,6 +418,37 @@ timer.Create("P11.OpTick", 2, 0, function()
                 if own[ow] then own[ow] = own[ow] + 1 end
             end
         end
+        -- v4.31.0 «КРЫЛО»: САМОЛЕЧЕНИЕ комплекта — точку снесло (клинап карты,
+        -- команда), добиваем до 4 (не чаще раза в 20 сек, держание не сбрасываем)
+        if alivePts < POINTS_N and CurTime() >= (Op.healT or 0) then
+            Op.healT = CurTime() + 20
+            local used = {}
+            for _, e2 in ipairs(Op.points) do
+                if IsValid(e2) then used[e2.GetPointName and e2:GetPointName() or ""] = true end
+            end
+            local freeNames = {}
+            for _, L in ipairs(OP_LETTERS) do
+                if not used[L] then freeNames[#freeNames + 1] = L end
+            end
+            local added = 0
+            for _, p3 in ipairs(PickOpSpots(POINTS_N)) do
+                if alivePts + added >= POINTS_N then break end
+                if OpFarEnough(p3) and freeNames[added + 1] then
+                    local e3 = OpPointMake(p3, freeNames[added + 1])
+                    if IsValid(e3) then
+                        Op.points[#Op.points + 1] = e3
+                        added = added + 1
+                    end
+                end
+            end
+            if added > 0 then
+                if POLUS11.Log then
+                    POLUS11.Log("ОПЕРАЦИЯ: самолечение — было " .. alivePts .. "/" .. POINTS_N .. ", добито +" .. added)
+                end
+                OpAnnounce("Связь с потерянной точкой восстановлена: на карте снова " .. POINTS_N .. " флага. Бой продолжается!")
+            end
+        end
+
         -- держим ВСЕ сразу?
         if alivePts > 0 and own.rkka == alivePts then
             Op.hold.rkka = Op.hold.rkka + 2
@@ -423,7 +508,7 @@ hook.Add("PlayerDeath", "P11.OpFrag", function(vic, inf, att)
     end
 end)
 
--- v4.28.0 «МЕТЕО»: респавн бойца операции — у случайной точки
+-- v4.31.0 «КРЫЛО»: респавн бойца операции — случайное место, не у флага
 hook.Add("PlayerSpawn", "P11.OpRandSpawn", function(ply)
     if Op.phase ~= "battle" then return end
     if not (Op.side and Op.side[ply]) then return end
