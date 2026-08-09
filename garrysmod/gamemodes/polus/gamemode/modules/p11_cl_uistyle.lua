@@ -111,3 +111,119 @@ function P11UI.Scroll(parent, x, y, w, h)
 end
 
 print("[POLUS-11] стиль станции (P11UI) загружен")
+
+-- ============================================================
+--  ЭМАЛЬ v2 (v4.25.0) — ГЛОБАЛЬНЫЙ РЕСКИН стоковых контролов.
+--  Заявка: «обнови полностью весь UI на всём сервере, каждую
+--  F4 и C-меню». Меню сборки собраны кастом-краской — они сами
+--  по себе красивые, их не трогаем (краска инстанса сильнее
+--  мета-эмали); всем ОСТАЛЬНЫМ (старые/дефолтные окна, кнопки,
+--  поля, чеки, скроллы по всему серверу) едем единой эмалью:
+--  тёмное окно + золотая кромка, поля — глубокая тьма, чек —
+--  золото, скролл — золотой бегунок на тёмной колее.
+-- ============================================================
+timer.Simple(0, function() -- ждём регистрации стандартных контролов
+    local C = P11UI.C
+
+    -- ОКНА: эмаль + золотая кромка под шапкой
+    local FR = vgui.GetControlTable and vgui.GetControlTable("DFrame")
+    if FR and not FR.P11EnamelV2 then
+        FR.P11EnamelV2 = true
+        FR.Paint = function(self, w, h)
+            draw.RoundedBox(10, 0, 0, w, h, C.bg)
+            draw.RoundedBoxEx(10, 0, 0, w, 26, C.panel2, true, true, false, false)
+            surface.SetDrawColor(C.line)
+            surface.DrawRect(0, 26, w, 1)
+            surface.SetDrawColor(C.gold.r, C.gold.g, C.gold.b, 90)
+            surface.DrawRect(0, 27, w, 1)
+            local ttl = (self.lblTitle and self.lblTitle.GetText) and self.lblTitle:GetText() or ""
+            if ttl ~= "" then
+                draw.SimpleText(ttl, "P11UI.Sub", 10, 5, C.text)
+            end
+        end
+    end
+
+    -- КНОПКИ: фирменная эмаль (шрифт/иконка владельца сохраняются)
+    local BT = vgui.GetControlTable and vgui.GetControlTable("DButton")
+    if BT and not BT.P11EnamelV2 then
+        BT.P11EnamelV2 = true
+        BT.Paint = function(self, w, h)
+            local hv = self:IsHovered() and not self:GetDisabled()
+            draw.RoundedBox(6, 0, 0, w, h, hv and C.panel2 or C.panel)
+            surface.SetDrawColor(hv and C.gold or C.line)
+            surface.DrawOutlinedRect(0, 0, w, h, 1)
+            if self.m_Material then
+                surface.SetMaterial(self.m_Material)
+                surface.SetDrawColor(255, 255, 255, 255)
+                local sz = math.min(w, h) - 8
+                surface.DrawTexturedRect((w - sz) / 2, (h - sz) / 2, sz, sz)
+            end
+            local txt = self:GetText()
+            if txt and txt ~= "" then
+                local fnt = self:GetFont()
+                draw.SimpleText(txt, (fnt and fnt ~= "") and fnt or "P11UI.Sub",
+                    w / 2, h / 2, self:GetDisabled() and C.dim or C.text,
+                    TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+            end
+            return true
+        end
+    end
+
+    -- ПОЛЯ ВВОДА: глубокая тьма + циан в фокусе
+    local TE = vgui.GetControlTable and vgui.GetControlTable("DTextEntry")
+    if TE and not TE.P11EnamelV2 then
+        TE.P11EnamelV2 = true
+        TE.Paint = function(self, w, h)
+            draw.RoundedBox(6, 0, 0, w, h, Color(12, 16, 22, 255))
+            surface.SetDrawColor(self:HasFocus() and C.accent or C.line)
+            surface.DrawOutlinedRect(0, 0, w, h, 1)
+            pcall(function()
+                self:DrawTextEntryText(
+                    self.GetTextColor and self:GetTextColor() or C.text,
+                    self.GetHighlightColor and self:GetHighlightColor() or C.accent,
+                    self.GetCursorColor and self:GetCursorColor() or color_white)
+            end)
+        end
+    end
+
+    -- ЧЕКИ: золотая отметина
+    local CK = vgui.GetControlTable and vgui.GetControlTable("DCheckBox")
+    if CK and not CK.P11EnamelV2 then
+        CK.P11EnamelV2 = true
+        CK.Paint = function(self, w, h)
+            draw.RoundedBox(4, 0, 0, w, h, Color(12, 16, 22, 255))
+            surface.SetDrawColor(self:GetChecked() and C.gold or C.line)
+            surface.DrawOutlinedRect(0, 0, w, h, 1)
+            if self:GetChecked() then
+                draw.SimpleText("✓", "P11UI.Sub", w / 2, h / 2, C.gold,
+                    TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+            end
+            return true
+        end
+    end
+
+    -- СКРОЛЛБАРЫ: тёмная колея + золотой бегунок
+    -- (меню со своей краской бегунка перекрывают её своей — всё честно)
+    local SB = vgui.GetControlTable and vgui.GetControlTable("DVScrollBar")
+    if SB and not SB.P11EnamelV2 then
+        SB.P11EnamelV2 = true
+        SB.Paint = function(self, w, h)
+            draw.RoundedBox(4, 0, 0, w, h, Color(255, 255, 255, 12))
+            return true
+        end
+        local oldSetUp = SB.SetUp
+        SB.SetUp = function(self, ...)
+            local r = oldSetUp(self, ...)
+            local g = self.btnGrip
+            if IsValid(g) then
+                g.Paint = function(s2, w, h)
+                    draw.RoundedBox(4, 0, 0, w, h,
+                        s2:IsHovered() and C.gold or Color(185, 150, 70))
+                end
+            end
+            return r
+        end
+    end
+end)
+
+print("[POLUS-11] ЭМАЛЬ v2 (v4.25.0): глобальный рескин UI — окна/кнопки/поля/чеки/скроллы в фирме")

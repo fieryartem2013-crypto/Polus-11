@@ -21,11 +21,15 @@ local function Fonts()
 end
 
 -- фракция игрока для захвата (та же логика, что на сервере)
+-- v4.25.0 «ЭМАЛЬ»: командные профы операций играют за родительские стороны
+local OP_FAC = { op_sssr = "rkka", op_usa = "eagle" }
+
 local function FactOf(ply)
     if not (P11FW and P11FW.GetJob) then return nil end
     local job = P11FW.GetJob(ply)
     local id = istable(job) and (job.faction or job.category) or nil
     if id == "rkka" or id == "eagle" then return id end
+    if OP_FAC[id] then return OP_FAC[id] end
     return nil
 end
 

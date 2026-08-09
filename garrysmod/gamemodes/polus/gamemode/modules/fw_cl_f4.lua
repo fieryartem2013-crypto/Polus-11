@@ -96,7 +96,7 @@ function P11FW.OpenJobMenu()
         surface.SetDrawColor(120, 190, 235, 60)
         surface.DrawRect(0, 64, w, 1)
 
-        draw.SimpleText("СТАНЦИЯ «ПОЛЮС-11»", "P11FW.Title", 18, 12, C.text)
+        draw.SimpleText("★ СТАНЦИЯ «ПОЛЮС-11» ★", "P11FW.Title", 18, 12, C.text) -- v4.25.0 «ЭМАЛЬ»
         draw.SimpleText("картотека личного состава • смена 1982", "P11FW.Small", 18, 42, C.dim)
 
         -- чип текущей должности

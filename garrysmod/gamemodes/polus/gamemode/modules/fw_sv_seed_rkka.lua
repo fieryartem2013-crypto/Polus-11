@@ -50,6 +50,18 @@ local SEED_FACTIONS = {
         color = Color(150, 90, 170),
     },
     {
+        -- v4.25.0 «ЭМАЛЬ»: ОТДЕЛЬНАЯ фракция стороны операции (заявка —
+        -- «добавь им отдельную фракцию, чтобы спавны расставить»)
+        id = "op_sssr", name = "СССР (ОПЕРАЦИЯ)", order = 96,
+        desc = "Знамя стороны в операции «РУБЕЖ»: бойцы Советского Союза. Отдельная фракция — у неё свои точки спавна (p11_arrival).",
+        color = Color(205, 85, 72),
+    },
+    {
+        id = "op_usa", name = "США (ОПЕРАЦИЯ)", order = 97,
+        desc = "Знамя стороны в операции «РУБЕЖ»: бойцы Соединённых Штатов. Отдельная фракция — у неё свои точки спавна (p11_arrival).",
+        color = Color(90, 150, 230),
+    },
+    {
         id = "nechto", name = "НЕЧТО", order = 99,
         desc = "Ивентовые формы Нечто. ВЫДАЮТСЯ ТОЛЬКО АДМИНИСТРАЦИЕЙ. Если ты это читаешь — штаб знает о твоей находке слишком много.",
         color = Color(150, 55, 60),
@@ -493,7 +505,7 @@ local SEED_JOBS = {
     -- hidden: не видны в F4 нигде; cmdonly: не берутся вручную — выдаёт
     -- система ОПЕРАЦИИ при выборе стороны или p11_opjob <sssr|usa> [ник].
     {
-        id = "seed_op_sssr", time = 0, category = "rkka", order = 95,
+        id = "seed_op_sssr", time = 0, category = "op_sssr", order = 95, -- v4.25.0 «ЭМАЛЬ»: своя фракция (спавны свои)
         name = "Солдат СССР",
         desc = "Боец операции «РУБЕЖ» под красной звездой: штурм и удержание точек захвата. Рация закреплена на канале ★ СССР. Должность скрыта из F4 — выдаётся автоматом на операции. 110 ХП / 110 брони.",
         weapons = { { "arc9_eft_aks74", "arc9_eft_ak74", "weapon_ar2" }, "weapon_polus11_radio" },
@@ -509,7 +521,7 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_op_usa", time = 0, category = "eagle", order = 95,
+        id = "seed_op_usa", time = 0, category = "op_usa", order = 95, -- v4.25.0 «ЭМАЛЬ»: своя фракция (спавны свои)
         name = "Солдат США",
         desc = "Боец операции «РУБЕЖ» под звёздами Нового Света: штурм и удержание точек захвата. Рация закреплена на канале ★ США. Должность скрыта из F4 — выдаётся автоматом на операции. 110 ХП / 110 брони.",
         weapons = { { "arc9_eft_m870", "weapon_shotgun" }, { "arc9_eft_m1911a1", "weapon_pistol" }, "weapon_polus11_radio" },
@@ -1031,6 +1043,27 @@ local function SeedAll()
         SaveFactionRecords(records)
         P11FW.SyncFactions()
         P11FW.Log("Сид: добавлено фракций-пресетов: " .. facAdded)
+    end
+
+    -- ---------- 1.5) v4.25.0 «ЭМАЛЬ» МИГРАЦИЯ: профы операций → свои фракции ----------
+    -- Первый сид v4.24.2 положил их в rkka/eagle — пересаживаем, спавны
+    -- сторон станут собственными (p11_arrival резолвит по фракции).
+    do
+        local OP_CAT = { seed_op_sssr = "op_sssr", seed_op_usa = "op_usa" }
+        local changed = false
+        for _, rec in ipairs(P11FW.CustomJobs) do
+            local want = rec and OP_CAT[rec.id]
+            if want and rec.category ~= want then
+                rec.category = want
+                changed = true
+            end
+        end
+        if changed then
+            P11FW.SaveCustomJobs()
+            P11FW.RegisterCustomJobs(P11FW.CustomJobs)
+            P11FW.SyncCustomJobs()
+            P11FW.Log("Сид v4.25.0: профы операций переведены во фракции op_sssr/op_usa (спавны свои)")
+        end
     end
 
     -- ---------- 2) ДОЛЖНОСТИ ----------
