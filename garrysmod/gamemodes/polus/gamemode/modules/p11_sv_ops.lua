@@ -6,7 +6,7 @@
 --  фракции «СССР / АМЕРИКА» → выбравшие автоматом становятся
 --  солдатами своей стороны → на карте СЛУЧАЙНО встают точки
 --  захвата (энтити «ФЛАГ») → 30 минут РДМ-ивента: удержать
---  ВСЕ точки 5 минут подряд — досрочная победа. Финал —
+--  ВСЕ точки 3 минуты подряд — досрочная победа (v4.28.0). Финал —
 --  лидерборд и деньги: победителям 5000₽, проигравшим 1000₽
 --  (ничья — по 2500₽), только участникам онлайн.
 --  v4.24.2 «ЗНАМЯ»: выбор стороны выдаёт КОМАНДНЫЕ профы «Солдат
@@ -22,7 +22,7 @@ util.AddNetworkString("P11_OpBoard") -- сервер→клиент: лидер�
 
 local RECRUIT_T = 45          -- запись сторон
 local BATTLE_T  = 30 * 60     -- бой
-local HOLD_WIN  = 5 * 60      -- держать ВСЕ точки столько подряд
+local HOLD_WIN  = 3 * 60      -- держать ВСЕ точки столько подряд (v4.28.0 «МЕТЕО»: 3 мин по заявке)
 local POINTS_N  = 4           -- точек на карте
 local WIN_PAY, LOSE_PAY, DRAW_PAY = 5000, 1000, 2500
 
@@ -149,6 +149,39 @@ end
 
 -- ============ СТОРОНЫ ============
 
+-- ============ v4.28.0 «МЕТЕО»: СЛУЧАЙНЫЕ СПАВНЫ НА ОПЕРАЦИИ ============
+-- Боец появляется у СЛУЧАЙНОЙ точки захвата: сперва пробуем точку своей
+-- стороны (её и оборонять), иначе — любую живую на карте.
+local function OpRandomSpawnPos(ply)
+    local mine = Op.side and Op.side[ply] or nil
+    local own, other = {}, {}
+    for _, e in ipairs(Op.points or {}) do
+        if IsValid(e) then
+            local ow = e.GetOwnerFact and e:GetOwnerFact() or ""
+            if mine and ow == mine then
+                own[#own + 1] = e:GetPos()
+            else
+                other[#other + 1] = e:GetPos()
+            end
+        end
+    end
+    local pool = (#own > 0) and own or other
+    if #pool == 0 then return nil end
+    local base = pool[math.random(#pool)]
+    return base + Vector(math.random(-260, 260), math.random(-260, 260), 8)
+end
+
+local function OpTeleportRandom(ply, delay)
+    timer.Simple(delay, function()
+        if not IsValid(ply) or not ply:Alive() then return end
+        local pos = OpRandomSpawnPos(ply)
+        if pos then
+            ply:SetPos(pos)
+            ply:SetEyeAngles(Angle(0, math.random(0, 359), 0))
+        end
+    end)
+end
+
 local function OpAssign(ply, fac)
     if not (IsValid(ply) and ply:Alive()) then return end
     if fac ~= "rkka" and fac ~= "eagle" then return end
@@ -163,6 +196,10 @@ local function OpAssign(ply, fac)
     -- рация стороны: ★ СССР / ★ США — закреплена до финала
     local ch = (fac == "eagle") and "op_usa" or "op_sssr"
     ply:SetNWString("P11_RadioCh", ch)
+    -- v4.28.0 «МЕТЕО»: вступил в горячий бой — сразу у случайной точки
+    if Op.phase == "battle" then
+        OpTeleportRandom(ply, 0.8)
+    end
     POLUS11.Notify(ply, "Ты солдат стороны «" .. FACT_NAME[fac] ..
         "»! Рация закреплена на канале «" .. (POLUS11.RadioChannels[ch] or ch) ..
         "». Оружие к бою — точки решат всё!")
@@ -240,8 +277,12 @@ local function OpBattleStart()
         end
     end
     OpPointsSpawn()
+    -- v4.28.0 «МЕТЕО»: стороны разбросаны по СЛУЧАЙНЫМ точкам карты
+    for ply2 in pairs(Op.side) do
+        OpTeleportRandom(ply2, 1.0 + math.random() * 1.5)
+    end
     OpAnnounce("БОЙ НАЧАЛСЯ: на станции " .. #Op.points ..
-        " точек захвата! Удерживайте ВСЕ сразу 5 минут — или больше по итогу 30 минут. Огонь по чужой стороне разрешён.")
+        " точек захвата! Удерживайте ВСЕ сразу 3 минуты — или больше по итогу 30 минут. Огонь по чужой стороне разрешён.")
     net.Start("P11_OpUI")
         net.WriteString("battle")
     net.Broadcast()
@@ -380,6 +421,13 @@ hook.Add("PlayerDeath", "P11.OpFrag", function(vic, inf, att)
         rec.k = rec.k + 1
         rec.name = att:Nick()
     end
+end)
+
+-- v4.28.0 «МЕТЕО»: респавн бойца операции — у случайной точки
+hook.Add("PlayerSpawn", "P11.OpRandSpawn", function(ply)
+    if Op.phase ~= "battle" then return end
+    if not (Op.side and Op.side[ply]) then return end
+    OpTeleportRandom(ply, 0.4)
 end)
 
 -- поздний вход в горячую точку

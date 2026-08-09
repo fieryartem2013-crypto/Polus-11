@@ -97,7 +97,10 @@ timer.Create("P11_ColdTick", 1, 0, function()
         if IsValid(ply) and ply:Alive() then
             -- активная зараза холодом не берётся
             local thing = ply:GetNWBool("P11_Infected", false) and ply:GetNWBool("P11_InfActive", false)
-            if thing then
+            -- v4.28.0 «МЕТЕО»: на операции «РУБЕЖ» (любая фаза — набор,
+            -- бой, финал) холодом НЕ умереть: бой решают руки, а не мороз.
+            local opPh = (POLUS11.Op and POLUS11.Op.phase) or "idle"
+            if thing or opPh ~= "idle" then
                 SetWarmth(ply, 100)
             else
                 local w = ply.P11_Warmth or 100

@@ -523,8 +523,8 @@ local SEED_JOBS = {
     {
         id = "seed_op_usa", time = 0, category = "op_usa", order = 95, -- v4.25.0 «ЭМАЛЬ»: своя фракция (спавны свои)
         name = "Солдат США",
-        desc = "Боец операции «РУБЕЖ» под звёздами Нового Света: штурм и удержание точек захвата. Рация закреплена на канале ★ США. Должность скрыта из F4 — выдаётся автоматом на операции. 110 ХП / 110 брони.",
-        weapons = { { "arc9_eft_m870", "weapon_shotgun" }, { "arc9_eft_m1911a1", "weapon_pistol" }, "weapon_polus11_radio" },
+        desc = "Боец операции «РУБЕЖ» под звёздами Нового Света: штурм и удержание точек захвата. Оружие: M16A1 (ARC9 EFT) + M1911A1. Рация закреплена на канале ★ США. Должность скрыта из F4 — выдаётся автоматом на операции. 110 ХП / 110 брони.",
+        weapons = { { "arc9_eft_m16a1", "weapon_smg1" }, { "arc9_eft_m1911a1", "weapon_pistol" }, "weapon_polus11_radio" }, -- v4.28.0 «МЕТЕО»: винтовка M16A1 по заявке
         hp = 110, armor = 110, max = 0,
         hidden = true, cmdonly = true,
         color = Color(90, 150, 230),
@@ -1063,6 +1063,29 @@ local function SeedAll()
             P11FW.RegisterCustomJobs(P11FW.CustomJobs)
             P11FW.SyncCustomJobs()
             P11FW.Log("Сид v4.25.0: профы операций переведены во фракции op_sssr/op_usa (спавны свои)")
+        end
+    end
+
+    -- ---------- 1.6) v4.28.0 «МЕТЕО» МИГРАЦИЯ: M16A1 солдату США ----------
+    -- В сейве jobs_custom.json у старых записей ещё дробовик M870 —
+    -- переписываем боекомплект и описание на актуальный.
+    do
+        local changed = false
+        for _, rec in ipairs(P11FW.CustomJobs) do
+            if rec and rec.id == "seed_op_usa" then
+                local cur = istable(rec.weapons) and (util.TableToJSON(rec.weapons) or "") or ""
+                if not string.find(cur, "arc9_eft_m16a1", 1, true) then
+                    rec.weapons = { { "arc9_eft_m16a1", "weapon_smg1" }, { "arc9_eft_m1911a1", "weapon_pistol" }, "weapon_polus11_radio" }
+                    rec.desc = "Боец операции «РУБЕЖ» под звёздами Нового Света: штурм и удержание точек захвата. Оружие: M16A1 (ARC9 EFT) + M1911A1. Рация закреплена на канале ★ США. Должность скрыта из F4 — выдаётся автоматом на операции. 110 ХП / 110 брони."
+                    changed = true
+                end
+            end
+        end
+        if changed then
+            P11FW.SaveCustomJobs()
+            P11FW.RegisterCustomJobs(P11FW.CustomJobs)
+            P11FW.SyncCustomJobs()
+            P11FW.Log("Сид v4.28.0: Солдат США перевооружён на M16A1 (заявка владельца)")
         end
     end
 
