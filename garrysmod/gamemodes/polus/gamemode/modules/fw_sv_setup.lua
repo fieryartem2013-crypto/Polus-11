@@ -207,7 +207,7 @@ net.Receive("P11FW_AdminAction", function(len, ply)
 
     -- ============ БЫСТРЫЕ ДЕЙСТВИЯ С ИГРОКОМ (Админ+) ============
 
-    elseif act >= 14 and act <= 19 and not P11FW.CanMod(ply, "heal") then
+    elseif (act >= 14 and act <= 19 or act == 32) and not P11FW.CanMod(ply, "heal") then
         P11FW.Notify(ply, "Быстрые действия доступны Админу и выше.")
 
     elseif act == 14 then -- полное лечение
@@ -251,6 +251,21 @@ net.Receive("P11FW_AdminAction", function(len, ply)
         if IsValid(target) and target:IsPlayer() and target:Alive() then
             target:Kill()
             P11FW.Notify(ply, "Убит: " .. target:Nick())
+        end
+
+    elseif act == 32 then -- v4.29.0 «НАДЗОР»: НЕВИДИМОСТЬ вкл/выкл (быстрые действия)
+        local target = Entity(net.ReadUInt(8))
+        if IsValid(target) and target:IsPlayer() then
+            target.P11_Cloak = not target.P11_Cloak
+            target:SetNoDraw(target.P11_Cloak)
+            target:DrawShadow(not target.P11_Cloak)
+            local wep = target:GetActiveWeapon()
+            if IsValid(wep) then wep:SetNoDraw(target.P11_Cloak) end
+            P11FW.Notify(ply, "Невидимость " .. (target.P11_Cloak and "ВКЛ" or "ВЫКЛ") .. ": " .. target:Nick())
+            POLUS11.Notify(target, target.P11_Cloak
+                and "Администрация сделала тебя НЕВИДИМЫМ для гарнизона."
+                or "Невидимость снята.")
+            if P11FW.ModLog then P11FW.ModLog("cloak", ply, target, target.P11_Cloak and "on" or "off") end
         end
 
     -- ============ ФРАКЦИИ ============

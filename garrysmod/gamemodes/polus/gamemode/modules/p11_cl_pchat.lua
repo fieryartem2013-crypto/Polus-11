@@ -506,7 +506,47 @@ function CH.Build()
                 end
             end
             return true
+        -- ===== v4.29.0 «НАДЗОР»: ЧЕСТНАЯ ПРАВКА ТЕКСТА =====
+        -- заявка: «в чат нельзя удалять слова и буквы и нельзя вставлять текст»
+        elseif code == KEY_BACKSPACE then
+            if CH.SelAll then -- Ctrl+A потом Backspace — сжечь всё
+                entry:SetText("")
+                CH.SelAll = false
+                return true
+            end
+            if input.IsKeyDown(KEY_LCONTROL) or input.IsKeyDown(KEY_RCONTROL) then
+                -- Ctrl+Backspace — убить ПОСЛЕДНЕЕ СЛОВО до каретки
+                local txt = entry:GetText() or ""
+                local caret = entry:GetCaretPos() or #txt
+                local head = string.sub(txt, 1, caret)
+                head = string.gsub(head, "%s*[^%s]+%s*$", "")
+                entry:SetText(head .. string.sub(txt, caret + 1))
+                entry:SetCaretPos(#head)
+                return true
+            end
+        elseif code == KEY_DELETE then
+            if CH.SelAll then
+                entry:SetText("")
+                CH.SelAll = false
+                return true
+            end
+        elseif code == KEY_A and (input.IsKeyDown(KEY_LCONTROL) or input.IsKeyDown(KEY_RCONTROL)) then
+            CH.SelAll = true -- «выделено всё»: Backspace/Delete сожгут строку
+            return true
+        elseif code == KEY_V and (input.IsKeyDown(KEY_LCONTROL) or input.IsKeyDown(KEY_RCONTROL)) then
+            -- Ctrl+V — ВСТАВКА из буфера обмена в позицию каретки
+            local clip = input.GetClipboardText and input.GetClipboardText() or ""
+            clip = string.sub(string.gsub(tostring(clip), "[%c]+", " "), 1, 300)
+            if clip ~= "" then
+                local txt = entry:GetText() or ""
+                local caret = entry:GetCaretPos() or #txt
+                entry:SetText(string.sub(txt, 1, caret) .. clip .. string.sub(txt, caret + 1))
+                entry:SetCaretPos(caret + #clip)
+            end
+            CH.SelAll = false
+            return true
         end
+        if CH.SelAll and code ~= KEY_A then CH.SelAll = false end
     end
 
     -- кнопки каналов (+ v4.15.3 «КУРСОР»: прямоугольники для ручного
@@ -560,8 +600,9 @@ function CH.Build()
             end
         end
         if IsValid(CH.Entry) then
+            -- v4.29.0 «НАДЗОР»: каретку НЕ тащим в конец — она встаёт туда,
+            -- куда ткнул курсор (заявка: «нельзя вставлять текст»)
             CH.Entry:RequestFocus()
-            CH.Entry:SetCaretPos(#(CH.Entry:GetText() or ""))
         end
     end
     f.OnMousePressed = function(_, code) FrameClick(code) end
@@ -569,9 +610,12 @@ function CH.Build()
 
     -- плейсхолдер-напоминалка рисуется поверх пустого поля
     entry.PaintOver = function(s, w2, h2)
-        if s:GetText() == "" then
+        if CH.SelAll then -- v4.29.0: знак «выделено всё»
+            draw.SimpleText("⚠ ВЫДЕЛЕНО ВСЁ — Backspace/Delete сожжёт строку, печать уберёт выбор",
+                "P11CHAT.Tiny", 8, h2 / 2, Color(255, 190, 90), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        elseif s:GetText() == "" then
             local m = ModeOf(CH.Cur)
-            draw.SimpleText(m.lbl .. ": пиши сюда… (клик = курсор, TAB/клик в шапку = канал, ↑ — история)",
+            draw.SimpleText(m.lbl .. ": пиши сюда… (Ctrl+V вставка · Ctrl+← слово · Ctrl+A всё)",
                 "P11CHAT.Tiny", 8, h2 / 2, Color(150, 162, 178), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
         end
     end
@@ -623,6 +667,11 @@ end
 function CH.Close()
     if not CH.Open_ then return end
     CH.Open_ = false
+    -- v4.29.0 «НАДЗОР»: черновик не храним — после закрытия/отправки
+    -- поле пустое (заявка «текст после закрытии чата и отправление
+    -- охраняется — убери»)
+    if IsValid(CH.Entry) then CH.Entry:SetText("") end
+    CH.SelAll = false
     if IsValid(CH.Entry) and vgui.GetKeyboardFocus() == CH.Entry then
         CH.Entry:KillFocus()
     end

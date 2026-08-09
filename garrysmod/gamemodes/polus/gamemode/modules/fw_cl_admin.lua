@@ -1116,15 +1116,16 @@ function P11FW.OpenAdminMenu(forceTab)
         ActBtn("ТЕЛЕПОРТ К НЕМУ", 17, Color(150, 190, 240))
         ActBtn("ЗАМОРОЗИТЬ/РАЗМ.",18, Color(170, 175, 190))
         ActBtn("УБИТЬ",           19, AC.bad)
+        ActBtn("НЕВИДИМОСТЬ ●",   32, Color(190, 200, 215)) -- v4.29.0 «НАДЗОР»
 
         -- v1.5: выдача рангов (сервер пустит только Куратор+)
         local rankLbl = vgui.Create("DLabel", ap)
-        rankLbl:SetPos(12, 246) rankLbl:SetSize(372, 16)
+        rankLbl:SetPos(12, 286) rankLbl:SetSize(372, 16) -- v4.29.0: блок рангов сдвинут под 7 кнопок
         rankLbl:SetFont("P11FW.Small") rankLbl:SetTextColor(AC.gold)
         rankLbl:SetText("РАНГ АДМИНИСТРАЦИИ (User→VIP→Хелпер→…→Глава Полюса-11):")
 
         local rankC = vgui.Create("DComboBox", ap)
-        rankC:SetPos(12, 264) rankC:SetSize(372, 26)
+        rankC:SetPos(12, 304) rankC:SetSize(372, 26)
         rankC:SetValue("— выбери ранг —")
         for _, r in ipairs(P11FW.Ranks or {}) do
             local function paintChoice(self2, w, h) end
@@ -1140,21 +1141,21 @@ function P11FW.OpenAdminMenu(forceTab)
                 net.WriteString(rid)
             end)
         end)
-        rankBtn:SetPos(12, 298) rankBtn:SetSize(372, 30)
+        rankBtn:SetPos(12, 338) rankBtn:SetSize(372, 30)
         if not (P11FW.CanManageRank and P11FW.CanManageRank(LocalPlayer(), nil)) then
             rankBtn.PColor = AC.dim
             rankBtn:SetEnabled(false)
         end
 
         local rankNote = vgui.Create("DLabel", ap)
-        rankNote:SetPos(12, 334) rankNote:SetSize(372, 60)
+        rankNote:SetPos(12, 372) rankNote:SetSize(372, 42)
         rankNote:SetFont("P11FW.Small") rankNote:SetTextColor(AC.dim)
         rankNote:SetText("Выдать может Куратор+ (ниже своего ранга).\n" ..
             "Секрет основателя: p11_access <ключ> в консоли\n(ключ меняется в fw_sh_config.lua).")
         rankNote:SetAutoStretchVertical(true)
 
         local refr = MakeBtn(ap, "ОБНОВИТЬ СПИСОК", AC.dim, function() RequestAdminData() end)
-        refr:SetPos(12, 408) refr:SetSize(372, 30)
+        refr:SetPos(12, 416) refr:SetSize(372, 28)
     end
 
     -- ==================================================

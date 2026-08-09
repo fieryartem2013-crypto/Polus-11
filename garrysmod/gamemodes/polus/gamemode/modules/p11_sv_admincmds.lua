@@ -4,6 +4,7 @@
 --  /bring <ник>             — притащить игрока К СЕБЕ
 --  /return                  — вернуться туда, откуда тпшило
 --  /cloak                   — невидимость вкл/выкл (и оружие тоже)
+--  /warn <ник> <причина>    — быстрый варн (Хелпер+, v4.29.0 «НАДЗОР»)
 --  /heal [ник]              — полечить (без ника — себя)
 --  /god                     — бессмертие вкл/выкл
 --  /ранги, /ranks           — открыть меню выдачи рангов
@@ -134,6 +135,28 @@ hook.Add("PlayerSay", "P11.AdminChatCmds", function(ply, text)
         end
         net.Start("P11FW_OpenAdminRanks") -- клиент: открыть админку на вкладке ИГРОКИ
         net.Send(ply)
+        return ""
+    end
+
+    -- v4.29.0 «НАДЗОР»: быстрый ВАРН одной строкой (Хелпер+, ранг 2+).
+    -- Формат: /warn <ник или кусок ника> <причина>
+    if cmd == "/warn" or cmd == "/варн" then
+        local name, reason = string.match(arg, "^(%S+)%s+(.+)$")
+        if not reason then
+            POLUS11.Notify(ply, "Формат: /warn <ник или кусок ника> <причина>")
+            return ""
+        end
+        local target = FindByArg(name)
+        if not IsValid(target) then
+            POLUS11.Notify(ply, "Игрок не найден: " .. name)
+            return ""
+        end
+        if target == ply then
+            POLUS11.Notify(ply, "Себе варн не пишут.")
+            return ""
+        end
+        local ok, err = P11FW.Warn(ply, target, reason) -- ворота/тост/журнал/автокик — внутри
+        if not ok then POLUS11.Notify(ply, "ОТКАЗ: " .. tostring(err)) end
         return ""
     end
 
