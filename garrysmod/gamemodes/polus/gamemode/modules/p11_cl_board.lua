@@ -1,5 +1,5 @@
 -- ============================================================
---  ПОЛЮС-11 — ТАБ v2 «СОСТАВ СТАНЦИИ» (v4.2.1, написан с нуля)
+--  ПОЛЮС-11 — ТАБ v3 «СОСТАВ СТАНЦИИ» (v4.26.0 «СИЯНИЕ», написан с нуля)
 --  Старый модуль p11_cl_scoreboard.lua УДАЛЁН полностью.
 --
 --  Почему он больше НЕ МОЖЕТ уронить клиент:
@@ -196,6 +196,19 @@ local function FaceColorOf(c)
     return Color(c.r, c.g, c.b, 255)
 end
 
+-- v4.26.0 «СИЯНИЕ»: пятиконечная звезда полигоном (эмблема шапки табло)
+local function P11BStar(cx, cy, r, col)
+    local pts = {}
+    for i = 1, 10 do
+        local a = -math.pi / 2 + math.pi * (i - 1) / 5
+        local rr = (i % 2 == 1) and r or r * 0.42
+        pts[i] = { x = cx + math.cos(a) * rr, y = cy + math.sin(a) * rr }
+    end
+    draw.NoTexture()
+    surface.SetDrawColor(col.r, col.g, col.b, col.a or 255)
+    surface.DrawPoly(pts)
+end
+
 -- усечь строку под ширину с многоточием (имена не залезают на колонки)
 local function FitText(txt, font, maxW)
     surface.SetFont(font)
@@ -218,6 +231,15 @@ local function DrawRow(d, x, y, W)
     draw.RoundedBoxEx(4, x, y, 4, ROW_H, FaceColorOf(d.col), true, false, true, false)
     surface.SetDrawColor(255, 255, 255, 6)
     surface.DrawRect(x + 4, y, W - 4, 1)
+    -- v4.26.0: курсор подсвечивает строку, СВОЯ строка — морозная рамка
+    local mx, my = gui.MouseX(), gui.MouseY()
+    if mx >= x and mx <= x + W and my >= y and my <= y + ROW_H then
+        draw.RoundedBox(4, x, y, W, ROW_H, Color(255, 255, 255, 13))
+    end
+    if d.me then
+        surface.SetDrawColor(150, 210, 250, 62 + 40 * math.sin(CurTime() * 2.8))
+        surface.DrawOutlinedRect(x, y, W, ROW_H, 1)
+    end
 
     local cy = y + ROW_H / 2
 
@@ -308,7 +330,7 @@ local function DrawRowsClip(x, topY, W, viewH)
             local c = g.color or COL_GREY
             draw.RoundedBox(3, x, yy, W, CAT_H, Color(c.r, c.g, c.b, 28))
             draw.RoundedBoxEx(3, x, yy, W, 2, Color(c.r, c.g, c.b, 185), true, true, false, false)
-            draw.SimpleText(tostring(g.name), "P11B.Small", x + 8, yy + CAT_H / 2 + 1, FaceColorOf(c), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+            draw.SimpleText("▾ " .. tostring(g.name), "P11B.Small", x + 8, yy + CAT_H / 2 + 1, FaceColorOf(c), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
             draw.SimpleText(#g.rows .. " чел.", "P11B.Tiny", x + W - 8, yy + CAT_H / 2 + 1, COL_GREY, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
         end
         yy = yy + CAT_H + 4
@@ -357,9 +379,15 @@ local function DrawBoard()
     surface.SetDrawColor(120, 190, 230, glow)
     surface.DrawRect(x, y + 57, W, 1)
 
-    -- шапка
-    draw.SimpleText("СТАНЦИЯ «ПОЛЮС-11»", "P11B.Title", x + 16, y + 10, COL_TXT, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
-    draw.SimpleText("MILITARY HORROR RP · 1982 · v" .. tostring(POLUS_BUILD or "?"), "P11B.Tiny", x + 18, y + 40, Color(120, 160, 190, 220), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+    -- шапка: v4.26.0 — эмблема кольца радара + красная звезда
+    local ex, ey = x + 30, y + 25
+    surface.DrawCircle(ex, ey, 16, 120, 190, 230, 145)
+    local ra2 = CurTime() * 1.6
+    surface.SetDrawColor(120, 190, 230, 95)
+    surface.DrawLine(ex, ey, ex + math.cos(ra2) * 15, ey + math.sin(ra2) * 15)
+    P11BStar(ex, ey, 6.5, Color(238, 108, 92))
+    draw.SimpleText("СТАНЦИЯ «ПОЛЮС-11»", "P11B.Title", x + 56, y + 10, COL_TXT, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+    draw.SimpleText("MILITARY HORROR RP · 1982 · v" .. tostring(POLUS_BUILD or "?"), "P11B.Tiny", x + 58, y + 40, Color(120, 160, 190, 220), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
     draw.SimpleText(tostring(P11B.online or ""), "P11B.Small", x + W - 16, y + 14, Color(170, 178, 195), TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP)
     draw.SimpleText(os.date("%H:%M") .. "  ·  " .. game.GetMap(), "P11B.Tiny", x + W - 16, y + 40, COL_DIM, TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP)
     -- v4.19.4 «ПОЧЁТ»: ДОСКА ПОЧЁТА — топ-3 по медалям прямо в шапке ТАБа
@@ -381,13 +409,25 @@ local function DrawBoard()
             "P11B.Tiny", x + 18, y + 56, Color(150, 200, 255), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
     end
 
-    -- статус станции
-    local status = "Фаза: " .. GetGlobalString("P11_Phase", "?")
+    -- статус станции: v4.26.0 — ЧИПЫ состояний (авария мигает)
+    local chips = {}
+    chips[#chips + 1] = { t = "ФАЗА: " .. GetGlobalString("P11_Phase", "?"), col = Color(255, 190, 90), blink = false }
     local shift = GetGlobalString("P11_Shift", "")
-    if shift ~= "" then status = status .. "    ☾ " .. shift end
-    if GetGlobalBool("P11_Blackout", false) then status = status .. "    ⚠ АВАРИЯ ЭНЕРГОСИСТЕМЫ" end
-    if GetGlobalBool("P11_Storm", false) then status = status .. "    ❄ МАГНИТНАЯ БУРЯ" end
-    draw.SimpleText(status, "P11B.Small", x + 16, y + 62, Color(255, 190, 90), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+    if shift ~= "" then chips[#chips + 1] = { t = "☾ " .. shift, col = Color(150, 200, 255), blink = false } end
+    if GetGlobalBool("P11_Blackout", false) then chips[#chips + 1] = { t = "⚠ АВАРИЯ ЭНЕРГОСИСТЕМЫ", col = Color(255, 95, 85), blink = true } end
+    if GetGlobalBool("P11_Storm", false) then chips[#chips + 1] = { t = "❄ МАГНИТНАЯ БУРЯ", col = Color(160, 210, 255), blink = false } end
+    local cx2 = x + 16
+    for _, ch in ipairs(chips) do
+        surface.SetFont("P11B.Small")
+        local tw2 = surface.GetTextSize(ch.t)
+        local ka = ch.blink and (0.55 + math.sin(CurTime() * 5) * 0.45) or 1
+        draw.RoundedBox(10, cx2, y + 60, tw2 + 20, 20, Color(ch.col.r, ch.col.g, ch.col.b, 26 * ka))
+        surface.SetDrawColor(ch.col.r, ch.col.g, ch.col.b, 120 * ka)
+        surface.DrawOutlinedRect(cx2, y + 60, tw2 + 20, 20, 1)
+        draw.SimpleText(ch.t, "P11B.Small", cx2 + 10, y + 70,
+            Color(ch.col.r, ch.col.g, ch.col.b, 160 + 95 * ka), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        cx2 = cx2 + tw2 + 28
+    end
 
     -- заголовок колонок
     local colY = y + 84
@@ -427,6 +467,11 @@ local function DrawBoard()
         if okJ and isstring(jn) then myJob = jn end
     end
     draw.SimpleText(myName .. (myJob ~= "" and (" · " .. myJob) or ""), "P11B.Tiny", x + 12, y + H - footH / 2, COL_GREY, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+    -- v4.26.0: сводка состава по центру футера
+    local totalP, totalG = 0, #P11B.groups
+    for _, g in ipairs(P11B.groups) do totalP = totalP + #g.rows end
+    draw.SimpleText("фракций: " .. totalG .. "  ·  бойцов: " .. totalP, "P11B.Tiny",
+        x + W / 2, y + H - footH / 2, COL_DIM, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
     draw.SimpleText("F1 — памятка · F4 — должности · F6 — поддержка · /досье — НКВД · C (удерж.) — действия", "P11B.Tiny",
         x + W - 12, y + H - footH / 2, COL_DIM, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
 end
@@ -520,7 +565,7 @@ hook.Add("OnPlayerChat", "P11.BoardChat", function(ply, text)
     return true
 end)
 
-print("[POLUS-11] TAB v2.1 загружен (колонка РАНГ для всех — v4.8.0)")
+print("[POLUS-11] TAB v3 «СИЯНИЕ» загружен (эмблема, статус-чипы, ховер строк — v4.26.0)")
 
 -- ============================================================
 --  v4.17.0 «КОНТРАБАНДА» — МИНИ-МЕНЮ ИГРОКА В ТАБе

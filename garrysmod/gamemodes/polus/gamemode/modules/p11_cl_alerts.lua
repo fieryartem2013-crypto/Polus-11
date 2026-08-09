@@ -1,5 +1,5 @@
 -- ============================================================
---  ПОЛЮС-11 — ОПОВЕЩЕНИЯ СТАНЦИИ (client) v2.9
+--  ПОЛЮС-11 — ОПОВЕЩЕНИЯ СТАНЦИИ (client) v3.0 «СИЯНИЕ» (v4.26.0)
 --  • золотой БАННЕР ПРИКАЗА сверху (от командира/админа);
 --  • визуал МЕТЕЛИ: густой снег, белая изморозь по краям,
 --    завывание ветра (два слоя), лёгкое затемнение;
@@ -47,6 +47,14 @@ hook.Add("HUDPaint", "P11.OrderBanner", function()
     surface.SetDrawColor(255, 205, 110, 220 * a)
     surface.DrawRect(0, y, w, 2)
     surface.DrawRect(0, y + 82, w, 2)
+    -- v4.26.0 «СИЯНИЕ»: рейка приказа — бегущий блик + звёзды по краям
+    local swx = ((CurTime() * 170) % (w + 220)) - 110
+    surface.SetDrawColor(255, 220, 150, 13 * a)
+    surface.DrawRect(swx, y + 2, 90, 80)
+    draw.SimpleText("★", "P11.Alerts.Order", 56, y + 40,
+        Color(255, 205, 110, 200 * a), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+    draw.SimpleText("★", "P11.Alerts.Order", w - 56, y + 40,
+        Color(255, 205, 110, 200 * a), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 
     draw.SimpleText("◈  П Р И К А З   К О М А Н Д И Р А", "P11.Alerts.Small", w / 2, y + 12,
         Color(255, 215, 130, 240 * a), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
@@ -281,6 +289,11 @@ hook.Add("HUDPaint", "P11.AnnBanner", function()
 
     draw.SimpleText("О П О В Е Щ Е Н И Е   С Т А Н Ц И И", "P11.Alerts.Small",
         x + w / 2, y + 14, Color(255, 205, 110, alpha), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+    -- v4.26.0 «СИЯНИЕ»: антенна репродуктора с расходящимся кольцом
+    local pp2 = (CurTime() * 1.5) % 1
+    draw.SimpleText("📡", "P11.Alerts.Small", x + 16, y + 14,
+        Color(255, 205, 110, alpha), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+    surface.DrawCircle(x + 34, y + 14, 4 + pp2 * 10, 255, 205, 110, math.floor(alpha * (1 - pp2) * 0.8))
 
     local ty = y + 40
     for _, l in ipairs(lines) do

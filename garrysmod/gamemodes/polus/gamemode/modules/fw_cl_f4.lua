@@ -1,5 +1,5 @@
 -- ============================================================
---  ПОЛЮС FRAMEWORK — F4: КАРТОТЕКА ПЕРСОНАЛА (client) v1.7
+--  ПОЛЮС FRAMEWORK — F4: КАРТОТЕКА ПЕРСОНАЛА (client) v2.0 «СИЯНИЕ» (v4.26.0)
 --  Редизайн v2: шире и красивее — «карта должности» с портретом,
 --  значками допусков (терминал/командир), чипами снаряжения,
 --  бегущим бликом и анимированной разметкой фракций.
@@ -27,6 +27,19 @@ local C = {
     gold    = Color(255, 205, 110),
     cyan    = Color(110, 205, 240),
 }
+
+-- v4.26.0 «СИЯНИЕ»: пятиконечная звезда полигоном (эмблема шапки)
+local function F4Star(cx, cy, r, col)
+    local pts = {}
+    for i = 1, 10 do
+        local a = -math.pi / 2 + math.pi * (i - 1) / 5
+        local rr = (i % 2 == 1) and r or r * 0.42
+        pts[i] = { x = cx + math.cos(a) * rr, y = cy + math.sin(a) * rr }
+    end
+    draw.NoTexture()
+    surface.SetDrawColor(col.r, col.g, col.b, col.a or 255)
+    surface.DrawPoly(pts)
+end
 
 -- v3.8: плавное появление окна — выезд снизу + проявление
 -- + затемнение всего экрана под меню (как у С-меню)
@@ -96,8 +109,20 @@ function P11FW.OpenJobMenu()
         surface.SetDrawColor(120, 190, 235, 60)
         surface.DrawRect(0, 64, w, 1)
 
-        draw.SimpleText("★ СТАНЦИЯ «ПОЛЮС-11» ★", "P11FW.Title", 18, 12, C.text) -- v4.25.0 «ЭМАЛЬ»
-        draw.SimpleText("картотека личного состава • смена 1982", "P11FW.Small", 18, 42, C.dim)
+        -- v4.26.0 «СИЯНИЕ»: эмблема — кольца радара + красная звезда смены
+        local ex, ey = 32, 31
+        surface.DrawCircle(ex, ey, 19, C.accent.r, C.accent.g, C.accent.b, 145)
+        surface.DrawCircle(ex, ey, 12, C.accent.r, C.accent.g, C.accent.b, 75)
+        local ra = CurTime() * 1.5
+        surface.SetDrawColor(C.accent.r, C.accent.g, C.accent.b, 105)
+        surface.DrawLine(ex, ey, ex + math.cos(ra) * 18, ey + math.sin(ra) * 18)
+        F4Star(ex, ey, 7.5, Color(238, 108, 92))
+        draw.SimpleText("СТАНЦИЯ «ПОЛЮС-11»", "P11FW.Title", 60, 8, C.text)
+        draw.SimpleText("СТАНЦИЯ «ПОЛЮС-11»", "P11FW.Title", 60, 8,
+            Color(C.accent.r, C.accent.g, C.accent.b, 24 + 14 * math.sin(CurTime() * 2))) -- ледяное свечение
+        draw.SimpleText("★ КАРТОТЕКА ЛИЧНОГО СОСТАВА · СМЕНА 1982 ★", "P11FW.Small", 60, 40, C.dim)
+        draw.SimpleText(os.date("%H:%M") .. " · " .. game.GetMap() .. " · личного состава: " .. player.GetCount(),
+            "P11FW.Small", w - 14, 47, C.dim, TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP)
 
         -- чип текущей должности
         local me = LocalPlayer()
@@ -165,9 +190,16 @@ function P11FW.OpenJobMenu()
                 draw.RoundedBoxEx(6, 0, 0, 4, h, cat.color, true, false, true, false)
                 surface.SetDrawColor(cat.color.r, cat.color.g, cat.color.b, 70)
                 surface.DrawRect(4, h - 1, w - 4, 1)
-                draw.SimpleText(cat.name, "P11FW.Big", 12, h / 2, cat.color, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-                draw.SimpleText(cnt .. "", "P11FW.Small", w - 10, h / 2,
-                    Color(cat.color.r, cat.color.g, cat.color.b, 170), TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
+                draw.SimpleText("▸ " .. cat.name, "P11FW.Big", 12, h / 2, cat.color, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+                -- v4.26.0: пилюля числа должностей
+                surface.SetFont("P11FW.Small")
+                local cw = surface.GetTextSize(tostring(cnt)) + 16
+                draw.RoundedBox(10, w - cw - 10, h / 2 - 10, cw, 20,
+                    Color(cat.color.r, cat.color.g, cat.color.b, 46))
+                surface.SetDrawColor(cat.color.r, cat.color.g, cat.color.b, 130)
+                surface.DrawOutlinedRect(w - cw - 10, h / 2 - 10, cw, 20, 1)
+                draw.SimpleText(cnt .. "", "P11FW.Small", w - 10 - cw / 2, h / 2,
+                    Color(cat.color.r, cat.color.g, cat.color.b, 220), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
             end
 
             for _, jobId in ipairs(P11FW.JobIds) do
@@ -184,6 +216,11 @@ function P11FW.OpenJobMenu()
                     btn.Paint = function(s, w, h)
                         local sel = (f.SelectedJob == s.JobId)
                         draw.RoundedBox(6, 0, 0, w, h, sel and Color(C.accent.r, C.accent.g, C.accent.b, 42) or C.panel)
+                        if sel then -- v4.26.0: выбранная должность светится рамкой
+                            surface.SetDrawColor(C.accent.r, C.accent.g, C.accent.b,
+                                120 + 55 * math.sin(CurTime() * 3.4))
+                            surface.DrawOutlinedRect(0, 0, w, h, 1)
+                        end
                         if s:IsHovered() then
                             s.HSlide = math.min(6, s.HSlide + FrameTime() * 40)
                             draw.RoundedBox(6, 0, 0, w, h, Color(255, 255, 255, 7))
@@ -260,7 +297,8 @@ function P11FW.OpenJobMenu()
             draw.RoundedBoxEx(8, 0, 0, w, h, Color(jc.r, jc.g, jc.b, 30), true, true, false, false)
             surface.SetDrawColor(jc.r, jc.g, jc.b, 140)
             surface.DrawRect(0, h - 1, w, 1)
-            draw.SimpleText(string.upper(job.name), "P11FW.Huge", 14, h / 2, jc, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+            draw.SimpleText("★", "P11FW.Huge", 14, h / 2, jc, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER) -- v4.26.0
+            draw.SimpleText(string.upper(job.name), "P11FW.Huge", 40, h / 2, jc, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
 
             local maxT = job.max or 0
             local taken = P11FW.TeamCount(jobId) -- v4.8.2: общий счёт занятых
@@ -277,6 +315,15 @@ function P11FW.OpenJobMenu()
         mBox.Paint = function(s, w, h)
             draw.RoundedBox(8, 0, 0, w, h, C.panel2)
             draw.RoundedBoxEx(8, 0, 0, w, 30, Color(255, 255, 255, 5), true, true, false, false)
+            -- v4.26.0: фоторамка досье — уголки + бегущий скан
+            surface.SetDrawColor(150, 200, 235, 150)
+            surface.DrawRect(6, 6, 22, 2) surface.DrawRect(6, 6, 2, 22)
+            surface.DrawRect(w - 28, 6, 22, 2) surface.DrawRect(w - 8, 6, 2, 22)
+            surface.DrawRect(6, h - 8, 22, 2) surface.DrawRect(6, h - 30, 2, 22)
+            surface.DrawRect(w - 28, h - 8, 22, 2) surface.DrawRect(w - 8, h - 30, 2, 22)
+            local sy = 8 + ((SysTime() * 36) % (h - 28))
+            surface.SetDrawColor(140, 200, 240, 10)
+            surface.DrawRect(6, sy, w - 12, 16)
         end
 
         local mp = vgui.Create("DModelPanel", mBox)
@@ -304,6 +351,8 @@ function P11FW.OpenJobMenu()
             ch:SetSize(114, 22)
             ch.Paint = function(s, w, h)
                 draw.RoundedBox(10, 0, 0, w, h, Color(col.r, col.g, col.b, 36))
+                surface.SetDrawColor(col.r, col.g, col.b, 110) -- v4.26.0: обводка чипа
+                surface.DrawOutlinedRect(0, 0, w, h, 1)
                 draw.SimpleText(txt, "P11FW.Small", w / 2, h / 2, col, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
             end
         end
@@ -457,6 +506,10 @@ function P11FW.OpenJobMenu()
                 local sweep = ((SysTime() * 120) % (w + 160)) - 80
                 surface.SetDrawColor(255, 255, 255, 7)
                 surface.DrawRect(sweep, 0, 60, h)
+                -- v4.26.0: зелёный пульс «должность доступна»
+                local pp = 0.5 + math.sin(CurTime() * 3.0) * 0.5
+                surface.SetDrawColor(130, 235, 150, 45 + 75 * pp)
+                surface.DrawOutlinedRect(1, 1, w - 2, h - 2, 1)
             end
             draw.SimpleText(state, "P11FW.Big", w / 2, h / 2, stateCol, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
         end

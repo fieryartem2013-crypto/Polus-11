@@ -1,5 +1,5 @@
 -- ============================================================
---  ПОЛЮС-11 — С-МЕНЮ ИГРОКА (client) v4.4.0 — ПЕРЕПИСАНО С НУЛЯ
+--  ПОЛЮС-11 — С-МЕНЮ ИГРОКА (client) v5.0 «ПУЛЬТ СМЕНЫ» (v4.26.0 «СИЯНИЕ»)
 --  Зажал C → станционное меню: ЖЕСТЫ, БЫСТРЫЕ ДЕЙСТВИЯ, персонаж,
 --  браузер внешности, админ-панель / вайтлист-панель для рангов.
 --
@@ -34,6 +34,19 @@ local CC = {
     bad   = Color(235, 100, 90),
 }
 
+-- v4.26.0 «СИЯНИЕ»: пятиконечная звезда полигоном (эмблема пульта)
+local function CMStar(cx, cy, r, col)
+    local pts = {}
+    for i = 1, 10 do
+        local a = -math.pi / 2 + math.pi * (i - 1) / 5
+        local rr = (i % 2 == 1) and r or r * 0.42
+        pts[i] = { x = cx + math.cos(a) * rr, y = cy + math.sin(a) * rr }
+    end
+    draw.NoTexture()
+    surface.SetDrawColor(col.r, col.g, col.b, col.a or 255)
+    surface.DrawPoly(pts)
+end
+
 -- жесты в порядке серверной таблицы fw_sv_emotes.lua
 local EMOTES = {
     { id = 1, glyph = "👋", name = "Махнуть",      desc = "приветствие" },
@@ -46,18 +59,41 @@ local EMOTES = {
     { id = 8, glyph = "📦", name = "Положить",     desc = "уложить вещь" },
 }
 
-local function CButton(parent, x, y, w, h, name, desc, col, click)
+-- v4.26.0 «СИЯНИЕ»: кнопка-КАРТОЧКА — глиф живёт в цветной ячейке слева,
+-- ховер поджигает контур и выдвигает стрелку; big=true — баннер-режим.
+local function CButton(parent, x, y, w, h, name, desc, col, click, big)
     local b = vgui.Create("DButton", parent)
     b:SetPos(x, y) b:SetSize(w, h)
     b:SetText("")
-    b.PName, b.PDesc, b.PCol = name, desc, col or CC.text
+    local icon, rest = string.match(name, "^(%S+)%s+(.+)$")
+    if not rest then icon, rest = "•", name end
+    b.PIcon, b.PName, b.PDesc, b.PCol = icon, rest, desc, col or CC.text
+    b.PBig = big and true or false
+    b.PCell = b.PBig and 46 or 36
     b.Paint = function(s, ww, hh)
         local hov = s:IsHovered()
-        draw.RoundedBox(6, 0, 0, ww, hh, hov and Color(255, 255, 255, 22) or CC.panel)
-        draw.RoundedBoxEx(6, 0, 0, 4, hh, Color(s.PCol.r, s.PCol.g, s.PCol.b, hov and 255 or 170), true, false, true, false)
-        draw.SimpleText(s.PName, "P11.CM.Text", 14, desc and (hh / 2 - 9) or (hh / 2), s.PCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-        if desc then
-            draw.SimpleText(s.PDesc, "P11.CM.Small", 14, hh / 2 + 11, CC.dim, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        local cw = s.PCell
+        draw.RoundedBox(6, 0, 0, ww, hh, hov and Color(255, 255, 255, 20) or CC.panel)
+        if s.PBig then -- баннер-режим: верхний ледяной скол
+            draw.RoundedBoxEx(6, 0, 0, ww, math.floor(hh / 2), Color(255, 255, 255, 7), true, true, false, false)
+        end
+        -- ячейка глифа слева
+        draw.RoundedBoxEx(6, 0, 0, cw, hh,
+            Color(s.PCol.r, s.PCol.g, s.PCol.b, hov and 62 or 32), true, false, true, false)
+        surface.SetDrawColor(s.PCol.r, s.PCol.g, s.PCol.b, 110)
+        surface.DrawRect(cw, 0, 1, hh)
+        draw.SimpleText(s.PIcon, "P11.CM.Mdl", cw / 2, hh / 2,
+            Color(s.PCol.r, s.PCol.g, s.PCol.b, hov and 255 or 205), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        local dy = s.PDesc and (hh / 2 - 9) or (hh / 2)
+        draw.SimpleText(s.PName, "P11.CM.Text", cw + 10, dy, s.PCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        if s.PDesc then
+            draw.SimpleText(s.PDesc, "P11.CM.Small", cw + 10, hh / 2 + 11, CC.dim, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        end
+        if hov then
+            surface.SetDrawColor(s.PCol.r, s.PCol.g, s.PCol.b, 150)
+            surface.DrawOutlinedRect(0, 0, ww, hh, 1)
+            draw.SimpleText("►", "P11.CM.Small", ww - 10, hh / 2, s.PCol, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
+            s:SetCursor("hand")
         end
     end
     b.DoClick = function()
@@ -320,10 +356,34 @@ function P11.OpenCMenu()
         Derma_DrawBackgroundBlur(s, s.T0 or 0)
         draw.RoundedBox(10, 0, 0, w, h, CC.bg)
         draw.RoundedBoxEx(10, 0, 0, w, 52, CC.panel, true, true, false, false)
+        draw.RoundedBoxEx(10, 0, 0, w, 20, Color(255, 255, 255, 5), true, true, false, false)
+        -- v4.26.0 «СИЯНИЕ»: эмблема пульта + живая шапка
+        local ex, ey = 26, 26
+        surface.DrawCircle(ex, ey, 15, CC.cyan.r, CC.cyan.g, CC.cyan.b, 145)
+        local ra = CurTime() * 1.7
+        surface.SetDrawColor(CC.cyan.r, CC.cyan.g, CC.cyan.b, 100)
+        surface.DrawLine(ex, ey, ex + math.cos(ra) * 14, ey + math.sin(ra) * 14)
+        CMStar(ex, ey, 6.5, CC.gold)
+        draw.SimpleText("ПУЛЬТ СМЕНЫ", "P11.CM.Title", 52, 12, CC.text, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+        local rk = P11FW.GetRankName and P11FW.GetRankName(me) or "User"
+        local jn = P11FW.GetJobName and P11FW.GetJobName(me) or ""
+        draw.SimpleText(me:Nick() .. (jn ~= "" and (" · " .. jn) or "") .. " · " .. rk,
+            "P11.CM.Small", 52, 39, CC.dim, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+        -- кошелёк бойца
+        local mt = me:GetNWInt("P11_Money", 0) .. " ₽"
+        surface.SetFont("P11.CM.Text")
+        local mw = surface.GetTextSize(mt) + 22
+        draw.RoundedBox(13, w - mw - 12, 9, mw, 26, Color(CC.gold.r, CC.gold.g, CC.gold.b, 26))
+        surface.SetDrawColor(CC.gold.r, CC.gold.g, CC.gold.b, 130)
+        surface.DrawOutlinedRect(w - mw - 12, 9, mw, 26, 1)
+        draw.SimpleText(mt, "P11.CM.Text", w - mw / 2 - 12, 22, CC.gold, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        draw.SimpleText("удерживай C • ESC — закрыть • F6 — поддержка",
+            "P11.CM.Small", w - 14, 44, CC.dim, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
         surface.SetDrawColor(CC.cyan)
         surface.DrawRect(0, 52, w, 2)
-        draw.SimpleText("ДЕЙСТВИЯ НА СТАНЦИИ", "P11.CM.Title", 16, 26, CC.text, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-        draw.SimpleText("удерживай C • ESC — закрыть • F6 — поддержка • v4.8.0", "P11.CM.Small", w - 14, 26, CC.dim, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
+        -- секции-панели под колонками кнопок
+        draw.RoundedBox(8, 8, 78, 504, 366, Color(255, 255, 255, 5))
+        draw.RoundedBox(8, 526, 78, 240, 366, Color(255, 255, 255, 5))
         surface.SetAlphaMultiplier(1)
     end
 
@@ -451,13 +511,13 @@ function P11.OpenCMenu()
         CC.ok, function()
             P11.CloseCMenu()
             if P11.OpenSkillTree then P11.OpenSkillTree() end
-        end)
+        end, true) -- v4.26.0: баннер-режим
     CButton(f, 396, 504, 370, 46, "⚔ ОПЕРАЦИИ",
         "админ-ивент: СССР vs АМЕРИКА · бой за точки 30 мин · лидерборд · 5000₽/1000₽",
         CC.gold, function()
             P11.CloseCMenu()
             if P11.OpenOps then P11.OpenOps() end
-        end)
+        end, true) -- v4.26.0: баннер-режим
 
     -- низ: подсказка
     local foot = vgui.Create("DLabel", f)
@@ -579,4 +639,4 @@ hook.Add("OnPlayerChat", "P11.CMenuChat", function(ply, text)
     end
 end)
 
-print("[POLUS-11] С-меню v4.8.0 загружено (клавиша C • p11_cmenu • !меню • кнопки 🏪/🤝 • F6 донат)")
+print("[POLUS-11] С-меню v5.0 «ПУЛЬТ СМЕНЫ» загружено (клавиша C • p11_cmenu • !меню • кнопки-карточки v4.26.0)")
