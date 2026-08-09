@@ -1,5 +1,5 @@
 -- ============================================================
---  ПОЛЮС-11 — таблички с именами (client) v4.3.0
+--  ПОЛЮС-11 — таблички с именами (client) v4.4.0 «ОРДЕН» (v4.27.0)
 --  Вместо «ванильного ника и ХП»:
 --   • всегда — СЕРВЕРНЫЙ позывной бойца (анкета) поверх головы;
 --   • кто смотрит В УПОР — под именем ПЛАВНО проявляется
@@ -146,14 +146,35 @@ hook.Add("HUDPaint", "P11_Nametags", function()
                                 TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 2, Color(0, 0, 0, a * 0.8))
                         end
 
-                        -- v4.19.4 «ПОЧЁТ»: медали НАД ником (до 3 глифов + «+N»)
-                        if P11 and P11.MedalGlyphs then
-                            local okM, mg, mn = pcall(P11.MedalGlyphs, ply, 3)
-                            if okM and mg and mg ~= "" then
-                                local extra = (mn or 0) > 3 and (" +" .. (mn - 3)) or ""
-                                draw.SimpleTextOutlined(mg .. extra, "P11.HUD.Text",
-                                    pos.x, pos.y - 24, Color(255, 205, 100, a),
-                                    TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 2, Color(0, 0, 0, a * 0.8))
+                        -- v4.27.0 «ОРДЕН»: НАГРАДНАЯ ПЛАНКА НАД ником —
+                        -- фишки цвета знака на тёмной подложке, пульс-шиммер
+                        if P11 and P11.MedalCells then
+                            local okM, cells, total = pcall(P11.MedalCells, ply, 4)
+                            if okM and cells and #cells > 0 then
+                                local nch = #cells + ((total > #cells) and 1 or 0)
+                                local wAll = nch * 22 - 2
+                                local cy2 = pos.y - (wanted ~= "" and 56 or 34)
+                                local lx = pos.x - wAll / 2
+                                draw.RoundedBox(6, lx - 5, cy2 - 2, wAll + 10, 24,
+                                    Color(8, 12, 18, a * 0.55))
+                                for i, c in ipairs(cells) do
+                                    local bx = lx + (i - 1) * 22
+                                    draw.RoundedBox(4, bx, cy2, 20, 20,
+                                        Color(c.col.r, c.col.g, c.col.b, a * 0.16))
+                                    draw.RoundedBoxEx(4, bx, cy2, 20, 3,
+                                        Color(c.col.r, c.col.g, c.col.b, a * 0.85), true, true, false, false)
+                                    surface.SetDrawColor(c.col.r, c.col.g, c.col.b,
+                                        a * (0.40 + 0.18 * math.sin(CurTime() * 2.4 + i * 1.2)))
+                                    surface.DrawOutlinedRect(bx, cy2, 20, 20, 1)
+                                    draw.SimpleText(c.g, "P11.HUD.Text", bx + 10, cy2 + 11,
+                                        Color(c.col.r, c.col.g, c.col.b, a), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+                                end
+                                if total > #cells then
+                                    local bx = lx + #cells * 22
+                                    draw.RoundedBox(4, bx, cy2, 20, 20, Color(255, 205, 100, a * 0.14))
+                                    draw.SimpleText("+" .. (total - #cells), "P11.Tag.Desc", bx + 10, cy2 + 11,
+                                        Color(255, 205, 100, a * 0.95), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+                                end
                             end
                         end
 
@@ -188,8 +209,15 @@ hook.Add("HUDPaint", "P11_Nametags", function()
                 local wl = surface.GetTextSize(ln) or 0
                 if wl > wDesc then wDesc = wl end
             end
-            local wBox = math.max(wName, wDesc) + 28
-            local hBox = 26 + (#lines > 0 and (#lines * 17 + 8) or 0)
+            -- v4.27.0 «ОРДЕН»: фишки медалей в фокус-карте
+            local fCells, fTotal = {}, 0
+            if P11 and P11.MedalCells then
+                local okM, cc, tt = pcall(P11.MedalCells, ply, 8)
+                if okM and cc then fCells, fTotal = cc, tt end
+            end
+            local medH = (#fCells > 0) and 28 or 0
+            local wBox = math.max(wName, wDesc, #fCells * 22 + 8) + 28
+            local hBox = 26 + medH + (#lines > 0 and (#lines * 17 + 8) or 0)
 
             -- карточка-затемнение за текстом
             draw.RoundedBox(8, pos.x - wBox / 2, pos.y - 10, wBox, hBox, Color(8, 12, 18, a * 0.62))
@@ -200,6 +228,27 @@ hook.Add("HUDPaint", "P11_Nametags", function()
                 Color(240, 246, 252, a), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 2, Color(0, 0, 0, a * 0.7))
 
             local yy = pos.y + 20
+            -- v4.27.0: фишки медалей под позывным
+            if #fCells > 0 then
+                local nch = #fCells + ((fTotal > #fCells) and 1 or 0)
+                local lx = pos.x - (nch * 22 - 2) / 2
+                for i, c in ipairs(fCells) do
+                    local bx = lx + (i - 1) * 22
+                    draw.RoundedBox(4, bx, yy - 2, 20, 20,
+                        Color(c.col.r, c.col.g, c.col.b, a * 0.18))
+                    draw.RoundedBoxEx(4, bx, yy - 2, 20, 3,
+                        Color(c.col.r, c.col.g, c.col.b, a * 0.9), true, true, false, false)
+                    draw.SimpleText(c.g, "P11.HUD.Text", bx + 10, yy + 9,
+                        Color(c.col.r, c.col.g, c.col.b, a), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+                end
+                if fTotal > #fCells then
+                    local bx = lx + #fCells * 22
+                    draw.RoundedBox(4, bx, yy - 2, 20, 20, Color(255, 205, 100, a * 0.15))
+                    draw.SimpleText("+" .. (fTotal - #fCells), "P11.Tag.Desc", bx + 10, yy + 9,
+                        Color(255, 205, 100, a * 0.95), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+                end
+                yy = yy + 28
+            end
             for _, ln in ipairs(lines) do
                 draw.SimpleTextOutlined(ln, "P11.Tag.Desc", pos.x, yy,
                     Color(205, 215, 228, a * 0.95), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color(0, 0, 0, a * 0.6))

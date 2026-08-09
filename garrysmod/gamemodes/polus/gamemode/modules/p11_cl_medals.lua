@@ -53,6 +53,50 @@ function P11.MedalGlyphs(ply, maxn)
     return table.concat(parts, " "), n
 end
 
+-- ============================================================
+--  v4.27.0 «ОРДЕН» — ФИШКИ МЕДАЛЕЙ (красивое отображение в ТАБе
+--  и над головой). Палитра устава: у каждого знака свой металл.
+-- ============================================================
+local MEDAL_PAL = {
+    ["★"] = Color(255, 205, 100), -- золото штаба
+    ["☆"] = Color(255, 226, 140), -- светлое золото легенды
+    ["♥"] = Color(255, 112, 132), -- алый крест милосердия
+    ["♦"] = Color(255, 152,  92), -- бронза порядка
+    ["◆"] = Color(115, 195, 160), -- полярная бирюза ветерана
+    ["○"] = Color(150, 205, 245), -- ледяная сталь ведомств
+    ["▲"] = Color(125, 165, 235), -- вахтенная синева
+    ["■"] = Color(176, 182, 196), -- гарнизонная сталь
+    ["●"] = Color(195, 150, 240), -- лабораторный аметист
+    ["♠"] = Color(122, 220, 152), -- дезинфекторская зелень
+    ["◇"] = Color(232, 236, 245), -- санитарное серебро
+}
+
+--- цвет знака по id медали (фолбэк: ведомственные — лёд, штабные — золото)
+function P11.MedalColorOf(id)
+    local d = P11.Medals.defs[id]
+    local g = d and d.g or "★"
+    return MEDAL_PAL[g] or (d and d.dept == 1 and Color(150, 205, 245) or Color(255, 205, 100))
+end
+
+--- фишки для лент/планок: до maxn ячеек {g,name,desc,col} + полное число медалей
+function P11.MedalCells(ply, maxn)
+    local ids = P11.MedalIds(ply)
+    local total = #ids
+    if total == 0 then return {}, 0 end
+    maxn = maxn or 4
+    local cells = {}
+    for i = 1, math.min(total, maxn) do
+        local d = P11.Medals.defs[ids[i]]
+        cells[i] = {
+            g    = (d and d.g) or "?",
+            name = (d and d.n) or tostring(ids[i]),
+            desc = (d and d.d) or "",
+            col  = P11.MedalColorOf(ids[i]),
+        }
+    end
+    return cells, total
+end
+
 --- доска почёта: top-n онлайн-бойцов по числу медалей
 function P11.MedalTop(n)
     local t = {}

@@ -247,7 +247,18 @@ local function DrawRow(d, x, y, W)
     -- чип ранга рядом с ником убран: теперь у ранга СВОЯ колонка
     local nx = x + 12
     local nameCol = d.alive and COL_TXT or COL_DEAD
-    local niceName = FitText(d.name, "P11B.Text", X_RANK - 26)
+    -- v4.27.0 «ОРДЕН»: лента медалей фишками — считаем ДО имени (имя под неё ужмём)
+    local mCells, mTotal, mRibbonW = nil, 0, 0
+    if IsValid(d.ply) and P11 and P11.MedalCells then
+        local okM, cells, total = pcall(P11.MedalCells, d.ply, 4)
+        if okM and cells and #cells > 0 then
+            mCells, mTotal = cells, total
+            local nch = #cells + ((total > #cells) and 1 or 0)
+            mRibbonW = nch * 20 - 2
+        end
+    end
+    local niceName = FitText(d.name, "P11B.Text",
+        X_RANK - 26 - (mRibbonW > 0 and (mRibbonW + 8) or 0))
     draw.SimpleText(niceName, "P11B.Text", nx, cy, nameCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
 
     surface.SetFont("P11B.Text")
@@ -268,12 +279,29 @@ local function DrawRow(d, x, y, W)
         surface.SetFont("P11B.Tiny")
         mx = mx + (surface.GetTextSize(marks) or 0) + 5
     end
-    -- v4.19.4 «ПОЧЁТ»: медали бойца следом за именем (до 3 глифов + «+N»)
-    if IsValid(d.ply) and P11 and P11.MedalGlyphs then
-        local okM, mg, mn = pcall(P11.MedalGlyphs, d.ply, 3)
-        if okM and mg and mg ~= "" then
-            local extra = (mn or 0) > 3 and (" +" .. (mn - 3)) or ""
-            draw.SimpleText(mg .. extra, "P11B.Tiny", mx, cy, COL_GOLD, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+    -- v4.27.0 «ОРДЕН»: ЛЕНТА МЕДАЛЕЙ — цветные фишки у края колонки ИГРОК,
+    -- наведение на строку показывает тултип «наградная колодка»
+    if mCells then
+        local rx = x + X_RANK - 8
+        local nch = #mCells + ((mTotal > #mCells) and 1 or 0)
+        local lx = rx - (nch * 20 - 2)
+        for i, c in ipairs(mCells) do
+            local bx = lx + (i - 1) * 20
+            draw.RoundedBox(4, bx, cy - 8, 18, 16, Color(c.col.r, c.col.g, c.col.b, 34))
+            draw.RoundedBoxEx(4, bx, cy - 8, 18, 2, Color(c.col.r, c.col.g, c.col.b, 200), true, true, false, false)
+            surface.SetDrawColor(c.col.r, c.col.g, c.col.b, 110 + 35 * math.sin(CurTime() * 2.6 + i * 1.3))
+            surface.DrawOutlinedRect(bx, cy - 8, 18, 16, 1)
+            draw.SimpleText(c.g, "P11B.Tiny", bx + 9, cy + 1, c.col, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        end
+        if mTotal > #mCells then
+            local bx = lx + #mCells * 20
+            draw.RoundedBox(4, bx, cy - 8, 18, 16, Color(255, 205, 100, 26))
+            draw.SimpleText("+" .. (mTotal - #mCells), "P11B.Tiny", bx + 9, cy + 1,
+                Color(255, 205, 100, 220), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        end
+        -- курсор на этой строке → тултип нарисуем после списка
+        if mx >= x and mx <= x + W and my >= y and my <= y + ROW_H then
+            P11B.tip = { cells = mCells, total = mTotal }
         end
     end
 
@@ -445,6 +473,41 @@ local function DrawBoard()
     render.SetScissorRect(x, topY, x + W, topY + viewH, true)
     local ok2, yy2 = pcall(DrawRowsClip, x + 4, topY + 2, W - 8, viewH)
     render.SetScissorRect(0, 0, 0, 0, false)
+
+    -- v4.27.0 «ОРДЕН»: ТУЛТИП медалей под курсором (список знаков с расшифровкой)
+    if P11B.tip then
+        local tip = P11B.tip
+        P11B.tip = nil
+        local rows = {}
+        for i = 1, math.min(#tip.cells, 6) do rows[#rows + 1] = tip.cells[i] end
+        local tw = 236
+        local th = 30 + #rows * 30 + ((tip.total > #rows) and 16 or 0) + 6
+        local tx = math.Clamp(gui.MouseX() + 16, 4, ScrW() - tw - 4)
+        local ty = math.Clamp(gui.MouseY() + 14, 4, ScrH() - th - 4)
+        draw.RoundedBox(8, tx, ty, tw, th, Color(10, 14, 20, 248))
+        surface.SetDrawColor(255, 205, 100, 150)
+        surface.DrawOutlinedRect(tx, ty, tw, th, 1)
+        draw.SimpleText("★ НАГРАДНАЯ КОЛОДКА", "P11B.Tiny", tx + 10, ty + 7,
+            Color(255, 205, 100, 230), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+        local tyy = ty + 22
+        for _, c in ipairs(rows) do
+            draw.RoundedBox(4, tx + 8, tyy, 20, 20, Color(c.col.r, c.col.g, c.col.b, 40))
+            surface.SetDrawColor(c.col.r, c.col.g, c.col.b, 145)
+            surface.DrawOutlinedRect(tx + 8, tyy, 20, 20, 1)
+            draw.SimpleText(c.g, "P11B.Small", tx + 18, tyy + 10, c.col, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+            draw.SimpleText(FitText(c.name, "P11B.Small", tw - 62), "P11B.Small",
+                tx + 36, tyy + 3, Color(235, 240, 248), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+            if c.desc ~= "" then
+                draw.SimpleText(FitText(c.desc, "P11B.Tiny", tw - 62), "P11B.Tiny",
+                    tx + 36, tyy + 17, Color(150, 160, 175), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+            end
+            tyy = tyy + 30
+        end
+        if tip.total > #rows then
+            draw.SimpleText("+ ещё " .. (tip.total - #rows), "P11B.Tiny", tx + 36, tyy + 2,
+                Color(255, 205, 100, 210), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+        end
+    end
 
     -- границы скролла + подсказка
     if ok2 and yy2 then
@@ -633,17 +696,20 @@ local function OpenPlayerMini(d)
             "P11B.MiniT", 14, 12, Color(235, 240, 248), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
         draw.SimpleText((d.job ~= "" and d.job or "без должности") .. " · " .. (IsValid(ply) and ply:SteamID() or "?"),
             "P11B.Mini", 14, 34, Color(150, 165, 180), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
-        -- v4.19.4 «ПОЧЁТ»: медали бойца в карточке
-        if P11 and P11.MedalIds then
-            local okM, ids = pcall(P11.MedalIds, ply)
-            if okM and ids and #ids > 0 then
-                local glyphs = {}
-                for _, id2 in ipairs(ids) do
-                    local dd = P11.Medals and P11.Medals.defs and P11.Medals.defs[id2]
-                    glyphs[#glyphs + 1] = (dd and dd.g) or "?"
+        -- v4.27.0 «ОРДЕН»: медали бойца в карточке — фишками цвета знака
+        if P11 and P11.MedalCells then
+            local okM, cells, total = pcall(P11.MedalCells, ply, 9)
+            if okM and cells and #cells > 0 then
+                for i, c in ipairs(cells) do
+                    local bx = 14 + (i - 1) * 22
+                    draw.RoundedBox(4, bx, 42, 20, 20, Color(c.col.r, c.col.g, c.col.b, 36))
+                    draw.RoundedBoxEx(4, bx, 42, 20, 3, Color(c.col.r, c.col.g, c.col.b, 190), true, true, false, false)
+                    surface.SetDrawColor(c.col.r, c.col.g, c.col.b, 150)
+                    surface.DrawOutlinedRect(bx, 42, 20, 20, 1)
+                    draw.SimpleText(c.g, "P11B.Mini", bx + 10, 52, c.col, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
                 end
-                draw.SimpleText(table.concat(glyphs, " ") .. "  — медалей: " .. #ids,
-                    "P11B.Mini", 14, 52, Color(255, 205, 100), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+                draw.SimpleText("медалей: " .. total, "P11B.Mini", 14, 68,
+                    Color(255, 205, 100, 220), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
             end
         end
     end
