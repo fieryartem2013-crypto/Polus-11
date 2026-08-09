@@ -169,6 +169,9 @@ local BANG_SERVER = {
     ["!ивент"] = true, ["!ИВЕНТ"] = true, ["!event"] = true, -- p11_sv_thingoffer v4.15.2 «НАБОР»: запуск/отмена ивента Нечто (ранг 4+)
     ["!крафт"] = true, ["!craft"] = true, ["!мастерская"] = true, ["!сборка"] = true, -- p11_sv_craft v4.10.0 «ГАРАЖ»
     ["!гараж"] = true, ["!garage"] = true, ["!авто"] = true, ["!машина"] = true, -- p11_sv_garage v4.10.0 «ГАРАЖ»
+    ["!улики"] = true, ["!УЛИКИ"] = true, ["!uliki"] = true, ["!clues"] = true, -- p11_sv_clues v4.20.0 «СЛЕД»
+    ["!штраф"] = true, ["!Штраф"] = true, ["!ШТРАФ"] = true, ["!shtraf"] = true, ["!fine"] = true, -- p11_sv_sinks v4.20.0 «СЛЕД»
+    ["!казна"] = true, ["!Казна"] = true, ["!КАЗНА"] = true, -- p11_sv_sinks v4.20.0 «СЛЕД»
 }
 local BANG_CLIENT = {
     ["!смена"] = true, ["!выбор"] = true, -- fw_cl_f4: открыть F4

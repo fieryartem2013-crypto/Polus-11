@@ -37,6 +37,11 @@ POLUS11.MedalDefs = {
     poriadok = { glyph = "♦", name = "Хранитель Порядка",  dept = false, desc = "порядок на станции — его рук дело" },
     veteran  = { glyph = "◆", name = "Ветеран Станции",    dept = false, desc = "долгие смены, пережитые бури и Нечто" },
     legenda  = { glyph = "☆", name = "Легенда Полюса",     dept = false, desc = "о таком расскажут следующим зимовкам" },
+    -- -- автонаграды станции (v4.20.0 «СЛЕД»): вручает САМ сервер за
+    --    счётчики карьеры; вручить вручную может и Developer+ (дубль не встанет)
+    glaz     = { glyph = "●", name = "Глазной",            dept = false, auto = true, desc = "50 анализов крови «КРОВЬ-2» — автонаграда лаборатории" },
+    dezin    = { glyph = "♠", name = "Дезинфектор",        dept = false, auto = true, desc = "5000 урона по Нечто огнём и свинцом — автонаграда гарнизона" },
+    sanitar  = { glyph = "◇", name = "Санитар Полюса",     dept = false, auto = true, desc = "10 бойцов подняты на ноги — автонаграда медслужбы" },
 }
 
 POLUS11.Medals = POLUS11.Medals or {}
@@ -246,4 +251,99 @@ concommand.Add("p11_medalgive", function(ply, _, args)
     print("[МЕДАЛИ] консоль: " .. sid64 .. " + «" .. def.name .. "»")
 end)
 
-print("[POLUS-11] медали «ПОЧЁТ» v4.19.4: реестр+синк; выдают Faction Leader (ведомств.) и Developer+ (все, вкладка МЕДАЛИ)")
+-- ============ АВТОНАГРАДЫ СЕРВЕРА (v4.20.0 «СЛЕД») ============
+--  Заявка владельца (банк аналитики №4): «авто-медали за счётчики:
+--  100 верных тестов → Глазной, 10 сожжённых тварей → Дезинфектор,
+--  5 спасённых → Санитар Полюса; вручение самим сервером + салют».
+--  Калибры ниже сдвинуты под реальный темп станции (50 тестов /
+--  5000 урона / 10 лечек) — порог правится в одной таблице.
+
+POLUS11.AutoMedals = {
+    glaz    = { stat = "tests", need = 50 },
+    dezin   = { stat = "dmg",   need = 5000 },
+    sanitar = { stat = "heals", need = 10 },
+}
+
+local STAT_FILE = "polus11/autostats.json"
+POLUS11.AutoStats = POLUS11.AutoStats or {} -- [sid64] = { tests, dmg, heals }
+local statDirty = false
+
+local function StatSave()
+    if not file.IsDir("polus11", "DATA") then file.CreateDir("polus11") end
+    file.Write(STAT_FILE, util.TableToJSON(POLUS11.AutoStats, true) or "{}")
+end
+local function StatLoad()
+    local raw = file.Read(STAT_FILE, "DATA")
+    if not raw then return end
+    local ok, tbl = pcall(util.JSONToTable, raw)
+    if ok and istable(tbl) then POLUS11.AutoStats = tbl end
+end
+hook.Add("InitPostEntity", "P11.MedalStatLoad", function() timer.Simple(1.3, StatLoad) end)
+hook.Add("PlayerDisconnected", "P11.MedalStatBye", function() StatSave() end)
+timer.Create("P11.MedalStatFlush", 15, 0, function()
+    if statDirty then statDirty = false StatSave() end
+end)
+
+-- сервер вручает сам: без MedalScope, но с теми же реестром/лимитом/дубль-стопом
+function POLUS11.MedalAutoGrant(ply, medId)
+    if not IsValid(ply) then return false end
+    local def = POLUS11.MedalDefs[tostring(medId or "")]
+    if not def or not def.auto then return false end
+    local sid64 = ply:SteamID64()
+    if not sid64 then return false end
+
+    POLUS11.Medals[sid64] = POLUS11.Medals[sid64] or {}
+    local arr = POLUS11.Medals[sid64]
+    if #arr >= MAX_MEDALS then return false end -- грудь полна: попробуем при следующем деле
+    for _, m in ipairs(arr) do
+        if m.id == medId then return false end
+    end
+
+    arr[#arr + 1] = { id = medId, by = "АВТОНАГРАДА", at = os.time() }
+    MedalSave()
+    POLUS11.MedalPush(nil)
+
+    net.Start("P11_Announce")
+        net.WriteString(def.glyph .. " " .. ply:Nick() .. " — АВТОНАГРАДА СТАНЦИИ: медаль «" .. def.name .. "»")
+        net.WriteString("АВТОНАГРАДА")
+    net.Broadcast()
+    PrintMessage(HUD_PRINTTALK, "[ПОЧЁТ] " .. ply:Nick() .. " получает автонаграду — медаль «" .. def.name .. "».")
+    ply:EmitSound("buttons/button15.wav", 70, 100)
+    POLUS11.Notify(ply, def.glyph .. " САМА СТАНЦИЯ наградила тебя медалью «" .. def.name .. "»: " .. def.desc .. ".")
+    POLUS11.Log("АВТОМЕДАЛЬ: " .. ply:Nick() .. " («" .. medId .. "» / «" .. def.name .. "»)")
+    return true
+end
+
+function POLUS11.MedalStatEvent(ply, key, add)
+    if not IsValid(ply) or not ply:IsPlayer() then return end
+    local sid64 = ply.SteamID64 and ply:SteamID64() or nil
+    if not sid64 then return end
+    local st = POLUS11.AutoStats[sid64]
+    if key == "blood_test" then
+        st = st or {}; st.tests = (tonumber(st.tests) or 0) + 1
+    elseif key == "heal_player" then
+        st = st or {}; st.heals = (tonumber(st.heals) or 0) + (tonumber(add) or 1)
+    elseif key == "damage_thing" then
+        st = st or {}; st.dmg = (tonumber(st.dmg) or 0) + (tonumber(add) or 1)
+    else
+        return
+    end
+    POLUS11.AutoStats[sid64] = st
+    statDirty = true
+    for id, a in pairs(POLUS11.AutoMedals) do
+        if (tonumber(st[a.stat]) or 0) >= a.need then
+            POLUS11.MedalAutoGrant(ply, id)
+        end
+    end
+end
+
+-- звено в цепи TaskEvent (модуль до контрактов — все звенья получают события)
+do
+    local base = POLUS11.TaskEvent
+    POLUS11.TaskEvent = function(ply, key, add)
+        if base then base(ply, key, add) end
+        POLUS11.MedalStatEvent(ply, key, add)
+    end
+end
+
+print("[POLUS-11] медали «ПОЧЁТ» v4.20.0 «СЛЕД»: реестр+синк; выдают Faction Leader (ведомств.) и Developer+ (все) + АВТОНАГРАДЫ станции: ● Глазной (50 тестов), ♠ Дезинфектор (5000 урона Нечто), ◇ Санитар Полюса (10 лечек)")

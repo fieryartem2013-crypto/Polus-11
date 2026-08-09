@@ -27,6 +27,7 @@ net.Receive("P11_ContractSync", function()
     if not ok or not istable(tbl) then return end
     P11.Contr.list   = istable(tbl.list) and tbl.list or {}
     P11.Contr.endsAt = tonumber(tbl.endsAt) or 0
+    P11.Contr.daily  = istable(tbl.daily) and tbl.daily or false -- v4.20.0 «СЛЕД»: наряд суток
 end)
 
 local function TimeLeft()
@@ -42,7 +43,7 @@ local function OpenContractWindow()
 
     local f = vgui.Create("DFrame")
     P11.ContrFrame = f
-    f:SetSize(640, 452)
+    f:SetSize(640, 608) -- v4.20.0 «СЛЕД»: +156 под панель НАРЯДА СУТОК
     f:Center()
     f:SetTitle("")
     f:MakePopup()
@@ -65,14 +66,76 @@ local function OpenContractWindow()
 
     local x = vgui.Create("DButton", f)
     x:SetPos(640 - 38, 12) x:SetSize(26, 26) x:SetText("")
+
     x.Paint = function(s, w, h)
         draw.SimpleText("✕", "P11.CTR.Mid", w / 2, h / 2,
             s:IsHovered() and CTR_BAD or CTR_DIM, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
     end
     x.DoClick = function() f:Remove() end
 
+    -- ============ v4.20.0 «СЛЕД»: НАРЯД СУТОК (панель над часовыми) ============
+    local d = P11.Contr.daily
+    if istable(d) and d.name then
+        local dp = vgui.Create("DPanel", f)
+        dp:SetPos(12, 68) dp:SetSize(616, 128)
+        dp.Paint = function(s2, w, h)
+            draw.RoundedBox(8, 0, 0, w, h, Color(34, 28, 14, 255))
+            surface.SetDrawColor(CTR_GOLD.r, CTR_GOLD.g, CTR_GOLD.b, 200)
+            surface.DrawOutlinedRect(0, 0, w, h, 1)
+            draw.SimpleText("НАРЯД СУТОК · " .. tostring(d.name), "P11.CTR.Mid", 14, 8, CTR_GOLD)
+            draw.SimpleText(tostring(d.desc or ""), "P11.CTR.Small", 14, 34, CTR_DIM)
+            local st = tonumber(d.streak) or 0
+            draw.SimpleText("СТРИК: " .. st .. " дн." ..
+                ((tonumber(d.goldNext) == 1 or d.goldNext == true) and "  ·  следующий — ЗОЛОТОЙ ×2!" or ""),
+                "P11.CTR.Small", w - 14, 10, CTR_GOLD, TEXT_ALIGN_RIGHT)
+            if d.done then
+                draw.SimpleText("✓ ЗАКРЫТ СЕГОДНЯ — новый после полуночи", "P11.CTR.Tx", 14, 58, CTR_OK)
+            end
+            if d.got and not d.done then
+                local frac = math.Clamp((tonumber(d.p) or 0) / math.max(1, tonumber(d.need) or 1), 0, 1)
+                draw.RoundedBox(4, 14, h - 22, w - 28, 12, Color(0, 0, 0, 120))
+                if frac > 0 then
+                    draw.RoundedBox(4, 16, h - 20, (w - 32) * frac, 8, CTR_GOLD)
+                end
+                local tags = { "Л", "Т", "С" }
+                draw.SimpleText("[" .. (tags[tonumber(d.tier) or 1] or "Л") .. "]  " ..
+                    math.floor(tonumber(d.p) or 0) .. "/" .. (tonumber(d.need) or 1),
+                    "P11.CTR.Small", w / 2, h - 16, CTR_TEXT, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+            end
+        end
+
+        if not d.got and not d.done then
+            local names = { "ЛЁГКИЙ", "ТЯЖЁЛЫЙ", "СМЕРТЕЛЬНЫЙ" }
+            for tier = 1, 3 do
+                local b = vgui.Create("DButton", dp)
+                b:SetPos(14 + (tier - 1) * 200, 62) b:SetSize(192, 56) b:SetText("")
+                b.Paint = function(s2, w, h)
+                    local col = s2:IsHovered() and Color(255, 205, 100, 240) or Color(150, 120, 55, 220)
+                    draw.RoundedBox(6, 0, 0, w, h, col)
+                    draw.SimpleText(names[tier], "P11.CTR.Mid", w / 2, 12, Color(22, 20, 16),
+                        TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+                    local need = istable(d.needs) and d.needs[tier] or 1
+                    local pay  = istable(d.pays) and d.pays[tier] or 0
+                    draw.SimpleText("цель " .. tostring(need) .. " · " .. tostring(pay) .. "₽",
+                        "P11.CTR.Small", w / 2, 36, Color(30, 28, 22), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+                end
+                b.DoClick = function()
+                    net.Start("P11_ContractAct")
+                        net.WriteUInt(2, 4)
+                        net.WriteUInt(tier, 2)
+                    net.SendToServer()
+                    surface.PlaySound("buttons/button15.wav")
+                    timer.Simple(0.5, function()
+                        if IsValid(f) then f:Remove() end
+                        OpenContractWindow()
+                    end)
+                end
+            end
+        end
+    end
+
     local sc = vgui.Create("DScrollPanel", f)
-    sc:SetPos(12, 68) sc:SetSize(616, 372)
+    sc:SetPos(12, 204) sc:SetSize(616, 392)
     local bar = sc:GetVBar() bar:SetWide(5)
     bar.Paint = function(_, w, h) draw.RoundedBox(2, 0, 0, w, h, Color(255, 255, 255, 14)) end
     bar.btnGrip.Paint = function(_, w, h) draw.RoundedBox(2, 0, 0, w, h, CTR_GOLD) end
@@ -167,6 +230,15 @@ hook.Add("HUDPaint", "P11.ContractHUD", function()
     if not IsValid(me) or not me:Alive() then return end
 
     local rows = {}
+    -- v4.20.0 «СЛЕД»: строка наряда суток — первой
+    local d = P11.Contr.daily
+    if istable(d) and d.got and not d.done then
+        local tags = { "Л", "Т", "С" }
+        rows[#rows + 1] = "▸ СУТКИ: " .. tostring(d.name) .. " [" ..
+            (tags[tonumber(d.tier) or 1] or "Л") .. "]  " ..
+            math.floor(tonumber(d.p) or 0) .. "/" .. (tonumber(d.need) or 1) ..
+            " · стрик " .. (tonumber(d.streak) or 0)
+    end
     for _, c in ipairs(P11.Contr.list or {}) do
         if c.got and not c.done then
             rows[#rows + 1] = "▸ " .. c.name .. "  " ..

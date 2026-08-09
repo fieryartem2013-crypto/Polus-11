@@ -166,7 +166,15 @@ function POLUS11.ShopBuy(ply, id)
         return
     end
     local price = (POLUS11.SalePrice and POLUS11.SalePrice(id)) or it.price -- v4.2: скидка дня
-    if not POLUS11.TakeMoney(ply, price, "покупка: " .. it.name .. ((POLUS11.SaleOfDay and POLUS11.SaleOfDay.id == id) and " [СКИДКА ДНЯ]" or "")) then
+    local nightTag = "" -- v4.20.0 «СЛЕД»: стоки экономики — ночной тариф ларька 23:00–07:00 (+35%)
+    if POLUS11.NightTariffFactor then
+        local nf = POLUS11.NightTariffFactor()
+        if nf > 1 then
+            price = math.ceil(price * nf)
+            nightTag = " [НОЧНОЙ ТАРИФ +35%]"
+        end
+    end
+    if not POLUS11.TakeMoney(ply, price, "покупка: " .. it.name .. ((POLUS11.SaleOfDay and POLUS11.SaleOfDay.id == id) and " [СКИДКА ДНЯ]" or "") .. nightTag) then
         POLUS11.Notify(ply, "Не хватает " .. (price - POLUS11.GetMoney(ply)) ..
             "₽. Цена: " .. price .. "₽, у тебя: " .. POLUS11.GetMoney(ply) .. "₽.")
         ply:EmitSound("buttons/button10.wav", 60, 90)
@@ -179,7 +187,8 @@ function POLUS11.ShopBuy(ply, id)
     POLUS11.Notify(ply, "«" .. it.name .. "» — в твоём инвентаре, в руки НЕ даётся (🎒 C-меню → ИСПОЛЬЗОВАТЬ — достать, «⬇ В БАГАЖ» — сдать обратно).")
     ply:EmitSound("buttons/button15.wav", 60, 105)
     POLUS11.InvSync(ply)
-    POLUS11.Log(ply:Nick() .. " купил " .. it.name .. " за " .. it.price .. "₽")
+    POLUS11.Log(ply:Nick() .. " купил " .. it.name .. " за " .. price .. "₽")
+    if POLUS11.TaskEvent then POLUS11.TaskEvent(ply, "shop_buy") end -- v4.20.0 «СЛЕД»: шаг онбординга «ПЕРВЫЙ ДЕНЬ»
 end
 
 -- использовать предмет из инвентаря

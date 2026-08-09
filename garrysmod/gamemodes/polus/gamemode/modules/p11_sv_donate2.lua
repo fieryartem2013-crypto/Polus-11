@@ -96,6 +96,10 @@ end)
 
 -- ============ ВИТРИНА ЗА ПОТОК (F6 → «ПОТРАТИТЬ ПОТОК») ============
 
+-- v4.20.0 «СЛЕД»: реестр мод-испытаний объявлен до витрины (run ссылается)
+POLUS11.TrialMods = POLUS11.TrialMods or {} -- [sid64] = { untilT, prev, sid }
+local TrialSave -- ниже по файлу (замыкание витрины)
+
 POLUS11.FluxShop = {
     {
         id = "vip", price = 100, icon = "💎",
@@ -199,6 +203,39 @@ POLUS11.FluxShop = {
             end
             ply.P11_FluxYak = true
             return true, "🔑 Ключ получен: в гараже «ПОЛЮС-АВТО» Як-2 для тебя — бесплатно (разово)."
+        end,
+    },
+    -- v4.20.0 «СЛЕД». Заявка владельца: «добавь в донат модератора на
+    -- неделю за 50 ПФ — это как пробный период, чтобы знать: стать
+    -- модером или нет». Ранг Moderator ровно на 7 суток; по истечении
+    -- снимается САМ (если штаб за это время не продлил вручную).
+    {
+        id = "modtrial", price = 50, icon = "🛡",
+        name = "Модератор — испытательный срок (7 дней)",
+        desc = "Пробная неделя в модерации станции: варн/мут/арест/кик по уставу. Посмотришь изнутри — твоё ли это. Ранг снимется сам через 7 суток (штаб может продлить раньше).",
+        run = function(ply)
+            local lvl = P11FW.GetRankLevel and P11FW.GetRankLevel(ply) or 0
+            if lvl >= 3 then
+                return false, "ты уже в команде станции (Moderator и выше) — испытание не нужно, флюкс не списан"
+            end
+            local prev = "user"
+            if P11FW.GetRank then
+                local r = P11FW.GetRank(ply)
+                if r and r.id then prev = r.id end
+            end
+            POLUS11.TrialMods[ply:SteamID64()] = {
+                untilT = os.time() + 7 * 86400,
+                prev   = prev,
+                sid    = ply:SteamID(),
+            }
+            if TrialSave then TrialSave() end
+            if P11FW.SetRank then P11FW.SetRank(ply, "moderator", nil) end
+            PrintMessage(HUD_PRINTTALK, "🛡 ИСПЫТАНИЕ: боец " .. ply:Nick() ..
+                " неделю проводит модератором. Судите строго, но по делу!")
+            POLUS11.Log("МОД-ИСПЫТАНИЕ: " .. ply:Nick() .. " (" .. ply:SteamID() ..
+                ") купил пробную неделю модератора за 50 ПФ (до " .. os.date("%d.%m %H:%M", os.time() + 7 * 86400) ..
+                ", возврат в «" .. prev .. "»)")
+            return true, "🛡 Испытательный срок НАЧАЛСЯ: 7 суток ранга Moderator. Права и устав — C-меню «📜 Права». Не зарывайся: каждое наказание пишется в журнал."
         end,
     },
 }
@@ -329,5 +366,67 @@ net.Receive("P11_FluxAdmin", function(_, ply)
         target:Nick() .. " (" .. target:SteamID() .. "): " .. delta .. " ПФ (баланс " .. v .. ")")
 end)
 
-print("[POLUS-11] донат-валюта «ПОЛЮС-ФЛЮКС» v4.10.0: витрина 9 позиций за ПФ, " ..
+-- ============ МОД-ИСПЫТАНИЕ: сроки (v4.20.0 «СЛЕД») ============
+
+local TRIAL_FILE = "polus11/trialmods.json"
+
+local function TrialSaveReal()
+    if not file.IsDir("polus11", "DATA") then file.CreateDir("polus11") end
+    file.Write(TRIAL_FILE, util.TableToJSON(POLUS11.TrialMods, true) or "{}")
+end
+TrialSave = TrialSaveReal -- замыкание из витрины теперь живое
+
+local function TrialLoad()
+    local raw = file.Read(TRIAL_FILE, "DATA")
+    if not raw then return end
+    local ok, tbl = pcall(util.JSONToTable, raw)
+    if ok and istable(tbl) then POLUS11.TrialMods = tbl end
+end
+hook.Add("InitPostEntity", "P11.TrialLoad", function() timer.Simple(1.7, TrialLoad) end)
+
+-- истёкшие сроки: ранг Moderator снимается САМ (если штаб не поменял его вручную)
+local function TrialSweep()
+    local now = os.time()
+    local changed = false
+    for sid64, rec in pairs(POLUS11.TrialMods) do
+        local untilT = tonumber(rec and rec.untilT) or 0
+        if untilT <= now then
+            local online = nil
+            for _, p in ipairs(player.GetAll()) do
+                if IsValid(p) and p:SteamID64() == sid64 then online = p break end
+            end
+            if not IsValid(online) then
+                -- боец оффлайн: запись НЕ гасим — ранг снимется при его входе
+                -- (join-свип дожмёт), иначе остался бы вечный Moderator
+            else
+                local cur = P11FW.GetRank and P11FW.GetRank(online)
+                if cur and cur.id == "moderator" then
+                    if P11FW.SetRank then P11FW.SetRank(online, (rec.prev or "user"), nil) end
+                    POLUS11.Notify(online, "🛡 Испытательный срок модератора ЗАВЕРШЁН. Спасибо за неделю службы — " ..
+                        "решение о постоянном месте за штабом станции.")
+                    POLUS11.Log("МОД-ИСПЫТАНИЕ ЗАВЕРШЕНО: " .. online:Nick() ..
+                        " — ранг возвращён в «" .. tostring(rec.prev or "user") .. "»")
+                else
+                    POLUS11.Log("МОД-ИСПЫТАНИЕ ЗАВЕРШЕНО: " .. sid64 ..
+                        " — ранг уже менял штаб («" .. tostring(cur and cur.id) .. "»), запись просто погашена")
+                end
+                POLUS11.TrialMods[sid64] = nil
+                changed = true
+            end
+        end
+    end
+    if changed then TrialSaveReal() end
+end
+
+timer.Create("P11.TrialSweep", 240, 0, TrialSweep)
+
+-- срок вышел, пока боец был оффлайн: ранг снимется при входе (после ApplyRank)
+hook.Add("PlayerInitialSpawn", "P11.TrialJoin", function(ply)
+    timer.Simple(11, function()
+        if IsValid(ply) then TrialSweep() end
+    end)
+end)
+
+print("[POLUS-11] донат-валюта «ПОЛЮС-ФЛЮКС» v4.20.0 «СЛЕД»: витрина 10 позиций за ПФ (" ..
+    "+ МОДЕРАТОР НА НЕДЕЛЮ за 50 ПФ — испытательный срок, сам снимается), " ..
     "p11_fluxgive <sid> <n> для магазина, утилиты p11_utils (rank " .. UTIL_MIN_RANK .. "+)")

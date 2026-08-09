@@ -43,9 +43,74 @@ POLUS11.ContractPool = {
 -- players: [sid] = { [tplId] = { p = прогресс, done = bool } }
 local ROT = { ids = {}, endsAt = 0, players = {} }
 
+-- ============ НАРЯД СУТОК (v4.20.0 «СЛЕД», дэйли-прокачка) ============
+-- 1 суточный шаблон × 3 сложности; стрик 5 дней подряд = ЗОЛОТОЙ (×2).
+local DAY_TIERS = {
+    [1] = { tag = "Л", name = "ЛЁГКИЙ",      kmul = 1, pmul = 1 },
+    [2] = { tag = "Т", name = "ТЯЖЁЛЫЙ",     kmul = 2, pmul = 2.2 },
+    [3] = { tag = "С", name = "СМЕРТЕЛЬНЫЙ", kmul = 3, pmul = 3.5 },
+}
+POLUS11.ContractTiers = DAY_TIERS
+
+POLUS11.DailyPool = {
+    zharkiy  = { name = "ЖАРКИЙ ДЕНЬ",       desc = "Нанеси урон активному Нечто — оно должно гореть ежесуточно", ev = "damage_thing", baseNeed = 1000, basePay = 4800 },
+    stakan   = { name = "СТАКАН КРОВИ",      desc = "Проведи анализы крови на столе «КРОВЬ-2» (вердикт любой)",       ev = "blood_test",   baseNeed = 3,    basePay = 4000 },
+    kuznitsa = { name = "КУЗНИЦА СУТОК",     desc = "Собери изделия на кустарном верстаке",                          ev = "craft_do",     baseNeed = 4,    basePay = 4200 },
+    obysk    = { name = "БОЛЬШОЙ ОБЫСК",     desc = "Обыщи ящики/бочки/тайники по станции",                          ev = "loot_find",    baseNeed = 12,   basePay = 3600 },
+    gospital = { name = "САНИТАРНЫЕ СУТКИ",  desc = "Вылечи бойцов (медкейс/шприц, ЛКМ по раненым)",                 ev = "heal_player",  baseNeed = 5,    basePay = 4200 },
+    ogolov   = { name = "ЖЕЛЕЗО ДЛЯ ФРОНТА", desc = "Сдай металлолом снабжению (🎒 лом списывается сам)",            item = "scrap",      baseNeed = 10,   basePay = 4000 },
+    paekd    = { name = "ПРОДНАБОР",         desc = "Сдай банки тушёнки для блока зимовки (🎒 списывается сам)",     item = "cons",       baseNeed = 9,    basePay = 3800 },
+}
+
+-- DAILY = { day = "YYYY-MM-DD", tpl = id, players = { [sid] = { tier, p, done, streak, lastDone } } }
+local DAILY = { day = "", tpl = "", players = {} }
+
+local function TodayKey() return os.date("%Y-%m-%d") end
+local function DailyT() return POLUS11.DailyPool[DAILY.tpl] end
+local function DailyNeed(tier)
+    local t = DailyT()
+    if not t then return 1 end
+    local tr = DAY_TIERS[math.floor(tonumber(tier) or 1)] or DAY_TIERS[1]
+    return math.max(1, math.floor((tonumber(t.baseNeed) or 1) * tr.kmul))
+end
+local function DailyPay(tier)
+    local t = DailyT()
+    if not t then return 0 end
+    local tr = DAY_TIERS[math.floor(tonumber(tier) or 1)] or DAY_TIERS[1]
+    return math.floor((tonumber(t.basePay) or 0) * tr.pmul)
+end
+local function DailyState(ply)
+    local sid = ply:SteamID()
+    DAILY.players[sid] = DAILY.players[sid] or {}
+    return DAILY.players[sid]
+end
+
 local function ContrSave()
     if not file.IsDir("polus11", "DATA") then file.CreateDir("polus11") end
-    file.Write(FILE, util.TableToJSON(ROT, true) or "{}")
+    file.Write(FILE, util.TableToJSON({ rot = ROT, daily = DAILY }, true) or "{}")
+end
+
+-- v4.20.0 «СЛЕД»: раньше сейв вообще не читался (дэйли исправила
+-- это заодно); старый формат (голый ROT) тоже распознаём.
+local function ContrLoad()
+    local raw = file.Read(FILE, "DATA")
+    if not raw then return end
+    local ok, tbl = pcall(util.JSONToTable, raw)
+    if not ok or not istable(tbl) then return end
+    if istable(tbl.rot) then
+        ROT.ids     = istable(tbl.rot.ids) and tbl.rot.ids or {}
+        ROT.endsAt  = tonumber(tbl.rot.endsAt) or 0
+        ROT.players = istable(tbl.rot.players) and tbl.rot.players or {}
+        if istable(tbl.daily) then
+            DAILY.day     = tostring(tbl.daily.day or "")
+            DAILY.tpl     = tostring(tbl.daily.tpl or "")
+            DAILY.players = istable(tbl.daily.players) and tbl.daily.players or {}
+        end
+    elseif istable(tbl.ids) then -- legacy: файл держал сам ROT
+        ROT.ids     = tbl.ids
+        ROT.endsAt  = tonumber(tbl.endsAt) or 0
+        ROT.players = istable(tbl.players) and tbl.players or {}
+    end
 end
 
 -- ============ СИНХРОНИЗАЦИЯ КЛИЕНТУ ============
@@ -80,8 +145,27 @@ function POLUS11.ContractSync(ply)
             }
         end
     end
+    -- v4.20.0 «СЛЕД»: наряд суток едет в том же пакете
+    local dPayload = false
+    local dt = DailyT()
+    if dt then
+        local ds = DAILY.players[ply:SteamID()]
+        local streak = ds and (tonumber(ds.streak) or 0) or 0
+        dPayload = {
+            name  = dt.name, desc = dt.desc,
+            needs = { DailyNeed(1), DailyNeed(2), DailyNeed(3) },
+            pays  = { DailyPay(1), DailyPay(2), DailyPay(3) },
+            got   = (ds and ds.tier ~= nil and not ds.done) and true or false,
+            tier  = ds and (tonumber(ds.tier) or 0) or 0,
+            p     = ds and math.floor(tonumber(ds.p) or 0) or 0,
+            need  = (ds and ds.tier) and DailyNeed(ds.tier) or 0,
+            done  = ds and ds.done and true or false,
+            streak   = streak,
+            goldNext = ((streak + 1) % 5 == 0),
+        }
+    end
     net.Start("P11_ContractSync")
-        net.WriteString(util.TableToJSON({ list = defs, endsAt = ROT.endsAt }) or "{}")
+        net.WriteString(util.TableToJSON({ list = defs, endsAt = ROT.endsAt, daily = dPayload }) or "{}")
     net.Send(ply)
 end
 
@@ -130,11 +214,22 @@ end
 hook.Add("InitPostEntity", "P11.ContractBoot", function()
     math.randomseed(os.time() + os.clock() * 1000)
     timer.Simple(3, function()
+        ContrLoad() -- v4.20.0: сутки/стрики переживают рестарт (часовой набор всё равно перекручиваем)
         -- «меняются С ОБНОВЛЕНИЕМ»: старт карты = всегда новый набор
         POLUS11.ContractReroll("обновление станции")
+        -- «наряд суток»: новый день — новый шаблон; тот же день — продолжаем
+        if DAILY.day ~= TodayKey() or not POLUS11.DailyPool[DAILY.tpl] then
+            POLUS11.DailyReroll("начало суток")
+        else
+            local dt = POLUS11.DailyPool[DAILY.tpl]
+            ContractAnnounce("НАРЯД СУТОК: «" .. dt.name .. "» действует до полуночи. Три сложности — у интенданта.")
+        end
         -- «и каждый час на сервере»
         timer.Create("P11.ContractHour", ROT_SEC, 0, function()
             POLUS11.ContractReroll("час смены")
+        end)
+        timer.Create("P11.DailyDay", 30, 0, function()
+            if DAILY.day ~= TodayKey() then POLUS11.DailyReroll("новые сутки") end
         end)
     end)
 end)
@@ -145,6 +240,104 @@ concommand.Add("p11_contractroll", function(ply)
     POLUS11.ContractReroll("ручной перекрут")
     print("[НАРЯДЫ] набор перекручен вручную")
 end)
+
+-- ============ РОТАЦИЯ И ЖИЗНЬ СУТОК (v4.20.0 «СЛЕД») ============
+
+function POLUS11.DailyReroll(why)
+    local keys = {}
+    for id in pairs(POLUS11.DailyPool) do keys[#keys + 1] = id end
+    local tpl = keys[math.random(#keys)]
+    DAILY.day = TodayKey()
+    DAILY.tpl = tpl
+    for _, st in pairs(DAILY.players) do
+        st.tier, st.p, st.done = nil, 0, false -- стрик/lastDone живут через дни
+    end
+    ContrSave()
+    local t = POLUS11.DailyPool[tpl]
+    ContractAnnounce("НАРЯД СУТОК" .. (why and (" (" .. why .. ")") or "") .. ": «" .. t.name ..
+        "». Сложности Л/Т/С, стрик 5 дней = ЗОЛОТОЙ (×2). У интенданта, до полуночи.")
+    POLUS11.Log("НАРЯД СУТОК: " .. DAILY.day .. " — «" .. t.name .. "»")
+    for _, p in ipairs(player.GetAll()) do POLUS11.ContractSync(p) end
+end
+
+local function DailyConsumeItem(ply, t, need)
+    if not t.item then return true end
+    local data = POLUS11.InvOf and POLUS11.InvOf(ply)
+    if not data then return false end
+    local have = tonumber(data.items[t.item]) or 0
+    if have < need then return false end
+    data.items[t.item] = have - need
+    if data.items[t.item] <= 0 then data.items[t.item] = nil end
+    if POLUS11.InvSaveNow then POLUS11.InvSaveNow() end
+    if POLUS11.InvSync then POLUS11.InvSync(ply) end
+    return true
+end
+
+local function DailyComplete(ply)
+    local t = DailyT()
+    if not t then return end
+    local ds = DailyState(ply)
+    local tier = tonumber(ds.tier) or 1
+    if ds.done then return end
+    local need = DailyNeed(tier)
+    if not DailyConsumeItem(ply, t, need) then return end
+
+    -- стрик: дни подряд без пропуска
+    local yest = os.date("%Y-%m-%d", os.time() - 86400)
+    local newStreak = (ds.lastDone == yest) and ((tonumber(ds.streak) or 0) + 1) or 1
+    local gold = (newStreak % 5 == 0)
+    local pay = DailyPay(tier)
+    if gold then pay = pay * 2 end
+    local mult = (POLUS11.RaceBuffMult and POLUS11.RaceBuffMult(ply)) or 1
+    if mult > 1 then pay = math.floor(pay * mult) end
+
+    ds.done = true
+    ds.p = need
+    ds.streak = newStreak
+    ds.lastDone = TodayKey()
+    ContrSave()
+
+    if POLUS11.AddMoney then POLUS11.AddMoney(ply, pay, "наряд суток: " .. t.name) end
+    ply:EmitSound("buttons/button15.wav", 75, 100)
+    ply:EmitSound("ambient/alarms/warningbell1.wav", 55, 130)
+    local tr = DAY_TIERS[tier] or DAY_TIERS[1]
+    local extra = (gold and " · ЗОЛОТОЙ ×2" or "") .. (mult > 1 and " · ЛЕДОКОЛ +20%" or "")
+    ContractAnnounce(ply:Nick() .. " закрыл НАРЯД СУТОК «" .. t.name .. "» [" .. tr.name .. "] +" ..
+        pay .. "₽ (стрик " .. newStreak .. extra .. ")")
+    POLUS11.Log("НАРЯД СУТОК ЗАКРЫТ: " .. ply:Nick() .. " «" .. t.name .. "» [" .. tr.tag .. "] +" ..
+        pay .. "₽, стрик " .. newStreak)
+    if POLUS11.TaskEvent then POLUS11.TaskEvent(ply, "contract_done") end -- ЛЕДОКОЛ/онбординг
+    POLUS11.ContractSync(ply)
+end
+
+function POLUS11.DailyTake(ply, tier)
+    local t = DailyT()
+    if not t then return end
+    tier = math.Clamp(math.floor(tonumber(tier) or 1), 1, 3)
+    local ds = DailyState(ply)
+    if ds.done then
+        POLUS11.Notify(ply, "Наряд суток уже ЗАКРЫТ тобой сегодня. Новый — после полуночи.")
+        return
+    end
+    if ds.tier then
+        POLUS11.Notify(ply, "Наряд суток уже у тебя: «" .. t.name .. "» — " ..
+            math.floor(tonumber(ds.p) or 0) .. "/" .. DailyNeed(ds.tier) .. ".")
+        return
+    end
+    ds.tier = tier
+    ds.p = 0
+    ContrSave()
+    local tr = DAY_TIERS[tier]
+    local streak = tonumber(ds.streak) or 0
+    POLUS11.Notify(ply, "НАРЯД СУТОК ПРИНЯТ: «" .. t.name .. "» [" .. tr.name .. "] — цель " ..
+        DailyNeed(tier) .. ", оплата " .. DailyPay(tier) .. "₽" ..
+        (((streak + 1) % 5 == 0) and " · ЗАКРОЕШЬ — ЗОЛОТОЙ ×2!" or "") ..
+        ". До полуночи успеешь.")
+    ply:EmitSound("buttons/button15.wav", 60, 105)
+    POLUS11.Log("НАРЯД СУТОК ВЗЯТ: " .. ply:Nick() .. " «" .. t.name .. "» [" .. tr.tag .. "]")
+    if POLUS11.TaskEvent then POLUS11.TaskEvent(ply, "contract_take") end
+    POLUS11.ContractSync(ply)
+end
 
 -- ============ ЗАВЕРШЕНИЕ ============
 
@@ -170,15 +363,21 @@ local function ContractComplete(ply, tplId)
     mine.p = t.need
     ContrSave()
 
+    -- v4.20.0 «СЛЕД»: бафф ЛЕДОКОЛА (+20% фракции-победителю недели)
+    local pay = tonumber(t.pay) or 0
+    local mult = (POLUS11.RaceBuffMult and POLUS11.RaceBuffMult(ply)) or 1
+    if mult > 1 then pay = math.floor(pay * mult) end
     if POLUS11.AddMoney then
-        POLUS11.AddMoney(ply, t.pay, "контракт: " .. t.name)
+        POLUS11.AddMoney(ply, pay, "контракт: " .. t.name .. (mult > 1 and " [ЛЕДОКОЛ +20%]" or ""))
     else
         POLUS11.Notify(ply, "Казна молчит — деньги начислит Глава вручную!")
     end
     ply:EmitSound("buttons/button15.wav", 75, 100)
     ply:EmitSound("ambient/alarms/warningbell1.wav", 55, 130)
-    ContractAnnounce(ply:Nick() .. " выполнил контракт «" .. t.name .. "» (+" .. t.pay .. "₽)")
-    POLUS11.Log("НАРЯД ЗАКРЫТ: " .. ply:Nick() .. " «" .. t.name .. "» +" .. t.pay .. "₽")
+    ContractAnnounce(ply:Nick() .. " выполнил контракт «" .. t.name .. "» (+" .. pay .. "₽" ..
+        (mult > 1 and ", ЛЕДОКОЛ ×1.2" or "") .. ")")
+    POLUS11.Log("НАРЯД ЗАКРЫТ: " .. ply:Nick() .. " «" .. t.name .. "» +" .. pay .. "₽")
+    if POLUS11.TaskEvent then POLUS11.TaskEvent(ply, "contract_done") end -- v4.20.0: ЛЕДОКОЛ/онбординг
     POLUS11.ContractSync(ply)
 end
 
@@ -203,6 +402,24 @@ function POLUS11.ContractEvent(ply, key, add)
             end
         end
     end
+
+    -- v4.20.0 «СЛЕД»: наряд суток движется тем же событием
+    local dt = DailyT()
+    if dt and dt.ev == key then
+        local ds = DailyState(ply)
+        if ds.tier and not ds.done then
+            local need = DailyNeed(ds.tier)
+            ds.p = math.min((tonumber(ds.p) or 0) + add, need)
+            changed = true
+            if ds.p >= need then
+                DailyComplete(ply)
+            else
+                POLUS11.Notify(ply, "Наряд суток «" .. dt.name .. "»: " ..
+                    math.floor(ds.p) .. "/" .. need)
+            end
+        end
+    end
+
     if changed then
         ContrSave()
         POLUS11.ContractSync(ply)
@@ -238,6 +455,22 @@ timer.Create("P11.ContractDeliver", 2, 0, function()
                     end
                 end
             end
+
+            -- v4.20.0 «СЛЕД»: сдачный наряд суток — тоже из 🎒
+            local dt = DailyT()
+            if dt and dt.item then
+                local ds = DAILY.players[ply:SteamID()]
+                if ds and ds.tier and not ds.done and POLUS11.InvOf then
+                    local need = DailyNeed(ds.tier)
+                    local have = tonumber(POLUS11.InvOf(ply).items[dt.item]) or 0
+                    if have > (tonumber(ds.p) or 0) then
+                        ds.p = math.min(have, need)
+                    end
+                    if ds.p >= need then
+                        DailyComplete(ply)
+                    end
+                end
+            end
         end
     end
 end)
@@ -262,6 +495,16 @@ net.Receive("P11_ContractAct", function(_, ply)
     local act = net.ReadUInt(4)
     if act == 9 then
         POLUS11.ContractSync(ply)
+        return
+    end
+    if act == 2 then -- v4.20.0 «СЛЕД»: взять НАРЯД СУТОК выбранной сложности
+        local tier = net.ReadUInt(2)
+        local ent = ply.P11_ContractEnt
+        if not IsValid(ent) or ply:GetPos():DistToSqr(ent:GetPos()) > 300 * 300 then
+            POLUS11.Notify(ply, "Наряд суток выдаёт интендант лично — подойди к стойке «НАРЯДНИК».")
+            return
+        end
+        POLUS11.DailyTake(ply, tier)
         return
     end
     if act ~= 1 then return end
@@ -289,10 +532,11 @@ net.Receive("P11_ContractAct", function(_, ply)
 
     st[tplId] = { p = 0, at = os.time() }
     ContrSave()
+    if POLUS11.TaskEvent then POLUS11.TaskEvent(ply, "contract_take") end -- v4.20.0: шаг «ПЕРВЫЙ ДЕНЬ»
     POLUS11.Notify(ply, "НАРЯД ПРИНЯТ: «" .. t.name .. "» — " .. t.desc .. ". Оплата " .. t.pay .. "₽ по закрытии.")
     ply:EmitSound("buttons/button15.wav", 60, 105)
     POLUS11.Log("НАРЯД ВЗЯТ: " .. ply:Nick() .. " «" .. t.name .. "»")
     POLUS11.ContractSync(ply)
 end)
 
-print("[POLUS-11] контракты «НАРЯДНИК» v4.19.4: 8 сложных шаблонов, набор из 3 на час, оплата 2200–5000₽, НПС polus_p11_contractnpc")
+print("[POLUS-11] контракты «НАРЯДНИК» v4.20.0 «СЛЕД»: 7 часовых + НАРЯД СУТОК (Л/Т/С, стрик 5 дней = ЗОЛОТОЙ ×2), бафф ЛЕДОКОЛА +20%, сейв читается")
