@@ -128,6 +128,13 @@ function P11FW.SetJob(ply, jobId, modelIdx, force)
         if not toks then return false, terr end
     end
 
+    -- v4.21.0 «ДРЕВО»: узел дерева службы (РККА/Учёные) — уровень/путь.
+    -- Ранг Staff Leader+ (14+) вне механики (заявка владельца).
+    if not force and POLUS11 and POLUS11.SkillTreeJobOK then
+        local tok, terr = POLUS11.SkillTreeJobOK(ply, jobId)
+        if not tok then return false, terr end
+    end
+
     -- v4.8.0: VIP-ДОЛЖНОСТЬ (секция 💎 VIP-СЛУЖБА) — с ранга VIP
     -- (P11FW.IsVIP: VIP, стафф уровня 2+, админы движка, хост).
     if job.vip and not force then

@@ -445,6 +445,14 @@ function P11.OpenCMenu()
         end)
     end
 
+    -- v4.21.0 «ДРЕВО»: древо службы — уровень за дела смены, 3 пути, откат
+    CButton(f, 14, 504, 752, 46, "⭐ ДРЕВО СЛУЖБЫ",
+        "уровень за дела смены и наряды · РККА и Учёные по 3 пути · откат ветки за 100 000₽ сохраняет опыт",
+        CC.ok, function()
+            P11.CloseCMenu()
+            if P11.OpenSkillTree then P11.OpenSkillTree() end
+        end)
+
     -- низ: подсказка
     local foot = vgui.Create("DLabel", f)
     foot:SetPos(14, 556) foot:SetSize(748, 20)

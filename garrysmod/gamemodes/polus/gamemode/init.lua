@@ -67,6 +67,7 @@ local send = {
     "modules/p11_cl_clues.lua",        -- v4.20.0 «СЛЕД»: планшет-досье улик НКВД
     "modules/p11_cl_onboard.lua",      -- v4.20.0 «СЛЕД»: плашка онбординга «ПЕРВЫЙ ДЕНЬ»
     "modules/p11_cl_raceweek.lua",     -- v4.20.0 «СЛЕД»: полоска «ЛЕДОКОЛ» на HUD
+    "modules/p11_cl_skilltree.lua",    -- v4.21.0 «ДРЕВО»: окно древа службы (C-меню)
 }
 for _, f in ipairs(send) do
     AddCSLuaFile(f)
@@ -159,6 +160,7 @@ local sv = {
     "modules/p11_sv_clues.lua",       -- v4.20.0 «СЛЕД»: улики на месте поглощения → досье НКВД (!улики)
     "modules/p11_sv_onboard.lua",     -- v4.20.0 «СЛЕД»: онбординг «ПЕРВЫЙ ДЕНЬ» — 5 шагов новичку (после контрактов!)
     "modules/p11_sv_raceweek.lua",    -- v4.20.0 «СЛЕД»: «ЛЕДОКОЛ» — недельная гонка РККА vs ОРЁЛ
+    "modules/p11_sv_skilltree.lua",   -- v4.21.0 «ДРЕВО»: уровень за дела + древо РККА/Учёные (после цепи TaskEvent!)
     "modules/p11_sv_sanity.lua",      -- v4.19.4 «ПОЧЁТ»: рассудок — тьма/одиночество/трупы
     "modules/p11_sv_thingmind.lua",   -- v4.19.4 «ПОЧЁТ»: разум жертвы — навыки по профе жертвы
     "modules/p11_sv_thingroot.lua",   -- v4.13.0 «КОРЕНЬ»: НЕЧТО неумирает до рестарта + полная маскировка — ВСЕГДА ПОСЛЕДНИЙ

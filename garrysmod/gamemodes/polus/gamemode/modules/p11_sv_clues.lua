@@ -164,6 +164,7 @@ function POLUS11.ClueCollect(ply, ent)
 
         ply:EmitSound("npc/roller/remote_yip.wav", 55, 120)
         if POLUS11.AddMoney then POLUS11.AddMoney(ply, CLUE_PAY, "сдана улика: " .. kindName) end
+        if POLUS11.TaskEvent then POLUS11.TaskEvent(ply, "clue_turn") end -- v4.21.0 «ДРЕВО»: опыт службы (+30)
         POLUS11.Log("УЛИКА СДАНА: " .. ply:Nick() .. " — «" .. kindName .. "» (жертва: " .. rec.job .. ", " .. rec.time .. ")")
 
         local prof = ProfileOf(arr)
