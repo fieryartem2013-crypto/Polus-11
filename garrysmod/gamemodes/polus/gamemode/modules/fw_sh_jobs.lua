@@ -376,6 +376,8 @@ function P11FW.RegisterCustomJobs(records)
                 command  = rec.command == true,
                 time     = tonumber(rec.time) or 0, -- v4.5.0: минут игры для входа
                 vip      = rec.vip == true, -- v4.8.0: VIP-должность
+                hidden   = rec.hidden == true,   -- v4.24.2 «ЗНАМЯ»: скрыть из F4
+                cmdonly  = rec.cmdonly == true,  -- v4.24.2 «ЗНАМЯ»: только команда/ивент
             }
             P11FW.JobTeams[rec.id] = rec.team
             P11FW.TeamJobs[rec.team] = rec.id

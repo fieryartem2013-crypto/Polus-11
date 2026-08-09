@@ -32,6 +32,13 @@ POLUS11.RadioOrder = { "rkka", "nkvd", "science", "personnel", "all" }
 function POLUS11.RadioCycleChannel(ply)
     if not IsValid(ply) or not ply:Alive() then return end
     local cur = ply:GetNWString("P11_RadioCh", "all")
+    -- v4.24.2 «ЗНАМЯ»: канал стороны (★ СССР/★ США) закреплён на время операции
+    if string.StartWith(cur, "op_") and POLUS11.Op
+        and POLUS11.Op.side and POLUS11.Op.side[ply] then
+        POLUS11.Notify(ply, "Канал «" .. (POLUS11.RadioChannels[cur] or cur) ..
+            "» закреплён до конца операции.")
+        return
+    end
     local idx = 1
     for i, ch in ipairs(POLUS11.RadioOrder) do
         if ch == cur then idx = (i % #POLUS11.RadioOrder) + 1 break end
@@ -170,11 +177,24 @@ hook.Add("PlayerSay", "P11_RadioChannelCmd", function(ply, text)
     elseif string.find(arg, "нквд") or arg == "nkvd" then want = "nkvd"
     elseif string.find(arg, "наук") or arg == "science" then want = "science"
     elseif string.find(arg, "персонал") or arg == "personnel" then want = "personnel"
+    elseif string.find(arg, "ссср") or arg == "cccp" then want = "op_sssr" -- v4.24.2 «ЗНАМЯ»
+    elseif string.find(arg, "сша") or arg == "usa" then want = "op_usa"   -- v4.24.2 «ЗНАМЯ»
     end
 
     if not want then
-        ply:ChatPrint("[Рация] Нет такого канала. Бывают: общий, ркка, нквд, наука, персонал.")
+        ply:ChatPrint("[Рация] Нет такого канала. Бывают: общий, ркка, нквд, наука, персонал" ..
+            " (в ходе операции — ★ ссср/сша у своей стороны).")
         return ""
+    end
+
+    -- v4.24.2 «ЗНАМЯ»: каналы сторон — только участникам операции своей стороны
+    if want == "op_sssr" or want == "op_usa" then
+        local mySide = POLUS11.Op and POLUS11.Op.side and POLUS11.Op.side[ply] or nil
+        local need = (want == "op_sssr") and "rkka" or "eagle"
+        if mySide ~= need then
+            ply:ChatPrint("[Рация] Каналы ★ сторон работают только в ходе операции — и только у своей стороны.")
+            return ""
+        end
     end
 
     ply:SetNWString("P11_RadioCh", want)

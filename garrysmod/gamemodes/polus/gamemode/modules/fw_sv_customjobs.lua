@@ -194,6 +194,8 @@ net.Receive("P11FW_JobEdit", function(len, ply)
         if clean.whitelist == nil then clean.whitelist = old.whitelist end -- v4.4.0
         if clean.time == nil then clean.time = old.time end -- v4.5.0
         if clean.vip == nil then clean.vip = old.vip end -- v4.8.0
+        if clean.hidden == nil then clean.hidden = old.hidden end -- v4.24.2 «ЗНАМЯ»
+        if clean.cmdonly == nil then clean.cmdonly = old.cmdonly end -- v4.24.2 «ЗНАМЯ»
         for i, r in ipairs(P11FW.CustomJobs) do
             if r.id == old.id then P11FW.CustomJobs[i] = clean end
         end

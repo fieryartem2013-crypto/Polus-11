@@ -487,6 +487,43 @@ local SEED_JOBS = {
             "models/player/Group03m/male_06.mdl",
         },
     },
+    -- ================= КОМАНДНЫЕ ПРОФЫ ОПЕРАЦИИ (v4.24.2 «ЗНАМЯ») =================
+    -- Заявка: «отдельные 2 профы — американский солдат и солдат СССР,
+    -- скрыто в F4, доступны только через команды, на рубеже идёт на них».
+    -- hidden: не видны в F4 нигде; cmdonly: не берутся вручную — выдаёт
+    -- система ОПЕРАЦИИ при выборе стороны или p11_opjob <sssr|usa> [ник].
+    {
+        id = "seed_op_sssr", time = 0, category = "rkka", order = 95,
+        name = "Солдат СССР",
+        desc = "Боец операции «РУБЕЖ» под красной звездой: штурм и удержание точек захвата. Рация закреплена на канале ★ СССР. Должность скрыта из F4 — выдаётся автоматом на операции. 110 ХП / 110 брони.",
+        weapons = { { "arc9_eft_aks74", "arc9_eft_ak74", "weapon_ar2" }, "weapon_polus11_radio" },
+        hp = 110, armor = 110, max = 0,
+        hidden = true, cmdonly = true,
+        color = Color(205, 85, 72),
+        models = {
+            "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m35_1941_s1_02.mdl",
+            "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m35_1941_s1_03.mdl",
+            "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m35_1941_s1_04.mdl",
+            "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m35_1941_s1_05.mdl",
+            "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m35_1941_s1_06.mdl",
+        },
+    },
+    {
+        id = "seed_op_usa", time = 0, category = "eagle", order = 95,
+        name = "Солдат США",
+        desc = "Боец операции «РУБЕЖ» под звёздами Нового Света: штурм и удержание точек захвата. Рация закреплена на канале ★ США. Должность скрыта из F4 — выдаётся автоматом на операции. 110 ХП / 110 брони.",
+        weapons = { { "arc9_eft_m870", "weapon_shotgun" }, { "arc9_eft_m1911a1", "weapon_pistol" }, "weapon_polus11_radio" },
+        hp = 110, armor = 110, max = 0,
+        hidden = true, cmdonly = true,
+        color = Color(90, 150, 230),
+        models = {
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/en/m41_s1_01.mdl",
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/en/m41_s1_02.mdl",
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/en/m41_s1_04.mdl",
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/en/m41_s1_05.mdl",
+            "models/hts/comradebear/pm0v3/player/usarmy/infantry/en/m41_s1_06.mdl",
+        },
+    },
 
 }
 
@@ -1020,6 +1057,8 @@ local function SeedAll()
                 armor    = tonumber(j.armor) or 0,
                 event    = j.event == true,
                 command  = j.command == true, -- !приказ/!розыск для генералов
+                hidden   = j.hidden == true,   -- v4.24.2 «ЗНАМЯ»: скрыть из F4
+                cmdonly  = j.cmdonly == true,  -- v4.24.2 «ЗНАМЯ»: только команда/ивент
                 whitelist = j.whitelist == true, -- v4.4.0: ВАЙТЛИСТ (напр. всё НКВД)
                 time     = tonumber(j.time) or 0,  -- v4.6.6: минуты игры для доступа
                 order    = j.order or 100,

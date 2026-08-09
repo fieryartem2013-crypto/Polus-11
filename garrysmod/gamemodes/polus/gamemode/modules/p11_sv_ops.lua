@@ -9,6 +9,11 @@
 --  ВСЕ точки 5 минут подряд — досрочная победа. Финал —
 --  лидерборд и деньги: победителям 5000₽, проигравшим 1000₽
 --  (ничья — по 2500₽), только участникам онлайн.
+--  v4.24.2 «ЗНАМЯ»: выбор стороны выдаёт КОМАНДНЫЕ профы «Солдат
+--  СССР»/«Солдат США» (скрыты из F4 — только система или команда
+--  p11_opjob), рация сама садится на личный канал стороны
+--  ★ СССР / ★ США (закреплён до финала), в глобал-строке — живой
+--  счёт записи сторон.
 -- ============================================================
 
 util.AddNetworkString("P11_OpUI")    -- сервер→клиент: зов (recruit/battle) / статус
@@ -38,6 +43,12 @@ end
 OpResetAll()
 
 local FACT_NAME = { rkka = "СССР", eagle = "АМЕРИКА" }
+
+-- v4.24.2 «ЗНАМЯ»: личные каналы рации сторон (садятся автоматом при записи)
+if POLUS11.RadioChannels then
+    POLUS11.RadioChannels.op_sssr = "★ СССР"
+    POLUS11.RadioChannels.op_usa  = "★ США"
+end
 
 local function OpAnnounce(txt)
     net.Start("P11_Announce")
@@ -143,9 +154,29 @@ local function OpAssign(ply, fac)
     if fac ~= "rkka" and fac ~= "eagle" then return end
     Op.side[ply] = fac
     ply:SetNWString("P11_OpSide", fac)
-    local jobId = (fac == "eagle") and "seed_eagle_svyaznoi" or "seed_rkka_soldat"
+    -- v4.24.2 «ЗНАМЯ»: командные профы сторон (скрыты из F4, только система/команда)
+    local jobId = (fac == "eagle") and "seed_op_usa" or "seed_op_sssr"
+    if not (P11FW.Jobs and P11FW.Jobs[jobId]) then
+        jobId = (fac == "eagle") and "seed_eagle_svyaznoi" or "seed_rkka_soldat" -- страховка
+    end
     P11FW.SetJob(ply, jobId, nil, true)
-    POLUS11.Notify(ply, "Ты солдат стороны «" .. FACT_NAME[fac] .. "». Оружие к бою — точки решат всё!")
+    -- рация стороны: ★ СССР / ★ США — закреплена до финала
+    local ch = (fac == "eagle") and "op_usa" or "op_sssr"
+    ply:SetNWString("P11_RadioCh", ch)
+    POLUS11.Notify(ply, "Ты солдат стороны «" .. FACT_NAME[fac] ..
+        "»! Рация закреплена на канале «" .. (POLUS11.RadioChannels[ch] or ch) ..
+        "». Оружие к бою — точки решат всё!")
+end
+
+-- живой счёт записи сторон (для HUD и окна выбора)
+local function OpSideCounts()
+    local a, b = 0, 0
+    for ply, f in pairs(Op.side) do
+        if IsValid(ply) then
+            if f == "rkka" then a = a + 1 elseif f == "eagle" then b = b + 1 end
+        end
+    end
+    return a, b
 end
 
 local function OpAutoBalance(ply)
@@ -179,7 +210,7 @@ function POLUS11.OpStart(by)
     net.Start("P11_OpUI")
         net.WriteString("call")
     net.Broadcast()
-    SetGlobalString("P11_Op", "recruit|" .. RECRUIT_T)
+    SetGlobalString("P11_Op", "recruit|" .. RECRUIT_T .. "|0|0")
     POLUS11.Log("ОПЕРАЦИЯ: старт от " .. (IsValid(by) and by:Nick() or "консоли"))
 end
 
@@ -189,6 +220,7 @@ function POLUS11.OpAbort(by)
     for ply in pairs(Op.side) do
         if IsValid(ply) then
             ply:SetNWString("P11_OpSide", "")
+            ply:SetNWString("P11_RadioCh", "all") -- v4.24.2: канал стороны снят
             OpReset(ply)
         end
     end
@@ -260,6 +292,7 @@ local function OpCleanup()
     for ply in pairs(Op.side) do
         if IsValid(ply) then
             ply:SetNWString("P11_OpSide", "")
+            ply:SetNWString("P11_RadioCh", "all") -- v4.24.2: канал стороны снят
             OpReset(ply)
             POLUS11.Notify(ply, "Операция окончена. Вахта свободна — выбери должность в F4.")
         end
@@ -273,7 +306,8 @@ end
 timer.Create("P11.OpTick", 2, 0, function()
     if Op.phase == "recruit" then
         local left = math.max(0, Op.recruitEnd - CurTime())
-        SetGlobalString("P11_Op", "recruit|" .. math.ceil(left))
+        local nA, nB = OpSideCounts()
+        SetGlobalString("P11_Op", "recruit|" .. math.ceil(left) .. "|" .. nA .. "|" .. nB)
         if left <= 0 then OpBattleStart() end
         return
     end
@@ -318,9 +352,11 @@ timer.Create("P11.OpTick", 2, 0, function()
         end
 
         local left = math.max(0, Op.endT - CurTime())
+        local nA, nB = OpSideCounts()
         SetGlobalString("P11_Op", "battle|" .. math.ceil(left) .. "|" ..
             math.floor(Op.hold.rkka) .. "|" .. math.floor(Op.hold.eagle) ..
-            "|" .. own.rkka .. "|" .. own.eagle .. "|" .. alivePts)
+            "|" .. own.rkka .. "|" .. own.eagle .. "|" .. alivePts ..
+            "|" .. nA .. "|" .. nB)
         return
     end
 
@@ -392,4 +428,47 @@ net.Receive("P11_OpPick", function(_, ply)
     net.Send(ply)
 end)
 
-print("[POLUS-11] ОПЕРАЦИИ «РУБЕЖ» v4.24.0: админ-старт, СССР/АМЕРИКА, случайные точки, 30 мин, 5к/1к награды")
+-- v4.24.2 «ЗНАМЯ»: командные профы операции вручную — только админам (ранг 4+)
+concommand.Add("p11_opjob", function(ply, _, args)
+    if IsValid(ply) and not (P11FW.Config and P11FW.Config.Admin and P11FW.Config.Admin(ply)) then
+        POLUS11.Notify(ply, "Командные профы операции выдают только админы (ранг 4+).")
+        return
+    end
+    local side = string.lower(tostring(args and args[1] or ""))
+    if side ~= "sssr" and side ~= "usa" then
+        local msg = "[ОП] p11_opjob <sssr|usa> [ник] — выдать «Солдат СССР» / «Солдат США»"
+        if IsValid(ply) then ply:PrintMessage(HUD_PRINTCONSOLE, msg) else print(msg) end
+        return
+    end
+    local target = ply
+    if args and args[2] then
+        local pat = string.lower(tostring(args[2]))
+        target = nil
+        for _, p in ipairs(player.GetAll()) do
+            if IsValid(p) and string.find(string.lower(p:Nick()), pat, 1, true) then
+                target = p break
+            end
+        end
+    end
+    if not IsValid(target) then
+        local msg = "[ОП] Боец не найден — живой ник подстрокой."
+        if IsValid(ply) then ply:PrintMessage(HUD_PRINTCONSOLE, msg) else print(msg) end
+        return
+    end
+    local jobId = (side == "usa") and "seed_op_usa" or "seed_op_sssr"
+    if not (P11FW.Jobs and P11FW.Jobs[jobId]) then
+        local msg = "[ОП] Командная профа «" .. jobId .. "» не завезена — сид доезжает при рестарте."
+        if IsValid(ply) then ply:PrintMessage(HUD_PRINTCONSOLE, msg) else print(msg) end
+        return
+    end
+    P11FW.SetJob(target, jobId, nil, true)
+    local ch = (side == "usa") and "op_usa" or "op_sssr"
+    target:SetNWString("P11_RadioCh", ch)
+    local jn = (P11FW.Jobs[jobId] and P11FW.Jobs[jobId].name) or jobId
+    POLUS11.Notify(target, "Командование выдало тебе должность «" .. jn ..
+        "» — рация на канале «" .. (POLUS11.RadioChannels[ch] or ch) .. "».")
+    POLUS11.Log("ОП: " .. (IsValid(ply) and ply:Nick() or "консоль") ..
+        " выдал " .. target:Nick() .. " → " .. jobId)
+end)
+
+print("[POLUS-11] ОПЕРАЦИИ «РУБЕЖ» v4.24.2 «ЗНАМЯ»: админ-старт, командные профы СССР/США, ★-каналы, точки, 5к/1к, p11_opjob")

@@ -144,6 +144,8 @@ function P11FW.OpenJobMenu()
 
     local me0 = LocalPlayer()
     local function JobShown(jobId)
+        local j = P11FW.Jobs[jobId]
+        if j and j.hidden then return false end -- v4.24.2 «ЗНАМЯ»: командные профы скрыты из F4
         return not (P11FW.WLHiddenFor and P11FW.WLHiddenFor(me0, jobId))
     end
 
