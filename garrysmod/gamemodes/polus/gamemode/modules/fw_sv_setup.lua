@@ -129,6 +129,20 @@ end)
 
 -- ============ ДЕЙСТВИЯ АДМИН-МЕНЮ ============
 
+-- v4.30.3 «ИММУНИТЕТ»: ВЕРХ КОМАНДОВАНИЯ быстрыми действиями НЕ трогаем —
+-- Стафф-Лидер (14), Чиф-Стафф-Лидер (15) и Глава Проекта (16) недоступны
+-- для притаскивания/тп/заморозки/убийства/невидимости от кого-либо
+-- ниже Главы (16); себя трогать можно всегда (селф-клоак/селф-хил).
+local function FastTargetOK(ply, target)
+    if not (IsValid(target) and target:IsPlayer()) then return false end
+    if target == ply then return true end
+    if P11FW.GetRankLevel(target) >= 14 and P11FW.GetRankLevel(ply) < 16 then
+        P11FW.Notify(ply, "Стафф-Лидера и Главу проекта быстрыми действиями не трогают.")
+        return false
+    end
+    return true
+end
+
 net.Receive("P11FW_AdminAction", function(len, ply)
     if not IsValid(ply) or not P11FW.Config.Admin(ply) then return end
 
@@ -208,10 +222,11 @@ net.Receive("P11FW_AdminAction", function(len, ply)
     -- ============ БЫСТРЫЕ ДЕЙСТВИЯ С ИГРОКОМ (Админ+) ============
 
     elseif (act >= 14 and act <= 19 or act == 32) and not P11FW.CanMod(ply, "heal") then -- v4.30.1 «ДОПУСК»: быстрые действия — с Модератора (3)
-        P11FW.Notify(ply, "Быстрые действия доступны Админу и выше.")
+        P11FW.Notify(ply, "Быстрые действия доступны Модератору (3) и выше.") -- v4.30.1/4.30.3
 
     elseif act == 14 then -- полное лечение
         local target = Entity(net.ReadUInt(8))
+        if not FastTargetOK(ply, target) then return end -- v4.30.3 «ИММУНИТЕТ»
         if IsValid(target) and target:IsPlayer() and target:Alive() then
             target:SetHealth(target:GetMaxHealth())
             P11FW.Notify(ply, "Вылечен: " .. target:Nick())
@@ -219,6 +234,7 @@ net.Receive("P11FW_AdminAction", function(len, ply)
 
     elseif act == 15 then -- возродить
         local target = Entity(net.ReadUInt(8))
+        if not FastTargetOK(ply, target) then return end -- v4.30.3 «ИММУНИТЕТ»
         if IsValid(target) and target:IsPlayer() and not target:Alive() then
             target:Spawn()
             P11FW.Notify(ply, "Возрождён: " .. target:Nick())
@@ -226,6 +242,7 @@ net.Receive("P11FW_AdminAction", function(len, ply)
 
     elseif act == 16 then -- притащить к себе
         local target = Entity(net.ReadUInt(8))
+        if not FastTargetOK(ply, target) then return end -- v4.30.3 «ИММУНИТЕТ»
         if IsValid(target) and target:IsPlayer() then
             target:SetPos(ply:GetPos() + ply:GetAimVector() * 60 + Vector(0, 0, 8))
             P11FW.Notify(ply, "Притащили: " .. target:Nick())
@@ -233,6 +250,7 @@ net.Receive("P11FW_AdminAction", function(len, ply)
 
     elseif act == 17 then -- телепорт к игроку
         local target = Entity(net.ReadUInt(8))
+        if not FastTargetOK(ply, target) then return end -- v4.30.3 «ИММУНИТЕТ»
         if IsValid(target) and target:IsPlayer() then
             ply:SetPos(target:GetPos() + target:GetAimVector() * -60 + Vector(0, 0, 8))
             P11FW.Notify(ply, "Телепорт к " .. target:Nick())
@@ -240,6 +258,7 @@ net.Receive("P11FW_AdminAction", function(len, ply)
 
     elseif act == 18 then -- заморозка-переключение
         local target = Entity(net.ReadUInt(8))
+        if not FastTargetOK(ply, target) then return end -- v4.30.3 «ИММУНИТЕТ»
         if IsValid(target) and target:IsPlayer() then
             target.P11FW_Frozen = not target.P11FW_Frozen
             target:Freeze(target.P11FW_Frozen)
@@ -248,6 +267,7 @@ net.Receive("P11FW_AdminAction", function(len, ply)
 
     elseif act == 19 then -- убить
         local target = Entity(net.ReadUInt(8))
+        if not FastTargetOK(ply, target) then return end -- v4.30.3 «ИММУНИТЕТ»
         if IsValid(target) and target:IsPlayer() and target:Alive() then
             target:Kill()
             P11FW.Notify(ply, "Убит: " .. target:Nick())
@@ -255,6 +275,7 @@ net.Receive("P11FW_AdminAction", function(len, ply)
 
     elseif act == 32 then -- v4.29.0 «НАДЗОР»: НЕВИДИМОСТЬ вкл/выкл (быстрые действия)
         local target = Entity(net.ReadUInt(8))
+        if not FastTargetOK(ply, target) then return end -- v4.30.3 «ИММУНИТЕТ»
         if IsValid(target) and target:IsPlayer() then
             target.P11_Cloak = not target.P11_Cloak
             target:SetNoDraw(target.P11_Cloak)

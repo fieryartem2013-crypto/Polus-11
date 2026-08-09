@@ -31,6 +31,17 @@ local function FindByArg(arg)
     return nil
 end
 
+-- v4.30.3 «ИММУНИТЕТ»: верх командования (ранг 14+) гонять нельзя,
+-- кроме самого Главы (16); себя — всегда можно
+local function TopGuard(ply, target)
+    if target == ply then return false end
+    if P11FW.GetRankLevel(target) >= 14 and P11FW.GetRankLevel(ply) < 16 then
+        POLUS11.Notify(ply, "Стафф-Лидера и Главу проекта быстрыми действиями не трогают.")
+        return true
+    end
+    return false
+end
+
 local function SaveReturn(ply)
     ply.P11_ReturnPos = ply:GetPos()
     ply.P11_ReturnAng = ply:GetAngles()
@@ -48,6 +59,7 @@ local function DoTp(ply, arg)
         POLUS11.Notify(ply, "Ты уже у себя под ногами.")
         return
     end
+    if TopGuard(ply, target) then return end -- v4.30.3 «ИММУНИТЕТ»
     SaveReturn(ply)
     ply:SetPos(target:GetPos() + target:GetForward() * -60 + Vector(0, 0, 6))
     ply:SetEyeAngles((target:GetPos() - ply:EyePos()):Angle())
@@ -62,6 +74,7 @@ local function DoBring(ply, arg)
         POLUS11.Notify(ply, "Игрок не найден: " .. tostring(arg))
         return
     end
+    if TopGuard(ply, target) then return end -- v4.30.3 «ИММУНИТЕТ»
     target.P11_ReturnPos = target:GetPos()
     target.P11_ReturnAng = target:GetAngles()
     target:SetPos(ply:GetPos() + ply:GetForward() * 60 + Vector(0, 0, 6))
