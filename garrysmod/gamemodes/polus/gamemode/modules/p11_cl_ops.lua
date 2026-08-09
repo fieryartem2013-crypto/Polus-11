@@ -284,4 +284,30 @@ function P11.OpenOps()
     end
 end
 
-print("[POLUS-11] ОПЕРАЦИИ «РУБЕЖ» (client) v4.24.0: зов сторон, HUD-бой, лидерборд, вкладка из C-меню")
+-- ============ МАЯКИ ТОЧЕК (v4.24.1 «МАЯК»): где лежат точки боя ============
+
+hook.Add("HUDPaint", "P11.OpBeacons", function()
+    local st = OpState()
+    if st.phase ~= "battle" then return end
+    local me = LocalPlayer()
+    if not IsValid(me) then return end
+    for _, e in ipairs(ents.FindByClass("polus11_cappoint")) do
+        if IsValid(e) and e:GetNWBool("P11_OpPoint", false) then
+            local scr = (e:GetPos() + Vector(0, 0, 110)):ToScreen()
+            if scr.visible then
+                local ow = e.GetOwnerFact and e:GetOwnerFact() or ""
+                local col = (ow == "rkka") and OP_RED or (ow == "eagle") and OP_BLUE
+                    or Color(160, 168, 180)
+                local nm = e.GetPointName and e:GetPointName() or "?"
+                local d = math.floor(me:GetPos():Distance(e:GetPos()))
+                draw.SimpleTextOutlined("▼", "P11.Op.Big", scr.x, scr.y - 26, col,
+                    TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color(0, 0, 0, 220))
+                draw.SimpleTextOutlined(nm .. " · " .. d .. " юн", "P11.Op.Small",
+                    scr.x, scr.y + 2, col, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER,
+                    1, Color(0, 0, 0, 220))
+            end
+        end
+    end
+end)
+
+print("[POLUS-11] ОПЕРАЦИИ «РУБЕЖ» (client) v4.24.1 «МАЯК»: зов сторон, HUD-бой, лидерборд, маяки точек")

@@ -25,9 +25,14 @@ function ENT:Draw()
     local cap   = self:GetCapFact() or ""
     local frac  = tonumber(self:GetCapFrac()) or 0
 
+    -- v4.24.1 «МАЯК»: обычная точка во время операции/рейда СПИТ — серая
+    local evt = self:GetNWBool("P11_OpPoint", false) or self:GetNWBool("P11_RaidPoint", false)
+    local sleeping = (not evt)
+        and (GetGlobalString("P11_Op", "") ~= "" or GetGlobalString("P11_Raid", "") ~= "")
+
     -- круг захвата на земле (цвет: владелец / кто жмёт — мигает / никто)
-    local col = FactCol(cap ~= "" and cap or owner)
-    if cap ~= "" then
+    local col = sleeping and Color(95, 100, 110) or FactCol(cap ~= "" and cap or owner)
+    if cap ~= "" and not sleeping then
         local a = 140 + math.abs(math.sin(CurTime() * 6)) * 115
         col = Color(col.r, col.g, col.b, a)
     end
@@ -65,7 +70,12 @@ function ENT:Draw()
                 "P11FW.NPC.Small", 0, 73, Color(255, 255, 255, 255),
                 TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 2, Color(0, 0, 0, 220))
         else
-            draw.SimpleTextOutlined("встань в круг своей фракцией — точка пойдёт под тебя",
+            local hint = "встань в круг своей фракцией — точка пойдёт под тебя"
+            if sleeping then
+                hint = "точка спит: идёт " ..
+                    (GetGlobalString("P11_Op", "") ~= "" and "ОПЕРАЦИЯ" or "РЕЙД")
+            end
+            draw.SimpleTextOutlined(hint,
                 "P11FW.NPC.Small", 0, 73, Color(200, 205, 215, 255),
                 TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 2, Color(0, 0, 0, 220))
         end

@@ -123,6 +123,7 @@ local function OpPointsSpawn()
             e:Spawn()
             e:Activate()
             e.P11_OpPoint = true
+            e:SetNWBool("P11_OpPoint", true)  -- v4.24.1 «МАЯК»: маяки мест точек на HUD
             Op.points[#Op.points + 1] = e
         end
     end
@@ -160,6 +161,11 @@ end
 function POLUS11.OpStart(by)
     if Op.phase ~= "idle" then
         if IsValid(by) then POLUS11.Notify(by, "Операция уже идёт: фаза «" .. Op.phase .. "».") end
+        return
+    end
+    -- v4.24.1 «МАЯК»: два ивента сразу не идут — во время рейда операции молчат
+    if POLUS11.Raid and POLUS11.Raid.phase and POLUS11.Raid.phase ~= "idle" then
+        if IsValid(by) then POLUS11.Notify(by, "Идёт РЕЙД — операцию объявишь после его финала.") end
         return
     end
     OpResetAll()

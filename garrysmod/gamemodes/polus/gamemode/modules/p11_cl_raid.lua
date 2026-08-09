@@ -68,4 +68,28 @@ hook.Add("HUDPaint", "P11.RaidHUD", function()
     end
 end)
 
-print("[POLUS-11] РЕЙДЫ (client) v4.24.0 «РУБЕЖ»: полоса наверху — ход рейда и чьи точки")
+-- ============ МАЯКИ ТОЧЕК РЕЙДА (v4.24.1 «МАЯК») ============
+
+hook.Add("HUDPaint", "P11.RaidBeacons", function()
+    if GetGlobalString("P11_Raid", "") == "" then return end
+    local me = LocalPlayer()
+    if not IsValid(me) then return end
+    for _, e in ipairs(ents.FindByClass("polus11_cappoint")) do
+        if IsValid(e) and e:GetNWBool("P11_RaidPoint", false) then
+            local scr = (e:GetPos() + Vector(0, 0, 110)):ToScreen()
+            if scr.visible then
+                local ow = e.GetOwnerFact and e:GetOwnerFact() or ""
+                local col = FACT_COL[ow] or Color(125, 131, 141)
+                local nm = e.GetPointName and e:GetPointName() or "?"
+                local d = math.floor(me:GetPos():Distance(e:GetPos()))
+                draw.SimpleTextOutlined("▼", "P11.Op.Big", scr.x, scr.y - 26, col,
+                    TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color(0, 0, 0, 220))
+                draw.SimpleTextOutlined(nm .. " · " .. d .. " юн", "P11.Raid.Small",
+                    scr.x, scr.y + 2, col, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER,
+                    1, Color(0, 0, 0, 220))
+            end
+        end
+    end
+end)
+
+print("[POLUS-11] РЕЙДЫ (client) v4.24.1 «МАЯК»: полоса точек + маяки мест прорыва")

@@ -100,6 +100,17 @@ function ENT:Think()
     local pos = self:GetPos()
     local r2 = RADIUS * RADIUS
 
+    -- v4.24.1 «МАЯК»: во время ОПЕРАЦИИ/РЕЙДА обычные точки (📍 с карты) СПЯТ —
+    -- захват и оклад заморожены, играют только ивентовые
+    if not self.P11_OpPoint and not self.P11_RaidPoint then
+        local evOn = (POLUS11 and POLUS11.Op and POLUS11.Op.phase and POLUS11.Op.phase ~= "idle")
+            or (POLUS11 and POLUS11.Raid and POLUS11.Raid.phase and POLUS11.Raid.phase ~= "idle")
+        if evOn then
+            self:NextThink(now + 2)
+            return true
+        end
+    end
+
     local rkka, eagle = 0, 0
     for _, ply in ipairs(player.GetAll()) do
         if IsValid(ply) and ply:Alive() and ply:GetPos():DistToSqr(pos) <= r2 then
