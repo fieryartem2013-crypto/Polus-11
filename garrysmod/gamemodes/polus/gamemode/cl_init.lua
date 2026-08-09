@@ -52,7 +52,6 @@ local cl = {
     "modules/p11_cl_capture.lua",     -- v4.16.0 «ЗАХВАТ»: HUD точки захвата (до pchat — он всегда последний)
     "modules/p11_cl_medals.lua",      -- v4.19.4 «ПОЧЁТ»: медали — надголовье, ТАБ, окно вручения
     "modules/p11_cl_contracts.lua",   -- v4.19.4 «ПОЧЁТ»: нарядник — окно + HUD-виджет
-    "modules/p11_cl_sanity.lua",      -- v4.19.4 «ПОЧЁТ»: рассудок — индикатор + хоррор-слой
     "modules/p11_cl_clues.lua",       -- v4.20.0 «СЛЕД»: планшет-досье улик НКВД по !улики
     "modules/p11_cl_onboard.lua",     -- v4.20.0 «СЛЕД»: плашка «ПЕРВЫЙ ДЕНЬ» (NWInt)
     "modules/p11_cl_raceweek.lua",    -- v4.20.0 «СЛЕД»: полоска «ЛЕДОКОЛ» РККА vs ОРЁЛ
