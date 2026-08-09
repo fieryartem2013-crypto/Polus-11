@@ -1,5 +1,5 @@
 -- ============================================================
---  ПОЛЮС-11 — ДРЕВО СЛУЖБЫ (client) v4.24.0 «РУБЕЖ»
+--  ПОЛЮС-11 — ДРЕВО СЛУЖБЫ (client) v4.27.1 «СЕКАТОР» — ветви без наложений, чистые карточки
 --  Окно C-меню → «⭐ ДРЕВО СЛУЖБЫ»: НАСТОЯЩЕЕ ДЕРЕВО — ствол
 --  базы снизу, три ветви веером вверх, линии-связи, узлы-кнопки
 --  с состояниями (✓ открыто / золотой доступно / замок / ✕ чужой
@@ -181,7 +181,10 @@ local function BuildTreeCanvas(f, fac)
         if not pdef then break end
         local px = pathX[pid]
         for j, n in ipairs(pdef.nodes) do
-            centers[n.id] = { x = px, y = junctionY - (j - 1) * gapPath - ((j == 1) and 70 or 0) }
+            -- v4.27.1: первый узел на 70 ниже развилки, каждый следующий — ещё на gapPath
+            -- (раньше 2-й узел садился всего на 22px ниже 1-го — карточки рисовались ВНАХЛЁСТ,
+            --  отсюда и «засоренные» дубли строк на высоких узлах)
+            centers[n.id] = { x = px, y = junctionY - 70 - (j - 1) * gapPath }
             if j == 1 then
                 lines[#lines + 1] = { topBase.id, n.id }
             else
@@ -245,17 +248,35 @@ local function BuildTreeCanvas(f, fac)
             if state == "dead" then nm = "✕ " .. nm end
             draw.SimpleText(nm, "P11.TR.Tx", 10, 7,
                 state == "done" and TR_OK or (state == "dead" and Color(120, 105, 105) or TR_TEXT))
-            local sub = node.perk and ("ПЕРК: " .. node.perk)
-                or ((isBase and "база" or "должность") .. " · ур. " .. (node.lvl or 0))
-            draw.SimpleText(sub, "P11.TR.Small", 10, 28,
-                state == "done" and Color(140, 200, 160) or TR_DIM)
+            -- v4.27.1 «СЕКАТОР»: вторая строка — ОДНА честная пометка,
+            -- без дублей «должность · ур. X» поверх «нужен ур. X»
+            local sub, subC
+            if state == "done" then
+                sub  = node.perk and ("ПЕРК: " .. node.perk) or "✓ открыто"
+                subC = Color(140, 200, 160)
+            elseif state == "open" then
+                sub  = node.perk and ("ПЕРК: " .. node.perk)
+                    or ((isBase and "база" or "должность") .. " · ур. " .. (node.lvl or 0))
+                subC = TR_GOLD
+            elseif state == "lock" and note == "сначала узел ниже" then
+                sub  = "🔒 сначала узел ниже"
+                subC = Color(150, 140, 130)
+            elseif state == "lock" then
+                sub  = "🔒 нужен ур. " .. (node.lvl or 0) .. " (у тебя " .. myLvl .. ")"
+                subC = Color(150, 140, 130)
+            elseif state == "dead" then
+                sub  = "✕ чужой путь — откатом можно сменить"
+                subC = Color(120, 105, 105)
+            else
+                sub  = "база по уровню"
+                subC = TR_DIM
+            end
+            draw.SimpleText(sub, "P11.TR.Small", 10, 30, subC)
             if state == "done" then
                 draw.SimpleText("✓", "P11.TR.Mid", w - 12, 8, TR_OK, TEXT_ALIGN_RIGHT)
             elseif state == "open" then
                 draw.SimpleText("ОТКРЫТЬ ▸", "P11.TR.Small", w - 10, h - 20,
                     s:IsHovered() and TR_GOLD or Color(190, 160, 90), TEXT_ALIGN_RIGHT)
-            elseif note ~= "" then
-                draw.SimpleText(note, "P11.TR.Small", w - 10, h - 20, Color(130, 126, 120), TEXT_ALIGN_RIGHT)
             end
         end
         b.DoClick = function()
@@ -395,4 +416,4 @@ function P11.OpenSkillTree()
     end
 end
 
-print("[POLUS-11] ДРЕВО СЛУЖБЫ (client) v4.24.0 «РУБЕЖ»: настоящее дерево — ствол/ветви/линии, живое обновление по синку")
+print("[POLUS-11] ДРЕВО СЛУЖБЫ (client) v4.27.1 «СЕКАТОР»: ветви без наложений + чистые карточки узлов")
