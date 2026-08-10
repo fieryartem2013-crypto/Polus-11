@@ -1,11 +1,11 @@
 -- ============================================================
---  ПОЛЮС-11 — HUD ЖИЗНИ (client) v3.4
---  Заменяет скрытый стоковый HL2-HUD:
---   • слева внизу — панель ЗДОРОВЬЯ и БРОНИ (плавные бары,
---     пульс при критическом HP, красная виньетка при ранении);
---   • справа внизу — ПАТРОНЫ активного оружия;
---   • значок МУТА над панелью жизни;
---   • большие ТОСТЫ модерации (варн/мут/кик/бан) по центру.
+--  ПОЛЮС-11 — HUD ЖИЗНИ (client) v4.33.0 «ПАТРОН»
+--  Полный редизайн по заявке владельца «обнови полностью UI
+--  худа»: строгий «советский» стиль станции — тёмная панель
+--  с красной звездой и золотой каймой, плавные бары с бликом,
+--  аккуратная панель патронов, вспышки урона/лечения, тосты
+--  модерации. Сетевой контракт и привязки (P11.VitalsTop,
+--  P11.EcoMoneyTop) не тронуты — экономика и мут висят как раньше.
 -- ============================================================
 
 surface.CreateFont("P11.Vitals.Big",   { font = "Roboto", size = 26, weight = 800, extended = true })
@@ -20,9 +20,6 @@ P11 = P11 or {}
 -- ============ ПЛАВНОСТЬ БАРОВ ============
 
 local curHp, curAr = 100, 0
--- v3.8.2 КРИТ-ФИКС: эти счётчики были «голыми» глобалами (local забыт) —
--- curWarm был nil, строка 111 «число + nil» крашилась КАЖДЫЙ КАДР (xБЕСКОНЕЧНО),
--- а до lastHp/dmgFlash/healFlash дело просто не доходило из-за падения выше.
 local curWarm, lastHp       = 100, 100
 local dmgFlash, healFlash   = 0, 0
 
@@ -31,11 +28,14 @@ local COL = {
     hpMid  = Color(235, 185, 80),
     hpBad  = Color(240, 85, 75),
     armor  = Color(95, 160, 230),
-    bg     = Color(16, 18, 24, 215),
-    frame  = Color(8, 9, 12, 255),
-    text   = Color(235, 238, 245),
-    dim    = Color(150, 155, 170),
+    bg     = Color(13, 15, 20, 224),   -- глубже и строже
+    bg2    = Color(18, 21, 28, 255),   -- внутренние подложки
+    frame  = Color(6, 7, 9, 255),
+    text   = Color(238, 240, 246),
+    dim    = Color(152, 157, 172),
     gold   = Color(255, 205, 110),
+    red    = Color(205, 60, 52),       -- знамя
+    redHi  = Color(235, 80, 70),
 }
 
 local function HpColor(frac, t)
@@ -44,23 +44,47 @@ local function HpColor(frac, t)
     elseif frac > 0.25 then c = COL.hpMid
     else
         c = COL.hpBad
-        -- пульс на критическом
         local p = 0.72 + math.sin(t * 7) * 0.28
         return Color(c.r, c.g, c.b, 160 + 95 * p)
     end
     return c
 end
 
-local function DrawBar(x, y, w, h, frac, col, bigTxt, smallTxt)
-    frac = math.Clamp(frac, 0, 1)
-    draw.RoundedBox(4, x - 2, y - 2, w + 4, h + 4, COL.frame)
-    draw.RoundedBox(3, x, y, w, h, Color(30, 33, 42, 255))
-    if frac > 0.01 then
-        draw.RoundedBox(3, x, y, math.max(6, w * frac), h, col)
-        -- блик сверху
-        surface.SetDrawColor(255, 255, 255, 22)
-        surface.DrawRect(x + 1, y + 1, math.max(4, w * frac) - 2, math.floor(h / 2) - 1)
+-- плавное смешение цветов (для перехода «ок → плохо» без скачка)
+local function MixCol(a, b, k)
+    return Color(
+        math.floor(a.r + (b.r - a.r) * k),
+        math.floor(a.g + (b.g - a.g) * k),
+        math.floor(a.b + (b.b - a.b) * k),
+        math.floor(a.a + (b.a - a.a) * k))
+end
+
+-- бегущий блик по бару (светлый штрих, едет слева направо)
+local function BarShine(x, y, w, h, frac, t, speed)
+    local ph = (t * (speed or 1.4)) % 1.6 - 0.3
+    if ph > -0.2 and ph < 1 then
+        local sx = x + ph * w
+        surface.SetDrawColor(255, 255, 255, 26)
+        surface.DrawRect(sx, y, 10, h)
     end
+end
+
+local function DrawBar(x, y, w, h, frac, col, bigTxt, smallTxt, t)
+    frac = math.Clamp(frac, 0, 1)
+    -- тень-рамка
+    draw.RoundedBox(4, x - 2, y - 2, w + 4, h + 4, COL.frame)
+    draw.RoundedBox(3, x, y, w, h, COL.bg2)
+    if frac > 0.01 then
+        local fw = math.max(6, w * frac)
+        draw.RoundedBox(3, x, y, fw, h, col)
+        -- верхний блик
+        surface.SetDrawColor(255, 255, 255, 26)
+        surface.DrawRect(x + 1, y + 1, fw - 2, math.floor(h / 2) - 1)
+        if t then BarShine(x, y, fw, h, frac, t) end
+    end
+    -- тонкая золотая насечка по краю бара
+    surface.SetDrawColor(COL.gold.r, COL.gold.g, COL.gold.b, 40)
+    surface.DrawOutlinedRect(x, y, w, h, 1)
     if bigTxt then
         draw.SimpleTextOutlined(bigTxt, "P11.Vitals.Big", x + 10, y + h / 2, COL.text,
             TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, 1, Color(0, 0, 0, 180))
@@ -95,25 +119,28 @@ hook.Add("HUDPaint", "P11.Vitals", function()
     -- ----- панель слева внизу -----
     local px, py, pw = 16, sh - 118, 272
     draw.RoundedBox(8, px - 8, py - 26, pw + 16, 118, COL.bg)
-    -- v4.2.2: верх панели — точка привязки для «золотого кошелька» (экономика)
     P11.VitalsTop = py - 26
 
-    -- v4.2.2: морозный глянец — тонкая ледяная кромка сверху + шапка-градиент
-    local tGlow = 130 + math.sin(t * 1.4) * 30
-    surface.SetDrawColor(120, 190, 230, tGlow)
-    surface.DrawRect(px - 8, py - 26, pw + 16, 1)
-    for i = 0, 3 do
-        surface.SetDrawColor(40, 60, 78, 26 - i * 5)
-        surface.DrawRect(px - 8, py - 25 + i, pw + 16, 1)
+    -- v4.33.0: КРАСНОЕ ЗНАМЯ — левая кромка панели
+    draw.RoundedBoxEx(8, px - 8, py - 26, 5, 118, COL.red, true, false, true, false)
+    -- золотая кайма сверху
+    surface.SetDrawColor(COL.gold.r, COL.gold.g, COL.gold.b, 120 + math.sin(t * 1.4) * 30)
+    surface.DrawRect(px - 3, py - 26, pw + 11, 1)
+    -- тонкая тень под каймой
+    for i = 0, 2 do
+        surface.SetDrawColor(40, 42, 50, 22 - i * 6)
+        surface.DrawRect(px - 3, py - 25 + i, pw + 11, 1)
     end
-    -- уголок-платка панели (ледяной штрих)
-    surface.SetDrawColor(150, 215, 245, 90)
+    -- уголок-плашка знамени
+    surface.SetDrawColor(COL.redHi.r, COL.redHi.g, COL.redHi.b, 150)
     surface.DrawRect(px - 8, py - 26, 26, 2)
     surface.DrawRect(px - 8, py - 26, 2, 26)
 
     local label = me:Alive() and "СОСТОЯНИЕ БОЙЦА" or "ВЫ ПОГИБЛИ — ЖДИТЕ РЕСПАВН"
-    draw.SimpleText(label, "P11.Vitals.Small", px + 4, py - 16,
-        me:Alive() and COL.dim or COL.hpBad)
+    local lblCol = me:Alive() and COL.dim or COL.hpBad
+    -- звезда у заголовка
+    draw.SimpleText("★", "P11.Vitals.Small", px + 2, py - 15, COL.gold, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+    draw.SimpleText(label, "P11.Vitals.Small", px + 16, py - 15, lblCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
 
     if not me:Alive() then
         draw.SimpleText("Респавн вернёт снаряжение должности", "P11.Vitals.Small",
@@ -121,17 +148,24 @@ hook.Add("HUDPaint", "P11.Vitals", function()
         return
     end
 
-    DrawBar(px, py, pw, 26, curHp / mhp, HpColor(curHp / mhp, t),
-        math.Round(hp), "ЗДОРОВЬЕ / " .. mhp)
+    local hpFrac = curHp / mhp
+    -- плавная смена цвета здоровья
+    local hpCol = HpColor(hpFrac, t)
+    if hpFrac > 0.55 and hpFrac < 0.75 then
+        hpCol = MixCol(COL.hpMid, COL.hpOk, (hpFrac - 0.55) / 0.2)
+    elseif hpFrac > 0.25 and hpFrac < 0.55 then
+        hpCol = MixCol(COL.hpBad, COL.hpMid, (hpFrac - 0.25) / 0.3)
+    end
+    DrawBar(px, py, pw, 26, hpFrac, hpCol,
+        math.Round(hp), "ЗДОРОВЬЕ / " .. mhp, t)
 
     DrawBar(px, py + 34, pw, 16, curAr / 100, COL.armor,
-        nil, math.Round(ar) > 0 and ("БРОНЯ  " .. math.Round(ar)) or "БРОНИ НЕТ")
+        nil, math.Round(ar) > 0 and ("БРОНЯ  " .. math.Round(ar)) or "БРОНИ НЕТ", t)
 
     -- ----- v3.7: ТЕПЛО (переохлаждение) -----
     local wm = me:GetNWFloat("P11_Warmth", 100)
     curWarm = curWarm + (wm - curWarm) * ft
     if math.abs(curWarm - wm) < 0.5 then curWarm = wm end
-    -- показываем всегда, но бледно, когда тепло полное (для инфы)
     local warmFrac = math.Clamp(curWarm / 100, 0, 1)
     local warmCol
     if warmFrac > 0.6 then warmCol = Color(120, 190, 235)
@@ -141,11 +175,8 @@ hook.Add("HUDPaint", "P11.Vitals", function()
         warmCol = Color(225, 245, 255, 150 + 105 * p) -- тревожное мигание на морозе
     end
     DrawBar(px, py + 56, pw, 12, warmFrac, warmCol,
-        nil, "❄ ТЕПЛО  " .. math.Round(curWarm) .. "%")
+        nil, "❄ ТЕПЛО  " .. math.Round(curWarm) .. "%", t)
     if warmFrac <= 0.3 then
-        -- v4.8.2 «ДОКЛАД»: жалоба «текст залез». Текст мороза теперь
-        -- под шкалой тепла (а не поверх неё) и всегда ВНУТРИ рамки:
-        -- если не влезает в ширину панели — берём мелкий шрифт.
         local coldTxt = "ЗАМЕРЗАЕШЬ — К ГЕНЕРАТОРУ!"
         local coldFont = "P11.Vitals.Small"
         surface.SetFont(coldFont)
@@ -167,6 +198,7 @@ hook.Add("HUDPaint", "P11.Vitals", function()
         draw.RoundedBoxEx(8, px - 12, py - 26, 4, 118, Color(240, 70, 60, 230 * dmgFlash), true, false, true, false)
         surface.SetDrawColor(200, 30, 30, 90 * dmgFlash)
         surface.DrawRect(0, 0, sw, 34)
+        surface.DrawRect(0, sh - 34, sw, 34)
         dmgFlash = dmgFlash * math.max(0, 1 - FrameTime() * 3.2)
     end
     if healFlash > 0.003 then
@@ -182,10 +214,10 @@ hook.Add("HUDPaint", "P11.Vitals", function()
             .. (rs ~= "" and (" — " .. rs) or "")
         surface.SetFont("P11.Vitals.Small")
         local tw = surface.GetTextSize(txt)
-        -- v4.2.2: выше «золотого кошелька» (тот висит над панелью жизни)
         local muteTop = (tonumber(P11.EcoMoneyTop) or (py - 88)) - 30
         draw.RoundedBox(5, px - 6, muteTop, tw + 20, 22, Color(60, 42, 12, 230))
-        draw.SimpleText(txt, "P11.Vitals.Small", px + 4, muteTop + 11, COL.gold, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        draw.RoundedBoxEx(5, px - 6, muteTop, 4, 22, COL.gold, true, false, true, false)
+        draw.SimpleText("🔇 " .. txt, "P11.Vitals.Small", px + 4, muteTop + 11, COL.gold, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
     end
 
     -- ----- красная виньетка при критическом HP -----
@@ -197,7 +229,7 @@ hook.Add("HUDPaint", "P11.Vitals", function()
         surface.DrawRect(0, 0, 46, sh)
         surface.DrawRect(sw - 46, 0, 46, sh)
         if (t % 0.6) < 0.3 then
-            draw.SimpleText("КРИТИЧЕСКОЕ СОСТОЯНИЕ", "P11.Vitals.Med",
+            draw.SimpleText("★ КРИТИЧЕСКОЕ СОСТОЯНИЕ ★", "P11.Vitals.Med",
                 sw / 2, sh * 0.8, Color(255, 90, 80, 180 + 60 * math.sin(t * 6)),
                 TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
         end
@@ -215,20 +247,18 @@ hook.Add("HUDPaint", "P11.Vitals", function()
             local name = wep.PrintName or wep:GetClass() or "оружие"
             local bx, by, bw = sw - 236, sh - 96, 220
             draw.RoundedBox(8, bx, by, bw, 88, COL.bg)
-            -- v4.2.2: ледяная кромка и уголок, как у панели жизни
+            -- знамя: красная кромка справа + золотая кайма
+            draw.RoundedBoxEx(8, bx + bw - 5, by, 5, 88, COL.red, false, true, false, true)
             local ag = 130 + math.sin(t * 1.4) * 30
-            surface.SetDrawColor(120, 190, 230, ag)
+            surface.SetDrawColor(COL.gold.r, COL.gold.g, COL.gold.b, ag)
             surface.DrawRect(bx, by, bw, 1)
-            surface.SetDrawColor(150, 215, 245, 90)
-            surface.DrawRect(bx + bw - 26, by, 26, 2)
-            surface.DrawRect(bx + bw - 2, by, 2, 26)
             -- мало патронов — красный пульс по контуру
             if clip >= 0 and clip <= math.max(4, (wep:GetMaxClip1() > 0 and wep:GetMaxClip1() or 30) * 0.2) then
                 local pp = 0.5 + math.sin(t * 8) * 0.5
                 surface.SetDrawColor(240, 90, 80, 60 + 120 * pp)
                 surface.DrawOutlinedRect(bx, by, bw, 88, 1)
             end
-            draw.SimpleText(string.upper(name), "P11.Vitals.Small", bx + bw / 2, by + 10, COL.dim,
+            draw.SimpleText("★ " .. string.upper(name), "P11.Vitals.Small", bx + bw / 2, by + 10, COL.dim,
                 TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
             if clip >= 0 then
                 draw.SimpleText(tostring(clip), "P11.Vitals.Ammo", bx + bw / 2 - 8, by + 40, COL.text,
@@ -266,7 +296,6 @@ net.Receive("P11FW_ModToast", function()
     TOASTS[#TOASTS + 1] = { text = text, kind = kind, t0 = SysTime(), dur = 6.5 }
     if #TOASTS > 3 then table.remove(TOASTS, 1) end
 
-    -- звук по типу
     if kind == "warn" then
         surface.PlaySound("ambient/alarms/warningbell1.wav")
     elseif kind == "kick" or kind == "ban" then
@@ -290,7 +319,6 @@ hook.Add("HUDPaint", "P11.Vitals.Toasts", function()
         if el >= t.dur then
             table.remove(TOASTS, i)
         else
-            -- появление + затухание
             local aIn  = math.Clamp(el / 0.25, 0, 1)
             local aOut = math.Clamp((t.dur - el) / 0.7, 0, 1)
             local a = math.min(aIn, aOut)
@@ -298,13 +326,18 @@ hook.Add("HUDPaint", "P11.Vitals.Toasts", function()
 
             surface.SetFont("P11.Vitals.Toast")
             local tw = surface.GetTextSize(t.text)
-            local bw = tw + 46
+            local bw = tw + 56
             local bx = sw / 2 - bw / 2
             local by = y - aIn * 26 - 26
 
             draw.RoundedBox(8, bx, by, bw, 52, Color(14, 12, 14, 235 * a))
+            -- золотая кайма + цветной корешок
             draw.RoundedBoxEx(8, bx, by, 5, 52, Color(c.r, c.g, c.b, 255 * a), true, false, true, false)
-            draw.SimpleText(t.text, "P11.Vitals.Toast", sw / 2 + 12, by + 26,
+            surface.SetDrawColor(COL.gold.r, COL.gold.g, COL.gold.b, 70 * a)
+            surface.DrawOutlinedRect(bx, by, bw, 52, 1)
+            draw.SimpleText("★", "P11.Vitals.Small", bx + 14, by + 26, Color(c.r, c.g, c.b, 255 * a),
+                TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+            draw.SimpleText(t.text, "P11.Vitals.Toast", sw / 2 + 14, by + 26,
                 Color(c.r, c.g, c.b, 255 * a), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
             y = y + 60
         end

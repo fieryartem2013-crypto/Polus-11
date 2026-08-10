@@ -54,11 +54,33 @@ local function FmtTime(sec)
     return string.format("%d:%02d", math.floor(sec / 60), sec % 60)
 end
 
-local function HoldBar(x, y, w, frac, col)
+-- v4.33.0 «ПАТРОН»: плавные значения (бары серий едут без рывков)
+local SMOOTH = {}
+local function SmoothVal(key, target)
+    local cur = SMOOTH[key] or target
+    cur = cur + (target - cur) * math.min(FrameTime() * 5, 1)
+    if math.abs(cur - target) < 0.005 then cur = target end
+    SMOOTH[key] = cur
+    return cur
+end
+
+local function HoldBar(x, y, w, frac, col, t)
     draw.RoundedBox(4, x, y, w, 10, Color(16, 20, 26, 240))
     local fw = math.floor(w * math.Clamp(frac, 0, 1))
-    if fw > 2 then draw.RoundedBox(4, x, y, fw, 10, col) end
-    surface.SetDrawColor(255, 255, 255, 26)
+    if fw > 2 then
+        draw.RoundedBox(4, x, y, fw, 10, col)
+        surface.SetDrawColor(255, 255, 255, 22)
+        surface.DrawRect(x + 1, y + 1, fw - 2, 3)
+        -- бегущий блик
+        if t then
+            local ph = (t * 1.6) % 1.4 - 0.2
+            if ph > -0.15 and ph < 1 then
+                surface.SetDrawColor(255, 255, 255, 34)
+                surface.DrawRect(x + ph * w, y, 12, 10)
+            end
+        end
+    end
+    surface.SetDrawColor(255, 205, 100, 46)
     surface.DrawOutlinedRect(x, y, w, 10, 1)
 end
 
@@ -74,7 +96,9 @@ hook.Add("HUDPaint", "P11.OpHUD", function()
         draw.RoundedBox(8, w / 2 - 300, 92, 600, 52, Color(58, 40, 16, 228))
         surface.SetDrawColor(255, 205, 100, 60)
         surface.DrawOutlinedRect(w / 2 - 300, 92, 600, 52, 1)
-        draw.SimpleText("⚔ ОПЕРАЦИЯ «РУБЕЖ» — запись сторон " .. FmtTime(st.left),
+        surface.SetDrawColor(255, 205, 100, 90 + math.sin(CurTime() * 1.4) * 20)
+        surface.DrawRect(w / 2 - 300, 92, 600, 1)
+        draw.SimpleText("★ ОПЕРАЦИЯ «РУБЕЖ» — запись сторон " .. FmtTime(st.left),
             "P11.Op.Mid", w / 2, 100, GOLD, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
         draw.SimpleText("★ СССР ×" .. (st.nA or 0) .. "    ★ США ×" .. (st.nB or 0) ..
             (mine ~= "" and ("    —    ты за «" .. (SIDE_SHORT[mine] or "?") .. "»") or ""),
@@ -83,28 +107,39 @@ hook.Add("HUDPaint", "P11.OpHUD", function()
     end
 
     if st.phase == "battle" then
-        -- главная панель: стороны + большой таймер
+        -- главная панель: стороны + большой таймер (v4.33.0: знамя-кайма)
         draw.RoundedBox(8, w / 2 - 400, 92, 800, 46, Color(14, 18, 26, 228))
         surface.SetDrawColor(255, 255, 255, 14)
         surface.DrawOutlinedRect(w / 2 - 400, 92, 800, 46, 1)
+        surface.SetDrawColor(255, 205, 100, 90 + math.sin(CurTime() * 1.4) * 20)
+        surface.DrawRect(w / 2 - 400, 92, 800, 1)
+        -- цветные кромки сторон
+        draw.RoundedBoxEx(8, w / 2 - 400, 92, 4, 46, USSR_COL, true, false, true, false)
+        draw.RoundedBoxEx(8, w / 2 + 396, 92, 4, 46, USA_COL, false, true, false, true)
 
         -- СССР слева: имя, счёт точек, бар серии
         local ca = (mine == "rkka") and GOLD or USSR_COL
         draw.SimpleText("★ СССР  " .. (st.ownA or 0) .. "/" .. (st.pts or 0),
             "P11.Op.Mid", w / 2 - 384, 98, ca, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
-        HoldBar(w / 2 - 384, 122, 170, (st.holdA or 0) / HOLD_WIN, ca)
+        HoldBar(w / 2 - 384, 122, 170, SmoothVal("holdA", (st.holdA or 0) / HOLD_WIN), ca, CurTime())
 
-        -- центр: большой таймер
-        draw.SimpleText(FmtTime(st.left), "P11.Op.Title", w / 2, 93,
-            Color(240, 242, 246), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
+        -- центр: большой таймер (пульсирует красным под минуту)
+        local leftT = st.left or 0
+        local tcol = Color(240, 242, 246)
+        if leftT < 60 then
+            local p = 0.5 + math.sin(CurTime() * 6) * 0.5
+            tcol = Color(255, 120 + 60 * p, 100 + 40 * p)
+        end
+        draw.SimpleText(FmtTime(leftT), "P11.Op.Title", w / 2, 93,
+            tcol, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
 
         -- США справа
         local cb = (mine == "eagle") and GOLD or USA_COL
         draw.SimpleText((st.ownB or 0) .. "/" .. (st.pts or 0) .. "  США ★",
             "P11.Op.Mid", w / 2 + 384, 98, cb, TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP)
-        HoldBar(w / 2 + 384 - 170, 122, 170, (st.holdB or 0) / HOLD_WIN, cb)
+        HoldBar(w / 2 + 384 - 170, 122, 170, SmoothVal("holdB", (st.holdB or 0) / HOLD_WIN), cb, CurTime())
 
-        -- фишки точек под панелью (буква в цвете владельца)
+        -- фишки точек под панелью (буква в цвете владельца, мягкая тень)
         local chips = {}
         for _, e in ipairs(ents.FindByClass("polus11_cappoint")) do
             if IsValid(e) and e:GetNWBool("P11_OpPoint", false) then
@@ -122,7 +157,11 @@ hook.Add("HUDPaint", "P11.OpHUD", function()
                 local col = SIDE_COL[c.ow] or NEUTRAL_C
                 local hot = c.cap ~= "" and c.cap ~= c.ow -- точку жмёт чужая сторона
                 local a = hot and (140 + math.sin(CurTime() * 8) * 80) or 235
+                -- тень
+                draw.RoundedBox(6, x + 1, 145, 56, 26, Color(0, 0, 0, 120))
                 draw.RoundedBox(6, x, 144, 56, 26, Color(14, 18, 26, a))
+                surface.SetDrawColor(col.r, col.g, col.b, hot and (120 + math.sin(CurTime() * 8) * 80) or 60)
+                surface.DrawOutlinedRect(x, 144, 56, 26, 1)
                 draw.SimpleText(c.nm, "P11.Op.Mid", x + 28, 157, col,
                     TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
                 if hot then
@@ -140,7 +179,9 @@ hook.Add("HUDPaint", "P11.OpHUD", function()
 
     if st.phase == "end" then
         draw.RoundedBox(8, w / 2 - 250, 92, 500, 38, Color(16, 40, 24, 228))
-        draw.SimpleText("⚔ ОПЕРАЦИЯ ЗАВЕРШЕНА — лидерборд на экране",
+        surface.SetDrawColor(150, 230, 170, 50)
+        surface.DrawOutlinedRect(w / 2 - 250, 92, 500, 38, 1)
+        draw.SimpleText("★ ОПЕРАЦИЯ ЗАВЕРШЕНА — лидерборд на экране ★",
             "P11.Op.Mid", w / 2, 100, Color(150, 230, 170), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
     end
 end)
@@ -183,10 +224,13 @@ local function OpenPick()
     f.Paint = function(s, pw, ph)
         Derma_DrawBackgroundBlur(s, s.T0)
         draw.RoundedBox(12, 0, 0, pw, ph, BG)
+        -- v4.33.0: знамя — красная шапка с золотой каймой
         draw.RoundedBoxEx(12, 0, 0, pw, 58, Color(64, 36, 16, 255), true, true, false, false)
-        surface.SetDrawColor(255, 205, 100, 90)
+        surface.SetDrawColor(205, 60, 52, 90)
+        surface.DrawRect(0, 0, pw, 3)
+        surface.SetDrawColor(255, 205, 100, 120)
         surface.DrawLine(10, 58, pw - 10, 58)
-        draw.SimpleText("⚔ ОПЕРАЦИЯ «РУБЕЖ»", "P11.Op.Big", pw / 2, 8,
+        draw.SimpleText("★ ОПЕРАЦИЯ «РУБЕЖ» ★", "P11.Op.Big", pw / 2, 8,
             GOLD, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
         draw.SimpleText("вахты сброшены командованием — ВСТАНЬ ПОД ЗНАМЯ СТОРОНЫ",
             "P11.Op.Small", pw / 2, 36, Color(235, 220, 195), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
@@ -209,6 +253,11 @@ local function OpenPick()
                 Color(math.floor(col.r * 0.20), math.floor(col.g * 0.20), math.floor(col.b * 0.20), 255))
             surface.SetDrawColor(col.r, col.g, col.b, hv and 255 or 120)
             surface.DrawOutlinedRect(0, 0, pw, ph, 2)
+            -- внутренняя золотая рамка при наведении
+            if hv then
+                surface.SetDrawColor(255, 205, 100, 120)
+                surface.DrawOutlinedRect(4, 4, pw - 8, ph - 8, 1)
+            end
             draw.SimpleText("★", "P11.Op.Huge", pw / 2, 16,
                 hv and Color(255, 226, 140) or col, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
             draw.SimpleText(sideName, "P11.Op.Title", pw / 2, 72,
@@ -275,8 +324,12 @@ net.Receive("P11_OpBoard", function()
     f.Paint = function(s, pw, ph)
         Derma_DrawBackgroundBlur(s, s.T0)
         draw.RoundedBox(12, 0, 0, pw, ph, BG)
+        -- v4.33.0: шапка в цвет победителя + золотая кайма
         draw.RoundedBoxEx(12, 0, 0, pw, 66, Color(20, 44, 28, 255), true, true, false, false)
-        draw.SimpleText("⚔ ЛИДЕРБОРД ОПЕРАЦИИ", "P11.Op.Big", pw / 2, 8,
+        draw.RoundedBoxEx(12, 0, 0, pw, 4, wcol, true, true, false, false)
+        surface.SetDrawColor(255, 205, 100, 100)
+        surface.DrawLine(12, 66, pw - 12, 66)
+        draw.SimpleText("★ ЛИДЕРБОРД ОПЕРАЦИИ ★", "P11.Op.Big", pw / 2, 8,
             GOLD, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
         draw.SimpleText("★  " .. tostring(b.wname or "") .. "  ★", "P11.Op.Mid", pw / 2, 40,
             wcol, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
@@ -360,9 +413,10 @@ function P11.OpenOps()
         Derma_DrawBackgroundBlur(s, s.T0)
         draw.RoundedBox(12, 0, 0, pw, ph, BG)
         draw.RoundedBoxEx(12, 0, 0, pw, 54, PANE, true, true, false, false)
+        draw.RoundedBoxEx(12, 0, 0, pw, 3, Color(205, 60, 52, 200), true, true, false, false)
         surface.SetDrawColor(255, 205, 100, 60)
         surface.DrawLine(10, 54, pw - 10, 54)
-        draw.SimpleText("⚔ ОПЕРАЦИИ", "P11.Op.Big", 18, 12, GOLD)
+        draw.SimpleText("★ ОПЕРАЦИИ", "P11.Op.Big", 18, 12, GOLD)
         draw.SimpleText("«РУБЕЖ» — бой сторон за точки", "P11.Op.Small",
             pw - 18, 20, DIMC, TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP)
     end

@@ -24,8 +24,8 @@ surface.CreateFont("P11D.Small", { font = "Roboto", size = 14, weight = 400, ext
 
 P11D = P11D or { Frame = nil }
 
--- ДС-магазин: ВСТАВЬ свой инвайт (постоянный: Приглашения → «не истекает»)
-local DONATE_URL = "https://discord.gg/kdNXgaetC" -- вставлен владельцем в v4.14.3 «ЗАРЯД» (плашка «ХОЗЯИНУ» убрана)
+-- v4.33.0 «ПАТРОН»: донат-ссылка заменена на VK владельца (заявка «вот новая ссылка для донатов»)
+local DONATE_URL = "https://vk.ru/stolinov"
 
 local C = {
     bg     = Color(10, 14, 20, 246),
@@ -183,7 +183,7 @@ local function OpenDonate()
     end
 
     -- ---------- 1) ПОПОЛНИТЬ ПОТОК ----------
-    SectionTitle("💠 ПОПОЛНИТЬ ПОЛЮС-ФЛЮКС", "реальная поддержка: рубли → в ДС (закреп) → ПФ на баланс")
+    SectionTitle("💠 ПОПОЛНИТЬ ПОЛЮС-ФЛЮКС", "реальная поддержка: рубли → в VK владельца (vk.ru/stolinov) → ПФ на баланс")
 
     local topRow = sc:Add("DPanel")
     topRow:Dock(TOP) topRow:DockMargin(0, 0, 0, 12) topRow:SetTall(108)
@@ -200,7 +200,7 @@ local function OpenDonate()
             draw.RoundedBoxEx(10, 0, 0, w, 30, Color(110, 200, 220, 26), true, true, false, false)
             draw.SimpleText(s2.T.rub .. "  →  " .. s2.T.flux .. " ПФ", "P11D.Big", 12, 6, C.flux)
             draw.SimpleText(s2.T.tag, "P11D.Small", 12, 32, C.dim)
-            draw.SimpleText("клик — в наш ДИСКОРД-магазин", "P11D.Small", 12, 52, C.dim)
+            draw.SimpleText("клик — VK владельца (vk.ru/stolinov)", "P11D.Small", 12, 52, C.dim)
         end
         local b = vgui.Create("DButton", card)
         b:SetPos(12, 74) b:SetSize(cardW - 24, 26) b:SetText("")
@@ -208,7 +208,7 @@ local function OpenDonate()
             draw.RoundedBox(7, 0, 0, w, h, s2:IsHovered() and Color(60, 110, 130) or Color(36, 60, 74))
             surface.SetDrawColor(C.flux)
             surface.DrawOutlinedRect(0, 0, w, h, 1)
-            draw.SimpleText("КУПИТЬ " .. t.rub .. " → ДС", "P11D.Small", w / 2, h / 2,
+            draw.SimpleText("КУПИТЬ " .. t.rub .. " → VK", "P11D.Small", w / 2, h / 2,
                 s2:IsHovered() and Color(210, 250, 255) or C.flux, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
         end
         b.DoClick = function()
@@ -357,21 +357,21 @@ net.Receive("p11_promo_use", function()
     end
 end)
 
--- клик по пакету рублей — в ДИСКОРД-магазин (оплата там, выдача тут)
+-- клик по пакету рублей — в VK владельца (оплата там, выдача тут)
 function P11D.BuyInDiscord(packName, price)
     surface.PlaySound("ui/buttonclick.wav")
     if string.find(DONATE_URL, "ВСТАВЬ_ИНВАЙТ", 1, true) then
         chat.AddText(Color(255, 120, 110), "[ПОДДЕРЖКА] ",
-            Color(225, 230, 240), "Хозяин сервера ещё не вставил инвайт ДС (DONATE_URL в p11_cl_donate.lua).")
-        P11D.PromoMsg = "⚠ Хозяин не вставил инвайт ДС — кнопка покажет ДС, когда он впишет DONATE_URL."
+            Color(225, 230, 240), "Хозяин сервера ещё не вставил ссылку VK (DONATE_URL в p11_cl_donate.lua).")
+        P11D.PromoMsg = "⚠ Хозяин не вставил ссылку VK — кнопка покажет VK, когда он впишет DONATE_URL."
         P11D.PromoOk = false
         return
     end
-    P11D.PromoMsg = "Открываю ДИСКОРД-магазин: «" .. tostring(packName) .. "» (" .. tostring(price) .. ")…"
+    P11D.PromoMsg = "Открываю VK владельца: «" .. tostring(packName) .. "» (" .. tostring(price) .. ")…"
     P11D.PromoOk = true
     gui.OpenURL(DONATE_URL)
     chat.AddText(Color(235, 205, 100), "[ПОДДЕРЖКА] ",
-        Color(225, 230, 240), "Открыл ДИСКОРД: оплата по закрепу СБП, пакет «" .. tostring(packName) .. "» за " .. tostring(price)
+        Color(225, 230, 240), "Открыл VK (vk.ru/stolinov): оплата по договорённости, пакет «" .. tostring(packName) .. "» за " .. tostring(price)
         .. ". ПФ долетит на баланс (магазин/Глава: p11_fluxgive).")
 end
 

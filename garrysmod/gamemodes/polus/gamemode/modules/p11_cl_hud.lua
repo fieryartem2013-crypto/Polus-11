@@ -53,7 +53,11 @@ hook.Add("HUDPaint", "P11_BlackoutWarn", function()
     if (CurTime() % 3) > 2.2 then return end
 
     local w, h = ScrW(), ScrH()
-    draw.SimpleText("АВАРИЯ ЭНЕРГОСИСТЕМЫ — НЕТ ПИТАНИЯ", "P11.HUD.Mid", w / 2, 100, Color(255, 90, 80, 220), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+    local a = 220
+    draw.RoundedBox(6, w / 2 - 300, 82, 600, 36, Color(30, 8, 6, 200))
+    surface.SetDrawColor(255, 90, 80, 60)
+    surface.DrawOutlinedRect(w / 2 - 300, 82, 600, 36, 1)
+    draw.SimpleText("★ АВАРИЯ ЭНЕРГОСИСТЕМЫ — НЕТ ПИТАНИЯ ★", "P11.HUD.Mid", w / 2, 100, Color(255, 90, 80, a), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 end)
 
 -- фаза смены под часами конца экрана
@@ -61,6 +65,11 @@ hook.Add("HUDPaint", "P11_PhaseLine", function()
     local w = ScrW()
     local phase = GetGlobalString("P11_Phase", "")
     if phase == "" then return end
+    surface.SetFont("P11.HUD.Text")
+    local tw = surface.GetTextSize("Фаза: " .. phase)
+    draw.RoundedBox(4, w - 18 - tw - 14, 10, tw + 14, 24, Color(10, 13, 18, 170))
+    surface.SetDrawColor(255, 205, 100, 60)
+    surface.DrawOutlinedRect(w - 18 - tw - 14, 10, tw + 14, 24, 1)
     draw.SimpleText("Фаза: " .. phase, "P11.HUD.Text", w - 18, 12, Color(200, 210, 230, 200), TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP)
 end)
 

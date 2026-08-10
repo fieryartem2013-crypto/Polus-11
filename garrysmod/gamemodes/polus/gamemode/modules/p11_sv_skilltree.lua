@@ -82,7 +82,7 @@ POLUS11.TreeDefs = {
             }},
             razved = { name = "ПУТЬ РАЗВЕДКИ", nodes = {
                 { id = "rk_raz", job = "seed_rkka_razvedchik", lvl = 3 },
-                { id = "rk_rad", job = "seed_rkka_radist",     lvl = 4 }, -- v4.32.0 «ПОДПОЛЬЕ»
+                -- v4.33.0 «ПАТРОН»: Радист РККА ВЫРЕЗАН (заявка владельца «удали связиста РККА»)
                 { id = "rk_kom", job = "seed_rkka_komissar",   lvl = 6 },
                 { id = "rk_gen", job = "seed_rkka_general",    lvl = 9 },
             }},

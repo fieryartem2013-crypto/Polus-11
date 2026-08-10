@@ -186,28 +186,16 @@ local SEED_JOBS = {
     },
     {
         -- v4.32.0 «ПОДПОЛЬЕ»: новая профа РККА от сборки (заявка «новые профы для РККА»)
+        -- v4.33.0 «ПАТРОН»: Снабженцу выдан ПАТРОН-КИТ (заявка «добавь свеп Патрон Кит… дай снабженцу»)
         id = "seed_rkka_snabzhenets", time = 60, category = "rkka", order = 33,
         name = "Снабженец РККА",
-        desc = "Тыловик ударных групп: патроны, паёк и брезент для постов — возит и отбивается. Двустволка ИЖ-43, лом кладовщика и рация. 110 ХП / 70 брони.",
-        weapons = { { "arc9_eft_mr43", "weapon_shotgun" }, "weapon_crowbar", "weapon_polus11_radio" }, hp = 110, armor = 70, max = 2,
+        desc = "Тыловик ударных групп: патроны, паёк и брезент для постов — возит и отбивается. ПАТРОН-КИТ в снаряге: ЛКМ — пополнить бойца в упор (патроны под ствол в его руках), ПКМ — себе. Двустволка ИЖ-43, лом кладовщика и рация. 110 ХП / 70 брони.",
+        weapons = { { "arc9_eft_mr43", "weapon_shotgun" }, "weapon_crowbar", "weapon_polus11_radio", "weapon_polus11_ammokit" }, hp = 110, armor = 70, max = 2,
         color = Color(190, 155, 95),
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m35_1941_s1_02.mdl",
             "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m35_1941_s1_03.mdl",
             "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m35_1941_s1_04.mdl",
-        },
-    },
-    {
-        -- v4.32.0 «ПОДПОЛЬЕ»: новая профа РККА от сборки
-        id = "seed_rkka_radist", time = 60, category = "rkka", order = 34,
-        name = "Радист РККА",
-        desc = "Голос гарнизона в белой пустыне: дежурство на волне, сводки штабу, склик постов по тревоге. АКС-74У для самообороны, рация всегда при плече. 100 ХП / 60 брони.",
-        weapons = { { "arc9_eft_aks74u", "arc9_eft_aks74", "weapon_smg1" }, "weapon_polus11_radio" }, hp = 100, armor = 60, max = 2,
-        color = Color(150, 165, 100),
-        models = {
-            "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m43_s1_02.mdl",
-            "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m43_s1_03.mdl",
-            "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m43_s1_04.mdl",
         },
     },
     {
@@ -756,6 +744,27 @@ local function SeedAll()
             SaveFactionRecords(facs)
             P11FW.SyncFactions()
             P11FW.Log("Сид v4.32.0 «ПОДПОЛЬЕ»: криминал станции переведён с вайтлиста на ДРЕВО СЛУЖБЫ (миграция)")
+        end
+    end
+
+    -- ---------- 0.46) v4.33.0 «ПАТРОН» МИГРАЦИЯ: РАДИСТ РККА ВЫРЕЗАН ----------
+    -- Заявка владельца: «удали связиста РККА». Должность жила в сейвах
+    -- с v4.32.0 — вычищаем запись из живого ростера (узел древа службы
+    -- rk_rad убран из клиентского/серверного дерева файлами).
+    do
+        local removed = 0
+        for i = #P11FW.CustomJobs, 1, -1 do
+            local rec = P11FW.CustomJobs[i]
+            if rec and rec.id == "seed_rkka_radist" then
+                table.remove(P11FW.CustomJobs, i)
+                removed = removed + 1
+            end
+        end
+        if removed > 0 then
+            P11FW.SaveCustomJobs()
+            P11FW.RegisterCustomJobs(P11FW.CustomJobs)
+            P11FW.SyncCustomJobs()
+            P11FW.Log("Сид v4.33.0 «ПАТРОН»: должность «Радист РККА» вырезана из ростера (миграция): " .. removed)
         end
     end
 

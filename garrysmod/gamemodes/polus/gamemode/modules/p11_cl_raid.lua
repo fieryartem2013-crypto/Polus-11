@@ -35,15 +35,29 @@ hook.Add("HUDPaint", "P11.RaidHUD", function()
     local st = RaidState()
     if not st then return end
     local w = ScrW()
+    local t = CurTime()
 
-    -- полоса рейда: «⚔ РЕЙД: РККА ▶ ОРЁЛ · до конца 8:32»
-    draw.RoundedBox(8, w / 2 - 380, 138, 760, 40, Color(30, 14, 12, 225))
-    draw.SimpleText("⚔ РЕЙД: " .. (FACT_SHORT[st.att] or "?") ..
+    -- v4.33.0 «ПАТРОН»: строгая красная полоса рейда со звездой и каймой
+    local leftT = st.left or 0
+    local low = leftT < 60
+    local pulse = low and (0.5 + math.sin(t * 6) * 0.5) or 0
+    local bcol = low
+        and Color(40 + 40 * pulse, 10, 8, 230)
+        or Color(30, 14, 12, 225)
+    draw.RoundedBox(8, w / 2 - 380, 138, 760, 40, bcol)
+    surface.SetDrawColor(255, 205, 100, 80 + math.sin(t * 1.4) * 20)
+    surface.DrawRect(w / 2 - 380, 138, 760, 1)
+    draw.RoundedBoxEx(8, w / 2 - 380, 138, 4, 40, Color(205, 60, 52, 230), true, false, true, false)
+    surface.SetDrawColor(255, 160, 130, low and (90 + 120 * pulse) or 40)
+    surface.DrawOutlinedRect(w / 2 - 380, 138, 760, 40, 1)
+
+    draw.SimpleText("★ РЕЙД: " .. (FACT_SHORT[st.att] or "?") ..
         " ▶ " .. (FACT_SHORT[st.def] or "?"),
         "P11.Raid.Mid", w / 2 - 362, 148,
         Color(255, 160, 130), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
-    draw.SimpleText("до конца " .. FmtTime(st.left), "P11.Raid.Mid",
-        w / 2 + 362, 148, Color(235, 238, 242), TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP)
+    local tcol = low and Color(255, 120 + 60 * pulse, 100 + 40 * pulse) or Color(235, 238, 242)
+    draw.SimpleText("до конца " .. FmtTime(leftT), "P11.Raid.Mid",
+        w / 2 + 362, 148, tcol, TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP)
 
     -- фишки «какие точки чьи» (вживую с энтити-флагов рейда)
     local chips = {}
@@ -61,7 +75,10 @@ hook.Add("HUDPaint", "P11.RaidHUD", function()
     local x = w / 2 - (#chips * 64) / 2
     for _, c in ipairs(chips) do
         local col = FACT_COL[c.ow] or Color(125, 131, 141)
+        draw.RoundedBox(6, x + 1, 185, 56, 26, Color(0, 0, 0, 110))
         draw.RoundedBox(6, x, 184, 56, 26, Color(14, 18, 26, 235))
+        surface.SetDrawColor(col.r, col.g, col.b, 70)
+        surface.DrawOutlinedRect(x, 184, 56, 26, 1)
         draw.SimpleText(c.nm, "P11.Raid.Mid", x + 28, 197, col,
             TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
         x = x + 64
@@ -82,6 +99,9 @@ hook.Add("HUDPaint", "P11.RaidBeacons", function()
                 local col = FACT_COL[ow] or Color(125, 131, 141)
                 local nm = e.GetPointName and e:GetPointName() or "?"
                 local d = math.floor(me:GetPos():Distance(e:GetPos()))
+                -- мягкая тень под маркером
+                draw.SimpleTextOutlined("▼", "P11.Op.Big", scr.x + 1, scr.y - 25, Color(0, 0, 0, 160),
+                    TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color(0, 0, 0, 0))
                 draw.SimpleTextOutlined("▼", "P11.Op.Big", scr.x, scr.y - 26, col,
                     TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color(0, 0, 0, 220))
                 draw.SimpleTextOutlined(nm .. " · " .. d .. " юн", "P11.Raid.Small",
