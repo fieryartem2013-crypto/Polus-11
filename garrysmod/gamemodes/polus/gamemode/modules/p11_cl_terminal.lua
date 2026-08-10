@@ -70,6 +70,7 @@ local function OpenTerminal()
         Derma_DrawBackgroundBlur(self, self.T0 or 0)
         draw.RoundedBox(8, 0, 0, w, h, TC.bg)
         draw.RoundedBoxEx(8, 0, 0, w, 46, TC.panel, true, true, false, false)
+        draw.RoundedBoxEx(8, 0, 0, w, 3, Color(205, 60, 52, 235), true, true, false, false) -- v4.34.0: красное знамя
         surface.SetDrawColor(TC.cyan)
         surface.DrawRect(0, 46, w, 2)
         draw.SimpleText("СМЕННЫЙ ТЕРМИНАЛ — ДОП. ЗАДАЧИ ЭКИПАЖУ", "P11.Term.Big", 14, 12, TC.cyan)

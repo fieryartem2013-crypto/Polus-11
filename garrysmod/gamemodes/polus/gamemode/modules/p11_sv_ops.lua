@@ -23,10 +23,11 @@ util.AddNetworkString("P11_OpBoard") -- сервер→клиент: лидер�
 local RECRUIT_T = 45          -- запись сторон
 local BATTLE_T  = 30 * 60     -- бой
 local HOLD_WIN  = 3 * 60      -- держать ВСЕ точки столько подряд (v4.28.0 «МЕТЕО»: 3 мин по заявке)
-local POINTS_N  = 4           -- точек на карте
--- v4.31.0 «КРЫЛО»: комплект строго А–Г + страховка «ровно 4» (баг владельца
--- «может быть 3, а не 4 точки, что всё руинет») + спавны НЕ у флагов
-local OP_LETTERS = { "А", "Б", "В", "Г" }
+local POINTS_N  = 3           -- точек на карте (v4.34.0 «СБОР»: было 4 — заявка владельца)
+-- v4.31.0 «КРЫЛО»: комплект строго из набора + страховка «ровно N» (баг
+-- владельца «может быть меньше точек, что всё руинет») + спавны НЕ у флагов
+-- v4.34.0 «СБОР»: точек 3 (А–В) по заявке владельца
+local OP_LETTERS = { "А", "Б", "В" }
 local WIN_PAY, LOSE_PAY, DRAW_PAY = 5000, 1000, 2500
 
 POLUS11.Op = POLUS11.Op or {}
@@ -128,7 +129,7 @@ local function PickOpSpots(n)
     return picked
 end
 
--- v4.31.0 «КРЫЛО»: фабрика флага (буква — строго из комплекта А–Г)
+-- v4.31.0 «КРЫЛО»: фабрика флага (буква — строго из комплекта); v4.34.0: А–В
 local function OpPointMake(p, name)
     local e = ents.Create("polus11_cappoint")
     if not IsValid(e) then return nil end
@@ -286,7 +287,7 @@ function POLUS11.OpStart(by)
         return
     end
     -- v4.31.0 «КРЫЛО»: сносим ошмётки прошлых операций (после краша могли
-    -- остаться «лишние» флаги — отсюда счёт 5/3 вместо ровно 4)
+    -- остаться «лишние» флаги — отсюда счёт 5/3 вместо ровно N)
     for _, e in ipairs(ents.FindByClass("polus11_cappoint")) do
         if IsValid(e) and (e.P11_OpPoint or e:GetNWBool("P11_OpPoint", false)) then e:Remove() end
     end

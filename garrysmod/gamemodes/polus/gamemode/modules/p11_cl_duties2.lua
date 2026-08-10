@@ -152,3 +152,58 @@ hook.Add("OnPlayerChat", "P11.DossierChat", function(ply, text)
 end)
 
 print("[POLUS-11] клиент дел-2 загружен (грузчик-маркер/досье)")
+
+-- ============================================================
+--  v4.34.0 «СБОР»: ЭКРАН ИТОГОВ СМЕНЫ (20 сек)
+--  Приходит от сервера (P11_ShiftBoard) после ShiftAwards —
+--  баннер по центру: звания смены и премии.
+-- ============================================================
+
+P11.ShiftBoard = nil
+
+net.Receive("P11_ShiftBoard", function()
+    local ok, tbl = pcall(util.JSONToTable, net.ReadString() or "[]")
+    if ok and istable(tbl) then
+        P11.ShiftBoard = { rows = tbl, t0 = SysTime() }
+    end
+end)
+
+hook.Add("HUDPaint", "P11.ShiftBoard", function()
+    local b = P11.ShiftBoard
+    if not b then return end
+    local el = SysTime() - b.t0
+    if el > 20 then P11.ShiftBoard = nil return end
+
+    local w, h = ScrW(), ScrH()
+    local a = math.min(el / 0.4, (20 - el) / 0.8, 1) * 255
+
+    -- подложка затемнения
+    surface.SetDrawColor(0, 0, 0, 110 * a / 255)
+    surface.DrawRect(0, 0, w, h)
+
+    local bw, bh = 620, 84 + #b.rows * 52
+    local bx, by = w / 2 - bw / 2, h * 0.22
+
+    draw.RoundedBox(12, bx, by, bw, bh, Color(12, 14, 18, 240 * a / 255))
+    surface.SetDrawColor(255, 205, 100, 120 * a / 255)
+    surface.DrawOutlinedRect(bx, by, bw, bh, 1)
+    draw.RoundedBoxEx(12, bx, by, bw, 5, Color(205, 60, 52, 255), true, true, false, false)
+
+    draw.SimpleText("★ ИТОГИ СМЕНЫ ★", "P11.D2.Mid", w / 2, by + 14,
+        Color(255, 205, 100, a), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
+    draw.SimpleText("звания на сутки · премия +5 000₽", "P11.D2.Small", w / 2, by + 42,
+        Color(160, 175, 195, a), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
+
+    local y = by + 72
+    for _, r in ipairs(b.rows) do
+        draw.SimpleText("★ " .. r.t .. ": " .. r.name .. " — " .. r.v .. " " .. r.unit,
+            "P11.D2.Mid", w / 2, y, Color(235, 240, 246, a), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
+        draw.SimpleText("премия +" .. r.pay .. "₽", "P11.D2.Small", w / 2, y + 24,
+            Color(150, 220, 160, a), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
+        y = y + 52
+    end
+    if #b.rows == 0 then
+        draw.SimpleText("Смена прошла тихо: героев не объявилось.", "P11.D2.Small",
+            w / 2, y, Color(160, 175, 195, a), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
+    end
+end)

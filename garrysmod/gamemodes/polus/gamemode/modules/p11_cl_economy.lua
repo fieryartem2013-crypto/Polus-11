@@ -135,6 +135,7 @@ local function EcoFrame(title, w, h)
         Derma_DrawBackgroundBlur(f, 0)
         draw.RoundedBox(10, 0, 0, ww, hh, BG)
         draw.RoundedBoxEx(10, 0, 0, ww, 52, PANE, true, true, false, false)
+        draw.RoundedBoxEx(10, 0, 0, ww, 3, Color(205, 60, 52, 235), true, true, false, false) -- v4.34.0: красное знамя
         surface.SetDrawColor(ACC)
         surface.DrawRect(0, 52, ww, 2)
         -- v4.1: фирменный штрих — градиент под хедером + тэг версии

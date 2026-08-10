@@ -96,6 +96,8 @@ function P11FW.OpenJobMenu()
 
         -- шапка: глубокий градиент + бегущий блик
         draw.RoundedBoxEx(10, 0, 0, w, 62, C.panel2, true, true, false, false)
+        -- v4.34.0 «СБОР»: красное знамя — верхняя кайма шапки (стиль станции)
+        draw.RoundedBoxEx(10, 0, 0, w, 3, Color(205, 60, 52, 235), true, true, false, false)
         draw.RoundedBoxEx(10, 0, 0, w, 26, Color(255, 255, 255, 6), true, true, false, false)
         local sweep = ((SysTime() * 90) % (w + 260)) - 130
         surface.SetDrawColor(160, 215, 255, 16)
