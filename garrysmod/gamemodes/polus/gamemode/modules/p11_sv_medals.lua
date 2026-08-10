@@ -79,6 +79,11 @@ hook.Add("PlayerDisconnected", "P11.MedalBye", function() MedalSave() end)
 function POLUS11.MedalScope(ply)
     if not IsValid(ply) then return nil end
     if ply:IsListenServerHost() then return "full" end
+    -- v4.33.1 «МЕДАЛЬ»: движковый СУПЕРАДМИН (владелец сервера) — полный
+    -- доступ. Раньше IsSuperAdmin давал уровень 6 (Super Administrator),
+    -- а вкладка/выдача требовали Developer (9) — владелец без выданного
+    -- ранга НЕ МОГ выдать ни одной медали («медали не выдаются»).
+    if ply:IsSuperAdmin() then return "full" end
     if P11FW and P11FW.GetRankLevel then
         local lvl = tonumber(P11FW.GetRankLevel(ply)) or 0
         if lvl >= 9 then return "full" end
@@ -352,5 +357,24 @@ do
         POLUS11.MedalStatEvent(ply, key, add)
     end
 end
+
+-- v4.33.1 «МЕДАЛЬ»: СТРАХОВОЧНЫЙ ТИК автонаград — раз в 2 минуты
+-- сервер сам сверяет счётчики живых бойцов с порогами и вручает,
+-- даже если какое-то событие не долетело (потерянный пакет/обрыв
+-- цепи). Дубль-стоп внутри MedalAutoGrant — повторно не встанет.
+timer.Create("P11.MedalAutoTick", 120, 0, function()
+    for _, p in ipairs(player.GetAll()) do
+        if IsValid(p) then
+            local st = POLUS11.AutoStats and POLUS11.AutoStats[p:SteamID64()]
+            if st then
+                for id, a in pairs(POLUS11.AutoMedals) do
+                    if (tonumber(st[a.stat]) or 0) >= a.need then
+                        POLUS11.MedalAutoGrant(p, id)
+                    end
+                end
+            end
+        end
+    end
+end)
 
 print("[POLUS-11] медали «ПОЧЁТ» v4.20.0 «СЛЕД»: реестр+синк; выдают Faction Leader (ведомств.) и Developer+ (все) + АВТОНАГРАДЫ станции: ● Глазной (50 тестов), ♠ Дезинфектор (5000 урона Нечто), ◇ Санитар Полюса (10 лечек)")

@@ -227,7 +227,7 @@ function P11FW.OpenAdminMenu(forceTab)
         { id = "flux",      name = "💠 ПОТОК",  minLevel = 4 }, -- v4.14.2: КАЗНА — выдача трёх валют (ПФ/₽/⏱)
         { id = "ann",       name = "ОПОВЕЩЕНИЕ", minLevel = 4 }, -- v4.18.0 «РЕПРОДУКТОР»: плашка всей станции
         { id = "event",     name = "ИВЕНТ НЕЧТО", minLevel = 4 }, -- v4.18.2 «ВЕРБОВКА»: ивент у кадровика своей кнопкой
-        { id = "medals",    name = "МЕДАЛИ", minLevel = 9 }, -- v4.19.4 «ПОЧЁТ»: выдача/снятие медалей (Developer+)
+        { id = "medals",    name = "МЕДАЛИ", minLevel = 6 }, -- v4.33.1 «МЕДАЛЬ»: с Super Admin+ (владелец-суперадмин = 6, Developer 9+ тоже проходит)
         { id = "jobs",      name = "ДОЛЖНОСТИ", minLevel = 14 },
         { id = "factions",  name = "ФРАКЦИИ",   minLevel = 14 },
         { id = "utils",     name = "УТИЛИТЫ",   minLevel = 14 },

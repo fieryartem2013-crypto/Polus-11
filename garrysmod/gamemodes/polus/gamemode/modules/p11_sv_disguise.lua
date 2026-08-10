@@ -98,14 +98,21 @@ local SUITS = {
         autoDesc = "Исследователь комплекса. Руки пахнут формалином.",
     },
     {
+        -- v4.33.1 «МЕДАЛЬ»: кейс «ОБСЛУГА» обновлён — легенда умеет
+        -- притворяться ВСЕМ персоналом станции: встроенные должности
+        -- + Водитель (seed_pers_voditel, v4.10) + Инженер. В op==6
+        -- должности собираются ДИНАМИЧЕСКИ из живого ростера
+        -- (P11FW.Jobs с category == "personnel") — кастомные и
+        -- переименованные профы тоже попадают в легенду.
         id = "personnel", name = "Техперсонал станции",
         desc = "Рабочая куртка обслуги: механик, сантехник, «тот парень с ключами». Незаметен, как тень.",
-        jobIds = { "janitor", "cook", "porter", "tech", "medic" }, -- v4.17.0 «КОНТРАБАНДА»: ВЕСЬ персонал для кейса «ОБСЛУГА»
+        jobIds = { "janitor", "cook", "porter", "tech", "medic", "engineer", "seed_pers_voditel" }, -- v4.17.0 «КОНТРАБАНДА»: ВЕСЬ персонал для кейса «ОБСЛУГА»
         models = {
             "models/player/Group01/male_01.mdl",
             "models/player/Group01/male_04.mdl",
             "models/player/Group01/male_06.mdl",
             "models/player/Group01/female_02.mdl",
+            "models/player/barney.mdl", -- v4.33.1: техник в робе (стоковый)
         },
         autoDesc = "Обслуга станции. Вечно куда-то спешит с ключами.",
     },
@@ -359,10 +366,24 @@ net.Receive("P11_Disguise", function(len, ply)
         end
         local suit = FindSuit("personnel")
         if not suit then Result(ply, false, "Легенд персонала не завезли.") return end
+        -- v4.33.1 «МЕДАЛЬ»: должности персонала собираем ДИНАМИЧЕСКИ из
+        -- живого ростера (категория "personnel") — кейс «ОБСЛУГА» умеет
+        -- притворяться ЛЮБОЙ профой обслуги: встроенные, Водитель v4.10,
+        -- Инженер, кастомные должности админа. Захардкоженный список
+        -- 5 должностей отбрасывал всё, чего в нём не было.
         local opts = {}
-        for _, jid in ipairs(suit.jobIds) do
-            local t = P11FW and P11FW.JobTeams and P11FW.JobTeams[jid]
-            if t then opts[#opts + 1] = t end
+        for jid, job in pairs(P11FW.Jobs or {}) do
+            if job and job.category == "personnel" then
+                local t = P11FW and P11FW.JobTeams and P11FW.JobTeams[jid]
+                if t then opts[#opts + 1] = t end
+            end
+        end
+        -- страховка: если категория не сработала, падаем на статический список
+        if #opts == 0 then
+            for _, jid in ipairs(suit.jobIds) do
+                local t = P11FW and P11FW.JobTeams and P11FW.JobTeams[jid]
+                if t then opts[#opts + 1] = t end
+            end
         end
         if #opts == 0 then
             Result(ply, false, "На станции нет должностей персонала для легенды.")

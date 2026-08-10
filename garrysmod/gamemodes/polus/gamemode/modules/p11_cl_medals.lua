@@ -121,6 +121,8 @@ end
 function P11.MedalScopeLocal()
     local me = LocalPlayer()
     if not IsValid(me) or not P11FW or not P11FW.GetRankLevel then return nil end
+    -- v4.33.1 «МЕДАЛЬ»: суперадмин (владелец) — полный доступ (зеркало сервера)
+    if me:IsSuperAdmin() then return "full" end
     if (tonumber(P11FW.GetRankLevel(me)) or 0) >= 9 then return "full" end
     local r = P11FW.GetRank and P11FW.GetRank(me)
     if r and r.id == "faction_leader" then return "dept" end
