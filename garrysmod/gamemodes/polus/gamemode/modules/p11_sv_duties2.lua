@@ -8,7 +8,7 @@
 util.AddNetworkString("P11_PorterReq")   -- C2S: текст заявки
 util.AddNetworkString("P11_PorterSync")  -- S2C: маркер заявки
 util.AddNetworkString("P11_Dossier")     -- S2C: JSON лента НКВД
-util.AddNetworkString("P11_ShiftBoard")  -- S2C: JSON экран итогов смены (v4.34.0)
+util.AddNetworkString("P11_ShiftBoard")  -- S2C: JSON экран итогов смены (v5.0.0)
 util.AddNetworkString("P11_DossierReq")  -- C2S: дай ленту
 
 local function Cfg(k, d)
@@ -517,7 +517,7 @@ local function ShiftNick(sid)
 end
 
 function POLUS11.ShiftAwards()
-    -- v4.34.0 «СБОР»: бонус за звание — 5000₽ (заявка владельца)
+    -- v5.0.0 «СБОР»: бонус за звание — 5000₽ (заявка владельца)
     local cats = {
         { tbl = Shift.earn, title = "ЛУЧШИЙ РАБОТНИК", unit = "₽ заработано", bonus = Cfg("AwardPay", 5000) },
         { tbl = Shift.rp,   title = "ЛУЧШИЙ УЧЁНЫЙ",  unit = "RP исследований", bonus = Cfg("AwardPay", 5000) },
@@ -546,7 +546,7 @@ function POLUS11.ShiftAwards()
         PrintMessage(HUD_PRINTTALK, "Смена прошла тихо: героев не объявилось.")
     end
 
-    -- v4.34.0 «СБОР»: экран-итог на 20 сек всем (клиент показывает баннер)
+    -- v5.0.0 «СБОР»: экран-итог на 20 сек всем (клиент показывает баннер)
     net.Start("P11_ShiftBoard")
         net.WriteString(util.TableToJSON(board) or "[]")
     net.Broadcast()

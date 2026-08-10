@@ -261,7 +261,7 @@ function P11.OpenRankTable()
         if P11.DrawDim then P11.DrawDim(s, 140) end
         draw.RoundedBox(10, 0, 0, w, h, CC.bg)
         draw.RoundedBoxEx(10, 0, 0, w, 66, CC.panel, true, true, false, false)
-        draw.RoundedBoxEx(10, 0, 0, w, 3, Color(205, 60, 52, 235), true, true, false, false) -- v4.34.0: красное знамя
+        draw.RoundedBoxEx(10, 0, 0, w, 3, Color(205, 60, 52, 235), true, true, false, false) -- v5.0.0: красное знамя
         surface.SetDrawColor(CC.gold.r, CC.gold.g, CC.gold.b, 150)
         surface.DrawRect(0, 66, w, 1)
         draw.SimpleText("📜 ТАБЕЛЬ О РАНГАХ ПРОЕКТА", "P11.CM.Text", 14, 20, CC.gold, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
