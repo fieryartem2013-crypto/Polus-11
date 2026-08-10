@@ -103,7 +103,11 @@ local function RaidAnchorSpots()
 end
 
 local function RaidPickSpots(n)
+    -- v5.0.1 «БЕТА»: точки рейда тоже СЛУЧАЙНЫЕ по карте (якоря + случай)
     local pool = RaidAnchorSpots()
+    if POLUS11.MixedPool then
+        pool = POLUS11.MixedPool(0.6)
+    end
     for i = #pool, 2, -1 do
         local j = math.random(i)
         pool[i], pool[j] = pool[j], pool[i]
@@ -125,9 +129,15 @@ local function RaidPickSpots(n)
         if minD < 400 and #picked < n then break end
     end
     while #picked < n do
-        local base = pool[1] or Vector(0, 0, 0)
-        picked[#picked + 1] = Vector(base.x + math.random(-700, 700),
-            base.y + math.random(-700, 700), base.z + 4)
+        -- v5.0.1 «БЕТА»: добивка случайными точками карты
+        local rp = POLUS11.RandomMapSpot and POLUS11.RandomMapSpot()
+        if rp then
+            picked[#picked + 1] = rp
+        else
+            local base = pool[1] or Vector(0, 0, 0)
+            picked[#picked + 1] = Vector(base.x + math.random(-700, 700),
+                base.y + math.random(-700, 700), base.z + 4)
+        end
     end
     return picked
 end

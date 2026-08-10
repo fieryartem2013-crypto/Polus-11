@@ -100,8 +100,74 @@ local function AnchorSpots()
     return out
 end
 
-local function PickOpSpots(n)
+-- ============================================================
+--  v5.0.1 «БЕТА»: НАСТОЯЩИЙ СЛУЧАЙНЫЙ СПАВН ПО ВСЕЙ КАРТЕ
+--  Якоря (НПС/объекты) могли быть редкими — точки и спавны
+--  падали в одно место. Теперь пул = якоря + СЛУЧАЙНЫЕ точки
+--  по границам карты (трассировка сверху вниз — точка встаёт
+--  НА ЗЕМЛЮ, а не в стену/воздух/воду).
+-- ============================================================
+
+local MAP_MINS, MAP_MAXS = Vector(0, 0, 0), Vector(0, 0, 0)
+local MAP_READY = false
+
+local function MapBounds()
+    if not MAP_READY then
+        MAP_READY = true
+        local ok, mn, mx = pcall(ents.GetMapBounds)
+        if ok and mn and mx then
+            MAP_MINS, MAP_MAXS = mn, mx
+        end
+    end
+    return MAP_MINS, MAP_MAXS
+end
+
+-- случайная точка по карте: падает на твёрдую поверхность (пол/землю)
+local function RandomMapSpot()
+    local mn, mx = MapBounds()
+    local cx = (mn.x + mx.x) / 2
+    local cy = (mn.y + mx.y) / 2
+    local hw = math.max(800, (mx.x - mn.x) / 2 - 300)   -- с отступом от краёв
+    local hh = math.max(800, (mx.y - mn.y) / 2 - 300)
+    for _ = 1, 12 do -- 12 попыток найти чистую площадку
+        local x = cx + math.random(-hw, hw)
+        local y = cy + math.random(-hh, hh)
+        local top = mn.z + (mx.z - mn.z) * 0.9
+        local tr = util.TraceLine({
+            start = Vector(x, y, top),
+            endpos = Vector(x, y, mn.z - 200),
+            mask = MASK_SOLID,
+        })
+        if tr.Hit and tr.HitPos then
+            local p = tr.HitPos + Vector(0, 0, 6)
+            -- не в воде (поверхность ниже уровня воды — грубая проверка)
+            if p.z > mn.z + 40 then
+                return p
+            end
+        end
+    end
+    return nil
+end
+
+-- общий пул: якоря + случайные точки карты (доля случайных растёт)
+local function MixedPool(randomFrac)
     local pool = AnchorSpots()
+    local nRand = math.max(2, math.floor((#pool + 2) * (randomFrac or 0.5)))
+    for i = 1, nRand do
+        local p = RandomMapSpot()
+        if p then pool[#pool + 1] = p end
+    end
+    return pool
+end
+
+-- v5.0.1 «БЕТА»: экспорт для рейда (модуль грузится позже, локальные не видны)
+POLUS11.RandomMapSpot = RandomMapSpot
+POLUS11.MixedPool = MixedPool
+POLUS11.MapBounds = MapBounds
+
+local function PickOpSpots(n)
+    -- v5.0.1 «БЕТА»: точки из СМЕШАННОГО пула — якоря + случайные по карте
+    local pool = MixedPool(0.6)
     for i = #pool, 2, -1 do
         local j = math.random(i)
         pool[i], pool[j] = pool[j], pool[i]
@@ -123,8 +189,14 @@ local function PickOpSpots(n)
         if minD < 420 and #picked < n then break end
     end
     while #picked < n do
-        local base = pool[1] or Vector(0, 0, 0)
-        picked[#picked + 1] = Vector(base.x + math.random(-700, 700), base.y + math.random(-700, 700), base.z + 4)
+        -- v5.0.1 «БЕТА»: добивка — случайные точки карты (не вокруг Vector(0,0,0))
+        local rp = RandomMapSpot()
+        if rp then
+            picked[#picked + 1] = rp
+        else
+            local base = pool[1] or Vector(0, 0, 0)
+            picked[#picked + 1] = Vector(base.x + math.random(-700, 700), base.y + math.random(-700, 700), base.z + 4)
+        end
     end
     return picked
 end
@@ -194,7 +266,8 @@ local function OpRandomSpawnPos(ply)
     for _, e in ipairs(ents.FindByClass("polus11_cappoint")) do
         if IsValid(e) then flags[#flags + 1] = e:GetPos() end
     end
-    local pool = AnchorSpots()
+    -- v5.0.1 «БЕТА»: пул = якоря + случайные точки карты (спавн по всей станции)
+    local pool = MixedPool(0.7)
     for i = #pool, 2, -1 do -- тасуем якоря
         local j = math.random(i)
         pool[i], pool[j] = pool[j], pool[i]
