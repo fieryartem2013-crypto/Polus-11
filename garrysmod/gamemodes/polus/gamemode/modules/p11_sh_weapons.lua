@@ -42,6 +42,13 @@ POLUS11.WepFallback = {
     arc9_eft_tt33           = "weapon_pistol",
     arc9_eft_aps            = "weapon_pistol",
     arc9_doi_k98            = "weapon_crossbow",
+    -- v5.2.0 «БИТВА ВРЕМЕНИ»: секретный арсенал рейха (Крепость Осовец)
+    arc9_eft_k98            = "weapon_crossbow", -- Kar98k EFT
+    arc9_eft_stg44          = "weapon_ar2",      -- StG-44 «Штурмгевер»
+    arc9_eft_g43            = "weapon_crossbow", -- Gewehr 43
+    arc9_eft_mp40           = "weapon_smg1",     -- MP-40
+    arc9_eft_mp5            = "weapon_smg1",     -- MP5
+    arc9_eft_p08            = "weapon_pistol",   -- Luger P08 «Парабеллум»
     -- v4.8.5 «КРАСНЫЙ ОРЁЛ»: американская резидентура
     arc9_eft_m1911a1        = "weapon_pistol",  -- Colt M1911A1 (.45 ACP)
     arc9_eft_m870           = "weapon_shotgun", -- Remington 870 (помпа США)

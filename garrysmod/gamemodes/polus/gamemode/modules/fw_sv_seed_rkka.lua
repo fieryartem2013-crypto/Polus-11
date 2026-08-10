@@ -66,6 +66,12 @@ local SEED_FACTIONS = {
         desc = "Ивентовые формы Нечто. ВЫДАЮТСЯ ТОЛЬКО АДМИНИСТРАЦИЕЙ. Если ты это читаешь — штаб знает о твоей находке слишком много.",
         color = Color(150, 55, 60),
     },
+    {
+        -- v5.2.0 «БИТВА ВРЕМЕНИ»: НОВАЯ ФРАКЦИЯ «КРЕПОСТЬ ОСОВЕЦ» (заявка владельца)
+        id = "osowiec", name = "Крепость Осовец", order = 9,
+        desc = "Восставшие из-под земли: мёртвый гарнизон легендарной крепости Осовец и рванувшиеся следом части Вермахта. Секретное оружие рейха, которое РККА так и не смогло утащить. Они не помнят боли — помнят только приказ.",
+        color = Color(120, 190, 120), -- мёртвая болотная зелень
+    },
 }
 
 -- ХП/броня берутся из полей hp/armor; всем авто-выдаются «руки».
@@ -615,6 +621,97 @@ local SEED_JOBS = {
             "models/hts/comradebear/pm0v3/player/usarmy/infantry/en/m41_s1_04.mdl",
             "models/hts/comradebear/pm0v3/player/usarmy/infantry/en/m41_s1_05.mdl",
             "models/hts/comradebear/pm0v3/player/usarmy/infantry/en/m41_s1_06.mdl",
+        },
+    },
+
+    -- ================= v5.2.0 «БИТВА ВРЕМЕНИ»: КРЕПОСТЬ ОСОВЕЦ =================
+    -- Восставшие из-под земли: мёртвый гарнизон Осовца и части Вермахта.
+    -- Модели — undeadarmy (скелеты в форме), оружие — секретный арсенал
+    -- рейха (ARC9 EFT, фолбэки на сток если пака нет).
+
+    -- Солдат Осовца — мёртвый защитник крепости (пионер М40)
+    {
+        id = "seed_oso_pioner", time = 30, category = "osowiec", order = 40,
+        name = "Солдат Осовца",
+        desc = "Мёртвый защитник крепости: встал из-под земли вместе с гарнизоном 1915 года. Не чувствует холода, не помнит боли. Секретный карабин рейха в руках. 110 ХП / 60 брони.",
+        weapons = { { "arc9_eft_k98", "arc9_doi_k98", "weapon_crossbow" }, { "arc9_eft_p08", "weapon_pistol" }, "weapon_polus11_radio" },
+        hp = 110, armor = 60, max = 3,
+        color = Color(120, 190, 120),
+        models = {
+            "models/hts/comradebear/pm0v3/player/undeadarmy/pioneer/en/m40dot44_s1_skeleton.mdl",
+            "models/hts/comradebear/pm0v3/player/undeadarmy/infantry/en/m40_s1_skeleton.mdl",
+        },
+    },
+    -- Стрелок Осовца — инфантерия
+    {
+        id = "seed_oso_strelok", time = 60, category = "osowiec", order = 41,
+        name = "Стрелок Осовца",
+        desc = "Рядовой мёртвого гарнизона: снайперская трёхлинейка и верность присяге 1915 года. Смотрит сквозь метель — глаза уже не высыхают. 105 ХП / 50 брони.",
+        weapons = { { "arc9_eft_mosin_infantry", "weapon_crossbow" }, "weapon_polus11_radio" },
+        hp = 105, armor = 50, max = 2,
+        color = Color(130, 195, 130),
+        models = {
+            "models/hts/comradebear/pm0v3/player/undeadarmy/infantry/en/m40_s1_skeleton.mdl",
+        },
+    },
+    -- Медик Осовца — мёртвый санитар
+    {
+        id = "seed_oso_medik", time = 45, category = "osowiec", order = 42,
+        name = "Медик Осовца",
+        desc = "Санитар, который сам уже не умрёт: латает живых и мёртвых, у него бинты не кончаются — как и терпение. 95 ХП / 30 брони.",
+        weapons = { "weapon_polus11_medkit", "weapon_polus11_syringe", { "arc9_eft_p08", "weapon_pistol" }, "weapon_polus11_radio" },
+        hp = 95, armor = 30, max = 2,
+        color = Color(140, 205, 140),
+        models = {
+            "models/hts/comradebear/pm0v3/player/undeadarmy/medic/en/m40dot44_s1_skeleton.mdl",
+        },
+    },
+    -- Унтер-офицер Осовца (NCO pioneer)
+    {
+        id = "seed_oso_nco", time = 120, category = "osowiec", order = 43,
+        name = "Унтер-офицер Осовца",
+        desc = "Костлявый командир отделения: орёт так, что мёртвые встают по стойке смирно. Секретный штурмовой карабин рейха. 120 ХП / 80 брони.",
+        weapons = { { "arc9_eft_stg44", "arc9_eft_g43", "weapon_ar2" }, { "arc9_eft_p08", "weapon_pistol" }, "weapon_polus11_radio" },
+        hp = 120, armor = 80, max = 2,
+        color = Color(110, 180, 110),
+        models = {
+            "models/hts/comradebear/pm0v3/player/undeadarmy/pioneer/nco/m40_s1_skeleton.mdl",
+        },
+    },
+    -- Солдат Вермахта — оккультная пехота
+    {
+        id = "seed_oso_vermacht", time = 60, category = "osowiec", order = 44,
+        name = "Солдат Вермахта",
+        desc = "Оккультная пехота рейха, пришедшая за мёртвыми: чёрная форма, руны и секретный арсенал, который РККА не смогло утащить. 110 ХП / 70 брони.",
+        weapons = { { "arc9_eft_mp40", "arc9_eft_mp5", "weapon_smg1" }, { "arc9_eft_p08", "weapon_pistol" }, "weapon_polus11_radio" },
+        hp = 110, armor = 70, max = 3,
+        color = Color(90, 150, 90),
+        models = {
+            "models/hts/comradebear/pm0v3/player/undeadarmy/infantry/en/m40occult_s1_skeleton.mdl",
+        },
+    },
+    -- Офицер-командир Осовца
+    {
+        id = "seed_oso_oficer", time = 240, category = "osowiec", order = 45,
+        name = "Офицер-командир Осовца",
+        desc = "Командир мёртвого гарнизона: фуражка М38, портупея и приказ, отданный сто лет назад. Открывает терминал и ведёт мёртвых в бой. 125 ХП / 100 брони.",
+        weapons = { { "arc9_eft_stg44", "arc9_eft_g43", "weapon_ar2" }, { "arc9_eft_p08", "weapon_pistol" }, "weapon_polus11_radio" },
+        hp = 125, armor = 100, max = 1, terminal = true, command = true,
+        color = Color(100, 170, 100),
+        models = {
+            "models/hts/comradebear/pm0v3/player/undeadarmy/infantry/co/m38_s1_skeleton.mdl",
+        },
+    },
+    -- Генерал Вермахта — оккультный командующий
+    {
+        id = "seed_oso_general", time = 360, category = "osowiec", order = 46,
+        name = "Генерал Вермахта",
+        desc = "Оккультный генерал рейха: тот, кто поднял мёртвых Осовца. М38 с рунами, полная власть над гарнизоном и секретным арсеналом. Одно место. 135 ХП / 125 брони.",
+        weapons = { { "arc9_eft_stg44", "arc9_eft_g43", "weapon_ar2" }, { "arc9_eft_p08", "weapon_pistol" }, "weapon_polus11_radio" },
+        hp = 135, armor = 125, max = 1, terminal = true, command = true,
+        color = Color(80, 140, 80),
+        models = {
+            "models/hts/comradebear/pm0v3/player/undeadarmy/infantry/co/m38occult_s1_skeleton.mdl",
         },
     },
 
