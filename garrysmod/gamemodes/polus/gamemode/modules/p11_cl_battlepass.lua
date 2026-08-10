@@ -68,12 +68,34 @@ function P11.OpenBattlePass()
         surface.DrawLine(12, 84, w - 12, 84)
         draw.SimpleText("⚔ БАТЛ-ПАСС «БИТВА ВРЕМЕНИ»", "P11.BP.Title", w / 2, 14,
             BP_COL.gold, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
-        draw.SimpleText("ивент: Крепость Осовец восстала · делай дела — забирай награды рейха",
+        draw.SimpleText("ивент: Крепость Осовец восстала · 30 уровней · делай дела — забирай награды рейха",
             "P11.BP.Small", w / 2, 52, BP_COL.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
 
         -- крестик
         draw.SimpleText("✕", "P11.BP.Mid", w - 22, 12, BP_COL.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
     end
+
+    -- v5.2.1: вкладки НАГРАДЫ / ГАРДЕРОБ
+    local curTab = P11.BP.tab or "rewards"
+    local function TabBtn(x, label, tab)
+        local b = vgui.Create("DButton", f)
+        b:SetPos(x, 92) b:SetSize(170, 30) b:SetText("")
+        b.Paint = function(s2, w2, h2)
+            local on = curTab == tab
+            draw.RoundedBox(6, 0, 0, w2, h2, on and BP_COL.gold or BP_COL.panel2)
+            draw.SimpleText(label, "P11.BP.Small", w2 / 2, h2 / 2,
+                on and Color(20, 22, 26) or BP_COL.dim,
+                TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        end
+        b.DoClick = function()
+            if curTab == tab then return end
+            P11.BP.tab = tab
+            f:Remove()
+            P11.OpenBattlePass()
+        end
+    end
+    TabBtn(20, "🎖 НАГРАДЫ", "rewards")
+    TabBtn(200, "🎭 ГАРДЕРОБ (" .. #(data.models or {}) .. ")", "wardrobe")
     f.OnKeyCodePressed = function(s, key)
         if key == KEY_ESCAPE then f:Remove() P11.BP.frame = nil end
     end
@@ -106,12 +128,71 @@ function P11.OpenBattlePass()
             Color(20, 22, 26), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
     end
 
-    -- список уровней
+    -- список уровней (или гардероб)
     local sc = vgui.Create("DScrollPanel", f)
     sc:SetPos(20, 172) sc:SetSize(720, 420)
     local bar = sc:GetVBar() bar:SetWide(5)
     bar.Paint = function(_, w, h) draw.RoundedBox(2, 0, 0, w, h, Color(255, 255, 255, 14)) end
     bar.btnGrip.Paint = function(_, w, h) draw.RoundedBox(2, 0, 0, w, h, BP_COL.gold) end
+
+    if curTab == "wardrobe" then
+        -- ============ ГАРДЕРОБ: разблокированные модели ============
+        local models = data.models or {}
+        if #models == 0 then
+            local l = sc:Add("DLabel")
+            l:SetFont("P11.BP.Mid") l:SetTextColor(BP_COL.dim)
+            l:SetText("  Гардероб пуст. Открывай уровни батл-пасса — модели дают наградами!")
+            l:SizeToContents()
+        end
+        for _, m in ipairs(models) do
+            local worn = (data.wardrobe or "") == m.path
+            local row = sc:Add("DPanel")
+            row:Dock(TOP) row:DockMargin(0, 0, 0, 6) row:SetTall(56)
+            row.Paint = function(s, w, h)
+                draw.RoundedBox(7, 0, 0, w, h, worn and Color(30, 40, 26, 255) or Color(20, 26, 36, 255))
+                if worn then
+                    surface.SetDrawColor(BP_COL.gold.r, BP_COL.gold.g, BP_COL.gold.b, 120)
+                    surface.DrawOutlinedRect(0, 0, w, h, 2)
+                end
+                draw.SimpleText("🎭", "P11.BP.Mid", 28, h / 2, BP_COL.gold, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+                draw.SimpleText(m.name or "Модель", "P11.BP.Mid", 52, h / 2 - 8,
+                    worn and BP_COL.gold or BP_COL.text, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+                draw.SimpleText(m.path or "", "P11.BP.Tiny", 52, h / 2 + 12,
+                    BP_COL.dim, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+                if worn then
+                    draw.SimpleText("НАДЕТА", "P11.BP.Tiny", w - 16, h / 2,
+                        BP_COL.ok, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
+                end
+            end
+            local b = vgui.Create("DButton", row)
+            b:SetPos(720 - 8 - 110, 12) b:SetSize(110, 32) b:SetText("")
+            b.Paint = function(s2, w2, h2)
+                draw.RoundedBox(5, 0, 0, w2, h2, s2:IsHovered() and Color(255, 220, 130) or BP_COL.gold)
+                draw.SimpleText(worn and "СНЯТЬ" or "НАДЕТЬ", "P11.BP.Small", w2 / 2, h2 / 2 - 1,
+                    Color(20, 22, 26), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+            end
+            b.DoClick = function()
+                surface.PlaySound("buttons/button15.wav")
+                net.Start("P11_BP_Wear")
+                    net.WriteString(worn and "" or m.path)
+                net.SendToServer()
+                timer.Simple(0.4, function()
+                    if IsValid(f) then
+                        local keep = P11.BP.data
+                        f:Remove()
+                        P11.BP.data = keep
+                        P11.OpenBattlePass()
+                    end
+                end)
+            end
+        end
+        -- подпись
+        local hint = vgui.Create("DLabel", f)
+        hint:SetPos(20, 600) hint:SetSize(720, 24)
+        hint:SetFont("P11.BP.Tiny") hint:SetTextColor(BP_COL.dim) hint:SetContentAlignment(5)
+        hint:SetText("Облик сохраняется после респавна · снимается маскировкой/тварью · модели дают уровни 6, 9, 12, 16, 19, 22, 25, 29, 30")
+        return
+    end
 
     local rewards = data.rewards or {}
     table.sort(rewards, function(a, b) return a.lvl < b.lvl end)

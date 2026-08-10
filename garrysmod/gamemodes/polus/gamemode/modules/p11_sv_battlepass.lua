@@ -10,6 +10,7 @@
 
 util.AddNetworkString("P11_BP_Sync")
 util.AddNetworkString("P11_BP_Claim")
+util.AddNetworkString("P11_BP_Wear")   -- v5.2.1: гардероб (надеть/снять модель)
 
 local BP_FILE = "polus11/battlepass.json"
 POLUS11.BP = POLUS11.BP or { data = {} }   -- [sid64] = { xp, claimed={} }
@@ -159,11 +160,21 @@ local function BPGrant(ply, r)
                 if POLUS11.InvSync then POLUS11.InvSync(ply) end
             end
         end
+    elseif r.kind == "model" then
+        -- v5.2.1: разблокировка модели для ГАРДЕРОБА (F5 → ГАРДЕРОБ → НАДЕТЬ)
+        local d = BPOf(ply)
+        d.models[r.id] = true
+        bpDirty = true
     elseif r.kind == "grand" then
         -- VIP-статус
         if P11FW.SetRank then P11FW.SetRank(ply, "vip", ply) end
-        -- 50 000₽
-        if POLUS11.AddMoney then POLUS11.AddMoney(ply, 50000, "Батл-пасс: ГЛАВНЫЙ ПРИЗ") end
+        -- 100 000₽ (v5.2.1: было 50к)
+        if POLUS11.AddMoney then POLUS11.AddMoney(ply, 100000, "Батл-пасс: ГЛАВНЫЙ ПРИЗ") end
+        -- 500 ПФ (v5.2.1)
+        if POLUS11.FluxAdd then POLUS11.FluxAdd(ply, 500, "Батл-пасс: ГЛАВНЫЙ ПРИЗ") end
+        -- v5.2.1: модель «Мёртвый Офицер Осовца» в гардероб
+        local dG = BPOf(ply)
+        dG.models["models/hts/comradebear/pm0v3/player/undeadarmy/infantry/co/m38_s1_skeleton.mdl"] = true
         -- медаль «Легенда Полюса» (прямо в реестр)
         if POLUS11.MedalDefs and POLUS11.Medals then
             local sid = ply:SteamID64()
@@ -212,11 +223,19 @@ function POLUS11.BPSync(ply)
     if not IsValid(ply) then return end
     local d = BPOf(ply)
     local lvl, left = BPLvlOf(d.xp)
+    -- v5.2.1: разблокированные модели (для ГАРДЕРОБА)
+    local ownedModels = {}
+    for _, r in ipairs(BP_REWARDS) do
+        if r.kind == "model" and d.models and d.models[r.id] then
+            ownedModels[#ownedModels + 1] = { path = r.id, name = r.name }
+        end
+    end
     net.Start("P11_BP_Sync")
         net.WriteString(util.TableToJSON({
             lvl = lvl, xp = d.xp, left = left, need = BPNeed(lvl),
             max = BP_MAX_LVL, claimed = d.claimed or {},
             rewards = BP_REWARDS,
+            models = ownedModels, wardrobe = d.wardrobe or "",
         }) or "{}")
     net.Send(ply)
 end
@@ -234,6 +253,67 @@ net.Receive("P11_BP_Claim", function(_, ply)
     ply.P11_BPNext = CurTime() + 0.5
     local lvl = net.ReadUInt(8)
     POLUS11.BPClaim(ply, lvl)
+end)
+
+-- v5.2.1: ГАРДЕРОБ — надеть/снять разблокированную модель
+net.Receive("P11_BP_Wear", function(_, ply)
+    if not IsValid(ply) then return end
+    ply.P11_BPNext = ply.P11_BPNext or 0
+    if CurTime() < ply.P11_BPNext then return end
+    ply.P11_BPNext = CurTime() + 0.5
+    local path = string.sub(net.ReadString() or "", 1, 200)
+    local d = BPOf(ply)
+
+    if path == "" then
+        -- снять: вернуть модель профы
+        d.wardrobe = ""
+        ply.P11_Wardrobe = nil
+        local job = P11FW.GetJob and P11FW.GetJob(ply)
+        local m = job and job.models and job.models[1] or nil
+        if m and util.IsValidModel(m) then ply:SetModel(m) end
+        bpDirty = true
+        POLUS11.Notify(ply, "Гардероб: облик снят — снова форма должности.")
+        POLUS11.BPSync(ply)
+        return
+    end
+
+    if not d.models[path] then
+        POLUS11.Notify(ply, "Эта модель не разблокирована — её дают уровни батл-пасса.")
+        return
+    end
+    if not util.IsValidModel(path) then
+        POLUS11.Notify(ply, "Модель не найдена — проверь, что пак моделей подключён.")
+        return
+    end
+    -- не трогаем маскировки/активную тварь
+    if ply.P11_Disguise then
+        POLUS11.Notify(ply, "Сними маскировку, потом меняй облик.")
+        return
+    end
+    if ply:GetNWBool("P11_InfActive", false) then
+        POLUS11.Notify(ply, "Тело само выбирает свой облик.")
+        return
+    end
+    d.wardrobe = path
+    ply.P11_Wardrobe = path
+    ply:SetModel(path)
+    bpDirty = true
+    POLUS11.Notify(ply, "🎭 Гардероб: облик надет! Он сохранится после респавна.")
+    POLUS11.BPSync(ply)
+end)
+
+-- v5.2.1: восстановление облика после респавна (если нет маски/твари)
+hook.Add("PlayerSpawn", "P11.BPWardrobeRestore", function(ply)
+    if not IsValid(ply) then return end
+    local d = POLUS11.BP.data and POLUS11.BP.data[ply:SteamID64()]
+    local w = d and d.wardrobe or ""
+    if w == "" then return end
+    timer.Simple(0.8, function()
+        if not IsValid(ply) or not ply:Alive() then return end
+        if ply.P11_Disguise then return end
+        if ply:GetNWBool("P11_InfActive", false) then return end
+        if util.IsValidModel(w) then ply:SetModel(w) end
+    end)
 end)
 
 -- админ: дать XP вручную (p11_bpxp <ник> <кол-во>)
