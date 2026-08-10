@@ -158,22 +158,23 @@ local function BuildTreeCanvas(f, fac)
     local myLvl = LevelOf(tonumber(LocalPlayer():GetNWInt("P11_SkillXP", P11.Tree.xp)) or 0)
     local branch = istable(P11.Tree.trees[fac]) and P11.Tree.trees[fac] or { path = "", nodes = {} }
 
+    -- v5.0.3: древо увеличено — верхние узлы путей больше не обрезаются
     local cv = vgui.Create("DScrollPanel", f)
-    cv:SetPos(14, 112) cv:SetSize(852, 470)
+    cv:SetPos(14, 112) cv:SetSize(912, 700)
     cv:GetVBar():SetWide(5)
 
-    local CW, CH = 828, 760
+    local CW, CH = 912, 1150
     local paper = vgui.Create("DPanel", cv)
     paper:SetSize(CW, CH)
     paper:SetPaintBackground(false)
 
     -- раскладка: ствол базы снизу, ветви веером вверх
-    local NCX = { ["1"] = CW / 2, ["2"] = CW / 2 - 250, ["3"] = CW / 2 + 250 } -- по индексу пути преобразуем ниже
+    local NCX = { ["1"] = CW / 2, ["2"] = CW / 2 - 260, ["3"] = CW / 2 + 260 } -- по индексу пути преобразуем ниже
     local trunkX = CW / 2
-    local baseY0 = 660          -- первый узел базы (низ ствола)
-    local gapBase = 64
-    local junctionGap = 96      -- расстояние от верха ствола до развилки
-    local gapPath = 92
+    local baseY0 = 1010         -- первый узел базы (низ ствола) — v5.0.3: ниже, всё влезает
+    local gapBase = 70
+    local junctionGap = 110     -- расстояние от верха ствола до развилки
+    local gapPath = 96
 
     local centers = {} -- [nodeId] = {x,y}
     local lines   = {} -- {fromId, toId}
@@ -245,7 +246,7 @@ local function BuildTreeCanvas(f, fac)
         local topNode = pdef.nodes[#pdef.nodes]
         local ty = centers[topNode.id] and centers[topNode.id].y or junctionY
         local hd = vgui.Create("DLabel", paper)
-        hd:SetPos(px - 110, ty - 86) hd:SetSize(220, 30)
+        hd:SetPos(px - 110, ty - 96) hd:SetSize(220, 30)
         hd:SetFont("P11.TR.Mid")
         hd:SetTextColor(dead and Color(100, 92, 92) or (mine and TR_GOLD or TR_TEXT))
         hd:SetText(pdef.name .. (mine and " ●" or dead and " ✕" or ""))
@@ -352,7 +353,7 @@ function P11.OpenSkillTree()
 
     local f = vgui.Create("DFrame")
     P11.TreeFrame = f
-    f:SetSize(880, 646)
+    f:SetSize(940, 900) -- v5.0.3: окно больше — древо не обрезается
     f:Center()
     f:SetTitle("")
     f:MakePopup()
@@ -387,7 +388,7 @@ function P11.OpenSkillTree()
     end
 
     local x = vgui.Create("DButton", f)
-    x:SetPos(880 - 38, 12) x:SetSize(26, 26) x:SetText("")
+    x:SetPos(940 - 38, 12) x:SetSize(26, 26) x:SetText("")
     x.Paint = function(s, w, h)
         draw.SimpleText("✕", "P11.TR.Mid", w / 2, h / 2,
             s:IsHovered() and TR_BAD or TR_DIM, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
@@ -423,7 +424,7 @@ function P11.OpenSkillTree()
 
     -- откат
     local reset = vgui.Create("DButton", f)
-    reset:SetPos(14, 590) reset:SetSize(852, 46) reset:SetText("")
+    reset:SetPos(14, 830) reset:SetSize(912, 50) reset:SetText("") -- v5.0.3: под увеличенным канвасом
     reset.Paint = function(s, w, h)
         draw.RoundedBox(6, 0, 0, w, h, s:IsHovered() and Color(90, 30, 28) or Color(60, 26, 24))
         draw.SimpleText("ОТКАТИТЬ ВЕТКИ «" .. (TR[P11.Tree.fac] and TR[P11.Tree.fac].name or "") ..

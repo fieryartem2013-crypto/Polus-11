@@ -228,6 +228,7 @@ function P11FW.OpenAdminMenu(forceTab)
         { id = "ann",       name = "ОПОВЕЩЕНИЕ", minLevel = 4 }, -- v4.18.0 «РЕПРОДУКТОР»: плашка всей станции
         { id = "event",     name = "ИВЕНТ НЕЧТО", minLevel = 4 }, -- v4.18.2 «ВЕРБОВКА»: ивент у кадровика своей кнопкой
         { id = "medals",    name = "МЕДАЛИ", minLevel = 6 }, -- v4.33.1 «МЕДАЛЬ»: с Super Admin+ (владелец-суперадмин = 6, Developer 9+ тоже проходит)
+        { id = "shift",     name = "СМЕНА",  minLevel = 4 }, -- v5.0.3: окончание смены / распорядок
         { id = "jobs",      name = "ДОЛЖНОСТИ", minLevel = 14 },
         { id = "factions",  name = "ФРАКЦИИ",   minLevel = 14 },
         { id = "utils",     name = "УТИЛИТЫ",   minLevel = 14 },
@@ -380,6 +381,60 @@ function P11FW.OpenAdminMenu(forceTab)
         if P11FW.MedalsTabBuild then
             local okM, errM = pcall(P11FW.MedalsTabBuild, p, f)
             if not okM then print("[POLUS][ERROR] вкладка МЕДАЛИ: " .. tostring(errM)) end
+        end
+    end
+
+    -- ==================================================
+    --  v5.0.3: ВКЛАДКА СМЕНА — окончание смены / распорядок
+    -- ==================================================
+    do
+        local p = NewTab("shift")
+
+        local info = vgui.Create("DPanel", p)
+        info:SetPos(10, 10) info:SetSize(836, 130)
+        info.Paint = function(s, w, h)
+            draw.RoundedBox(6, 0, 0, w, h, AC.panel2)
+            draw.SimpleText("РАСПОРЯДОК СМЕНЫ", "P11FW.Text", 14, 10, AC.dim)
+            local sh = GetGlobalString("P11_Shift", "—")
+            draw.SimpleText("сейчас:  " .. sh, "P11FW.Big", 14, 40, AC.gold)
+            draw.SimpleText("следующая метка распорядка — автоматически через 3.5 мин · смена длится весь серверный день",
+                "P11FW.Small", 14, 74, AC.dim)
+            draw.SimpleText("Окончание смены подводит ИТОГИ: лучший работник / учёный / стрелок — звания на сутки и премии.",
+                "P11FW.Small", 14, 96, AC.dim)
+        end
+
+        -- кнопка «ОКОНЧИТЬ СМЕНУ» (итоги + сброс счётчиков)
+        local endBtn = vgui.Create("DButton", p)
+        endBtn:SetPos(10, 152) endBtn:SetSize(836, 64) endBtn:SetText("")
+        endBtn.Paint = function(s, w, h)
+            local hv = s:IsHovered()
+            draw.RoundedBox(8, 0, 0, w, h, hv and Color(150, 60, 30) or Color(110, 45, 25))
+            draw.RoundedBoxEx(8, 0, 0, w, 3, Color(255, 205, 100, 200), true, true, false, false)
+            surface.SetDrawColor(255, 205, 100, hv and 160 or 60)
+            surface.DrawOutlinedRect(0, 0, w, h, 1)
+            draw.SimpleText("■ ОКОНЧИТЬ СМЕНУ — подвести итоги и наградить", "P11FW.Big",
+                w / 2, h / 2 - 10, Color(242, 242, 246), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+            draw.SimpleText("лучший работник / учёный / стрелок · звание в TAB на сутки · премия +5 000₽",
+                "P11FW.Small", w / 2, h / 2 + 14, Color(235, 200, 150), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        end
+        endBtn.DoClick = function()
+            surface.PlaySound("ambient/alarms/warningbell1.wav")
+            RunConsoleCommand("p11_awards")
+            chat.AddText(AC.gold, "[СМЕНА] ", Color(235, 235, 240), "Итоги подведены — смотрите экран и чат.")
+        end
+
+        -- кнопка «СЛЕДУЮЩАЯ МЕТКА» (распорядок вручную)
+        local markBtn = vgui.Create("DButton", p)
+        markBtn:SetPos(10, 228) markBtn:SetSize(836, 46) markBtn:SetText("")
+        markBtn.Paint = function(s, w, h)
+            local hv = s:IsHovered()
+            draw.RoundedBox(8, 0, 0, w, h, hv and Color(70, 90, 110) or Color(45, 60, 75))
+            draw.SimpleText("⏭ СЛЕДУЮЩАЯ МЕТКА РАСПОРЯДКА (ПОДЪЁМ/ОБЕД/ОТБОЙ…)", "P11FW.Text",
+                w / 2, h / 2, Color(235, 240, 246), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        end
+        markBtn.DoClick = function()
+            surface.PlaySound("buttons/button15.wav")
+            RunConsoleCommand("p11_shift")
         end
     end
 
