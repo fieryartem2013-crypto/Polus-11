@@ -23,11 +23,11 @@ util.AddNetworkString("P11_OpBoard") -- сервер→клиент: лидер�
 local RECRUIT_T = 45          -- запись сторон
 local BATTLE_T  = 30 * 60     -- бой
 local HOLD_WIN  = 3 * 60      -- держать ВСЕ точки столько подряд (v4.28.0 «МЕТЕО»: 3 мин по заявке)
-local POINTS_N  = 3           -- точек на карте (v5.0.0 «СБОР»: было 4 — заявка владельца)
+local POINTS_N  = 4           -- точек на карте (v5.0.2: РУБЕЖ — 4 точки по заявке владельца)
 -- v4.31.0 «КРЫЛО»: комплект строго из набора + страховка «ровно N» (баг
 -- владельца «может быть меньше точек, что всё руинет») + спавны НЕ у флагов
--- v5.0.0 «СБОР»: точек 3 (А–В) по заявке владельца
-local OP_LETTERS = { "А", "Б", "В" }
+-- v5.0.2: точек 4 (А–Г) по заявке владельца
+local OP_LETTERS = { "А", "Б", "В", "Г" }
 local WIN_PAY, LOSE_PAY, DRAW_PAY = 5000, 1000, 2500
 
 POLUS11.Op = POLUS11.Op or {}
@@ -201,7 +201,7 @@ local function PickOpSpots(n)
     return picked
 end
 
--- v4.31.0 «КРЫЛО»: фабрика флага (буква — строго из комплекта); v5.0.0: А–В
+-- v4.31.0 «КРЫЛО»: фабрика флага (буква — строго из комплекта); v5.0.2: А–Г
 local function OpPointMake(p, name)
     local e = ents.Create("polus11_cappoint")
     if not IsValid(e) then return nil end
