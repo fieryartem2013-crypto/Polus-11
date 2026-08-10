@@ -75,12 +75,14 @@ POLUS11.TreeDefs = {
         paths = {
             shturm = { name = "ПУТЬ ШТУРМА", nodes = {
                 { id = "rk_sht",  job = "seed_rkka_shturmovik",   lvl = 3 },
+                { id = "rk_snab", job = "seed_rkka_snabzhenets", lvl = 4 }, -- v4.32.0 «ПОДПОЛЬЕ»
                 { id = "rk_pul",  job = "seed_rkka_pulemetchik",  lvl = 5 },
                 { id = "rk_let",  job = "seed_rkka_letchik",      lvl = 7 },
                 { id = "rk_gpeh", job = "seed_rkka_generalpeh",   lvl = 9 },
             }},
             razved = { name = "ПУТЬ РАЗВЕДКИ", nodes = {
                 { id = "rk_raz", job = "seed_rkka_razvedchik", lvl = 3 },
+                { id = "rk_rad", job = "seed_rkka_radist",     lvl = 4 }, -- v4.32.0 «ПОДПОЛЬЕ»
                 { id = "rk_kom", job = "seed_rkka_komissar",   lvl = 6 },
                 { id = "rk_gen", job = "seed_rkka_general",    lvl = 9 },
             }},
@@ -108,6 +110,29 @@ POLUS11.TreeDefs = {
             pole = { name = "ПОЛЕВОЙ ПРОТОКОЛ", nodes = {
                 { id = "sc_p1", perk = { name = "Полевой протокол", desc = "+25% к опыту службы за анализы крови" }, lvl = 2 },
                 { id = "sc_p2", perk = { name = "Стипендия ЦНИИ",   desc = "разовая выплата 2 500₽ из гранта института — сразу на карту", money = 2500 }, lvl = 4 },
+            }},
+        },
+    },
+    -- v4.32.0 «ПОДПОЛЬЕ»: КРИМИНАЛ В ДРЕВЕ (заявка владельца «криминал
+    -- не по вайтлисту а по дереву службы»): вайтлист со старших проф снят,
+    -- доступ качается делами как у РККА/учёных.
+    crime = {
+        name = "КРИМИНАЛ",
+        base = {
+            { id = "cr_kur", job = "seed_crime_kurer", lvl = 0 },
+        },
+        paths = {
+            kontr = { name = "ПУТЬ КОНТРАБАНДЫ", nodes = {
+                { id = "cr_kon", job = "seed_crime_kontrband", lvl = 2 },
+                { id = "cr_vzl", job = "seed_crime_vzlomshik", lvl = 4 },
+            }},
+            dno = { name = "ПУТЬ ДНА", nodes = {
+                { id = "cr_bych", job = "seed_crime_bychok", lvl = 2 },
+                { id = "cr_bar",  job = "seed_crime_baryga", lvl = 4 },
+            }},
+            verh = { name = "КРЫША", nodes = {
+                { id = "cr_sku", job = "seed_crime_skupshik", lvl = 5 },
+                { id = "cr_gla", job = "seed_crime_glavar",   lvl = 7 },
             }},
         },
     },
@@ -417,5 +442,5 @@ net.Receive("P11_TreeAct", function(_, ply)
     end
 end)
 
-print("[POLUS-11] ДРЕВО СЛУЖБЫ v4.21.0: уровень за дела (0..10), РККА+УЧЁНЫЕ по 3 пути, откат " ..
+print("[POLUS-11] ДРЕВО СЛУЖБЫ v4.32.0 «ПОДПОЛЬЕ»: уровень за дела (0..10), РККА+УЧЁНЫЕ+КРИМИНАЛ по 3 пути, откат " ..
     RESET_PRICE .. "₽ сохраняет опыт, ранг 14+ вне механики")

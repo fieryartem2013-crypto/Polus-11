@@ -46,7 +46,7 @@ local SEED_FACTIONS = {
     },
     {
         id = "crime", name = "Криминал станции", order = 8, -- v4.17.0 «КОНТРАБАНДА»
-        desc = "Подполье «Полюса-11»: контрабанда, скупка краденого, чёрный рынок. Липовая внешность обслуги — кейс «ОБСЛУГА» (маскировка ТОЛЬКО под персонал). Старшие — по вайтлисту, курьер — открытая вакансия.",
+        desc = "Подполье «Полюса-11»: контрабанда, скупка краденого, чёрный рынок. Липовая внешность обслуги — кейс «ОБСЛУГА» (маскировка ТОЛЬКО под персонал). Курьер — открытая вакансия, старшие должности — по ДРЕВУ СЛУЖБЫ (C-меню → «⭐ ДРЕВО СЛУЖБЫ»).", -- v4.32.0 «ПОДПОЛЬЕ»: ушли с вайтлиста на древо
         color = Color(150, 90, 170),
     },
     {
@@ -185,6 +185,32 @@ local SEED_JOBS = {
         },
     },
     {
+        -- v4.32.0 «ПОДПОЛЬЕ»: новая профа РККА от сборки (заявка «новые профы для РККА»)
+        id = "seed_rkka_snabzhenets", time = 60, category = "rkka", order = 33,
+        name = "Снабженец РККА",
+        desc = "Тыловик ударных групп: патроны, паёк и брезент для постов — возит и отбивается. Двустволка ИЖ-43, лом кладовщика и рация. 110 ХП / 70 брони.",
+        weapons = { { "arc9_eft_mr43", "weapon_shotgun" }, "weapon_crowbar", "weapon_polus11_radio" }, hp = 110, armor = 70, max = 2,
+        color = Color(190, 155, 95),
+        models = {
+            "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m35_1941_s1_02.mdl",
+            "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m35_1941_s1_03.mdl",
+            "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m35_1941_s1_04.mdl",
+        },
+    },
+    {
+        -- v4.32.0 «ПОДПОЛЬЕ»: новая профа РККА от сборки
+        id = "seed_rkka_radist", time = 60, category = "rkka", order = 34,
+        name = "Радист РККА",
+        desc = "Голос гарнизона в белой пустыне: дежурство на волне, сводки штабу, склик постов по тревоге. АКС-74У для самообороны, рация всегда при плече. 100 ХП / 60 брони.",
+        weapons = { { "arc9_eft_aks74u", "arc9_eft_aks74", "weapon_smg1" }, "weapon_polus11_radio" }, hp = 100, armor = 60, max = 2,
+        color = Color(150, 165, 100),
+        models = {
+            "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m43_s1_02.mdl",
+            "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m43_s1_03.mdl",
+            "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m43_s1_04.mdl",
+        },
+    },
+    {
         id = "seed_rkka_medsestra", time = 45, category = "rkka", order = 36, -- v4.9.1 «ИГЛА»: медсёстры подняты ВЫШЕ генералов (были 38/39 под командой); последними идут генералы
         name = "Медсестра РККА",
         desc = "Военная медсестра гарнизона: перевязки, обморожения, латание раненых (полевой медкейс + шприц в снаряге). Ни стыла, ни дрогнула. 90 ХП / 25 брони.",
@@ -254,6 +280,19 @@ local SEED_JOBS = {
             "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m35_1941_s1_02.mdl",
             "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m35_1941_s1_03.mdl",
             "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m35_1941_s1_04.mdl",
+        },
+    },
+    {
+        -- v4.32.0 «ПОДПОЛЬЕ»: новая профа НКВД (заявка «одну новую для НКВД»; вайтлист сохранён)
+        id = "seed_nkvd_doznavatel", time = 60, category = "nkvd", order = 51, whitelist = true,
+        name = "Дознаватель НКВД",
+        desc = "Младший состав особого отдела: первичный допрос, протоколы обысков, опрос свидетелей по свежим следам. АКС-74У и ПМ под шинелью. 100 ХП / 75 брони.",
+        weapons = { { "arc9_eft_aks74u", "arc9_eft_aks74", "weapon_smg1" }, { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 100, armor = 75, max = 2,
+        color = Color(112, 24, 28), -- красно-чёрный ряд v4.5.0
+        models = {
+            "models/hts/comradebear/pm0v3/player/rkka/commissar/co/m35_1941_s1_02.mdl",
+            "models/hts/comradebear/pm0v3/player/rkka/commissar/co/m35_1941_s1_03.mdl",
+            "models/hts/comradebear/pm0v3/player/rkka/commissar/co/m35_1941_s1_04.mdl",
         },
     },
     {
@@ -478,7 +517,7 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_crime_kontrband", time = 90, category = "crime", order = 71, whitelist = true,
+        id = "seed_crime_kontrband", time = 90, category = "crime", order = 71, -- v4.32.0 «ПОДПОЛЬЕ»: вайтлист СНЯТ — допуск по ДРЕВУ СЛУЖБЫ (заявка владельца),
         name = "Контрабандист",
         desc = "Провозит запрещёнку через периметр: патроны, спирт, ампулы — всё, кроме аффектов НКВД. Кейс «ОБСЛУГА», обрез двустволки ИЖ-43 (нет ARC9 — стоковая помпа), лом. 105 ХП / 50 брони.",
         weapons = { "weapon_polus11_disguise2", { "arc9_eft_mr43", "weapon_shotgun" }, "weapon_crowbar" },
@@ -491,7 +530,7 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_crime_skupshik", time = 150, category = "crime", order = 72, whitelist = true,
+        id = "seed_crime_skupshik", time = 150, category = "crime", order = 72, -- v4.32.0 «ПОДПОЛЬЕ»: вайтлист СНЯТ — допуск по ДРЕВУ СЛУЖБЫ (заявка владельца),
         name = "Скупщик краденого",
         desc = "Чёрный рынок станции в одном лице: принимает краденое, прячет тайники, держит цены подполья. Кейс «ОБСЛУГА», M1911A1 и рация на воровской волне. 105 ХП / 50 брони. Одно место.",
         weapons = { "weapon_polus11_disguise2", { "arc9_eft_m1911a1", "weapon_pistol" }, "weapon_polus11_radio" },
@@ -503,7 +542,7 @@ local SEED_JOBS = {
         },
     },
     {
-        id = "seed_crime_glavar", time = 360, category = "crime", order = 73, whitelist = true,
+        id = "seed_crime_glavar", time = 360, category = "crime", order = 73, -- v4.32.0 «ПОДПОЛЬЕ»: вайтлист СНЯТ — допуск по ДРЕВУ СЛУЖБЫ (заявка владельца),
         name = "Главарь криминала станции",
         desc = "«Смотрящий» Полюса-11: контрабандные каналы, долги, крыша. Кейс «ОБСЛУГА», револьвер .357, рация. Одно место. 115 ХП / 75 брони.",
         weapons = { "weapon_polus11_disguise2", "weapon_357", "weapon_polus11_radio" },
@@ -512,6 +551,45 @@ local SEED_JOBS = {
         models = {
             "models/player/Group03m/male_04.mdl",
             "models/player/Group03m/male_06.mdl",
+        },
+    },
+    {
+        -- v4.32.0 «ПОДПОЛЬЕ»: новая профа подполья (заявка «чутка новых проф криминалу»)
+        id = "seed_crime_bychok", time = 30, category = "crime", order = 71,
+        name = "Бычок",
+        desc = "Кулаки и страх подполья: выбивание долгов, охрана тайников, разборки без лишнего шума. Кейс «ОБСЛУГА», кулаки и лом. 125 ХП / 25 брони.",
+        weapons = { "weapon_polus11_disguise2", "weapon_polus11_fists", "weapon_crowbar" }, hp = 125, armor = 25, max = 2,
+        color = Color(135, 80, 150),
+        models = {
+            "models/player/Group03/male_01.mdl",
+            "models/player/Group03/male_03.mdl",
+            "models/player/Group03m/male_02.mdl",
+        },
+    },
+    {
+        -- v4.32.0 «ПОДПОЛЬЕ»: новая профа подполья
+        id = "seed_crime_baryga", time = 60, category = "crime", order = 72,
+        name = "Барыга",
+        desc = "Живая витрина чёрного рынка: сбывает краденый паёк, самокрут и спирт нуждающимся, держит мелкие долги. Кейс «ОБСЛУГА», ПМ в кармане, рация на воровской волне. 100 ХП / 25 брони.",
+        weapons = { "weapon_polus11_disguise2", { "arc9_eft_pm", "arc9_eft_tt33", "weapon_pistol" }, "weapon_polus11_radio" }, hp = 100, armor = 25, max = 2,
+        color = Color(145, 88, 160),
+        models = {
+            "models/player/Group03/male_08.mdl",
+            "models/player/Group03/male_09.mdl",
+            "models/player/Group03/female_06.mdl",
+        },
+    },
+    {
+        -- v4.32.0 «ПОДПОЛЬЕ»: новая профа подполья
+        id = "seed_crime_vzlomshik", time = 120, category = "crime", order = 74,
+        name = "Взломщик складов",
+        desc = "Медвежатник Полюса-11: склады снабжения, ящики лома и чужие тайники — его хлеб. Кейс «ОБСЛУГА», обрез ИЖ-43 для отхода, лом-фомка. 105 ХП / 40 брони. Одно место.",
+        weapons = { "weapon_polus11_disguise2", { "arc9_eft_mr43", "weapon_shotgun" }, "weapon_crowbar" }, hp = 105, armor = 40, max = 1,
+        color = Color(155, 92, 152),
+        models = {
+            "models/player/Group03/male_02.mdl",
+            "models/player/Group03m/male_05.mdl",
+            "models/player/Group03/male_07.mdl",
         },
     },
     -- ================= КОМАНДНЫЕ ПРОФЫ ОПЕРАЦИИ (v4.24.2 «ЗНАМЯ») =================
@@ -640,6 +718,44 @@ local function SeedAll()
             P11FW.RegisterCustomJobs(P11FW.CustomJobs)
             P11FW.SyncCustomJobs()
             P11FW.Log("Сид v4.19.3 «НОЖ»: должность «Диспетчер «Красного Орла» вырезана из ростера (миграция): " .. removed)
+        end
+    end
+
+    -- ---------- 0.45) v4.32.0 «ПОДПОЛЬЕ» МИГРАЦИЯ: КРИМИНАЛ С ВАЙТЛИСТА НА ДРЕВО СЛУЖБЫ ----------
+    -- Заявка владельца: «криминал не по вайтлисту а по дереву службы».
+    -- Старые сейвы держат whitelist=true у старших проф криминала — гасим
+    -- разом; описание фракции освежаем (упоминание вайтлиста вводило в
+    -- заблуждение). Флаг crimeTreeV432 на записи фракции — после него
+    -- ручные правки админа НЕ откатываем.
+    do
+        local facs = FactionRecordsNow()
+        local need = false
+        for _, fr in ipairs(facs) do
+            if fr.id == "crime" and not fr.crimeTreeV432 then need = true break end
+        end
+        if need then
+            local changed = false
+            for _, rec in ipairs(P11FW.CustomJobs) do
+                if rec and rec.category == "crime" and rec.whitelist then
+                    rec.whitelist = false
+                    changed = true
+                end
+            end
+            if changed then
+                P11FW.SaveCustomJobs()
+                P11FW.RegisterCustomJobs(P11FW.CustomJobs)
+                P11FW.SyncCustomJobs()
+            end
+            for _, fr in ipairs(facs) do
+                if fr.id == "crime" then
+                    fr.desc = "Подполье «Полюса-11»: контрабанда, скупка краденого, чёрный рынок. Липовая внешность обслуги — кейс «ОБСЛУГА» (маскировка ТОЛЬКО под персонал). Курьер — открытая вакансия, старшие должности — по ДРЕВУ СЛУЖБЫ (C-меню → «⭐ ДРЕВО СЛУЖБЫ»)."
+                    fr.crimeTreeV432 = true
+                end
+            end
+            P11FW.RegisterCustomFactions(facs)
+            SaveFactionRecords(facs)
+            P11FW.SyncFactions()
+            P11FW.Log("Сид v4.32.0 «ПОДПОЛЬЕ»: криминал станции переведён с вайтлиста на ДРЕВО СЛУЖБЫ (миграция)")
         end
     end
 

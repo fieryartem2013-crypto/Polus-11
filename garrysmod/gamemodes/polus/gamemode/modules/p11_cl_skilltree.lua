@@ -1,5 +1,6 @@
 -- ============================================================
---  ПОЛЮС-11 — ДРЕВО СЛУЖБЫ (client) v4.27.1 «СЕКАТОР» — ветви без наложений, чистые карточки
+--  ПОЛЮС-11 — ДРЕВО СЛУЖБЫ (client) v4.32.0 «ПОДПОЛЬЕ» — + ветвь КРИМИНАЛА, новые узлы РККА
+--  (была v4.27.1 «СЕКАТОР» — ветви без наложений, чистые карточки)
 --  Окно C-меню → «⭐ ДРЕВО СЛУЖБЫ»: НАСТОЯЩЕЕ ДЕРЕВО — ствол
 --  базы снизу, три ветви веером вверх, линии-связи, узлы-кнопки
 --  с состояниями (✓ открыто / золотой доступно / замок / ✕ чужой
@@ -28,12 +29,14 @@ local TR = {
         paths = {
             shturm = { name = "ПУТЬ ШТУРМА", nodes = {
                 { id = "rk_sht",  name = "Штурмовик РККА",       lvl = 3 },
+                { id = "rk_snab", name = "Снабженец РККА",       lvl = 4 },
                 { id = "rk_pul",  name = "Пулемётчик РККА",      lvl = 5 },
                 { id = "rk_let",  name = "Лётчик РККА",          lvl = 7 },
                 { id = "rk_gpeh", name = "Генерал РККА (Пехота)",lvl = 9 },
             }},
             razved = { name = "ПУТЬ РАЗВЕДКИ", nodes = {
                 { id = "rk_raz", name = "Разведчик РККА",   lvl = 3 },
+                { id = "rk_rad", name = "Радист РККА",      lvl = 4 },
                 { id = "rk_kom", name = "Комиссар РККА",    lvl = 6 },
                 { id = "rk_gen", name = "Генерал РККА",     lvl = 9 },
             }},
@@ -62,6 +65,28 @@ local TR = {
             pole = { name = "ПОЛЕВОЙ ПРОТОКОЛ", nodes = {
                 { id = "sc_p1", name = "Полевой протокол", lvl = 2, perk = "+25% к опыту за анализы крови" },
                 { id = "sc_p2", name = "Стипендия ЦНИИ",   lvl = 4, perk = "разовая выплата 2 500₽" },
+            }},
+        },
+    },
+    -- v4.32.0 «ПОДПОЛЬЕ»: КРИМИНАЛ В ДРЕВЕ (витрина; сервер авторитетен)
+    crime = {
+        name = "КРИМИНАЛ", col = Color(190, 135, 215),
+        base = {
+            { id = "cr_kur", name = "Курьер контрабанды", lvl = 0 },
+        },
+        pathOrder = { "kontr", "dno", "verh" },
+        paths = {
+            kontr = { name = "ПУТЬ КОНТРАБАНДЫ", nodes = {
+                { id = "cr_kon", name = "Контрабандист",     lvl = 2 },
+                { id = "cr_vzl", name = "Взломщик складов",  lvl = 4 },
+            }},
+            dno = { name = "ПУТЬ ДНА", nodes = {
+                { id = "cr_bych", name = "Бычок",  lvl = 2 },
+                { id = "cr_bar",  name = "Барыга", lvl = 4 },
+            }},
+            verh = { name = "КРЫША", nodes = {
+                { id = "cr_sku", name = "Скупщик краденого",        lvl = 5 },
+                { id = "cr_gla", name = "Главарь криминала станции", lvl = 7 },
             }},
         },
     },
@@ -370,8 +395,8 @@ function P11.OpenSkillTree()
     x.DoClick = function() f:Remove() end
 
     -- вкладки фракций
-    local facNames = { rkka = "РККА", science = "УЧЁНЫЕ" }
-    local order = { "rkka", "science" }
+    local facNames = { rkka = "РККА", science = "УЧЁНЫЕ", crime = "КРИМИНАЛ" }
+    local order = { "rkka", "science", "crime" } -- v4.32.0 «ПОДПОЛЬЕ»: криминал в древе
     for i, fac in ipairs(order) do
         local tb = vgui.Create("DButton", f)
         tb:SetPos(16 + (i - 1) * 150, 62) tb:SetSize(140, 40) tb:SetText("")
@@ -388,7 +413,7 @@ function P11.OpenSkillTree()
         end
     end
     local soon = vgui.Create("DLabel", f)
-    soon:SetPos(330, 68) soon:SetSize(300, 30)
+    soon:SetPos(470, 68) soon:SetSize(380, 30) -- v4.32.0: сдвинута за третью вкладку
     soon:SetFont("P11.TR.Small") soon:SetTextColor(TR_DIM)
     soon:SetText("НКВД · Красный Орёл · персонал — ветви позже")
 
