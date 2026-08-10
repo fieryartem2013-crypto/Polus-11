@@ -17,33 +17,43 @@ POLUS11.BP = POLUS11.BP or { data = {} }   -- [sid64] = { xp, claimed={} }
 
 -- ============ УРОВНИ И НАГРАДЫ ============
 
-local BP_MAX_LVL = 20
+local BP_MAX_LVL = 30  -- v5.2.1: 30 уровней (заявка владельца)
 local function BPNeed(lvl)
     return 100 + (lvl - 1) * 50   -- 100, 150, 200, ...
 end
 
--- награда: kind = money | flux | item | grand
+-- награда: kind = money | flux | item | model | grand
 local BP_REWARDS = {
     { lvl = 1,  kind = "money", amt = 3000,  name = "+3 000₽" },
     { lvl = 2,  kind = "flux",  amt = 50,    name = "+50 ПОЛЮС-ФЛЮКС" },
     { lvl = 3,  kind = "item",  id = "p08",  name = "Luger P08 «Парабеллум»" },
     { lvl = 4,  kind = "money", amt = 4000,  name = "+4 000₽" },
     { lvl = 5,  kind = "item",  id = "mp40", name = "MP-40 «Машиненпистоле»" },
-    { lvl = 6,  kind = "flux",  amt = 75,    name = "+75 ПОЛЮС-ФЛЮКС" },
+    { lvl = 6,  kind = "model", id = "models/hts/comradebear/pm0v3/player/rkka/medical/en/m35_1941_s1_01f.mdl", name = "Модель «Медсестра РККА»" },
     { lvl = 7,  kind = "money", amt = 5000,  name = "+5 000₽" },
-    { lvl = 8,  kind = "flux",  amt = 100,   name = "+100 ПОЛЮС-ФЛЮКС" },
-    { lvl = 9,  kind = "money", amt = 6000,  name = "+6 000₽" },
+    { lvl = 8,  kind = "flux",  amt = 75,    name = "+75 ПОЛЮС-ФЛЮКС" },
+    { lvl = 9,  kind = "model", id = "models/hts/comradebear/pm0v3/player/usarmy/infantry/en/m41_s1_01.mdl", name = "Модель «Солдат США»" },
     { lvl = 10, kind = "item",  id = "g43",  name = "Gewehr 43" },
-    { lvl = 11, kind = "money", amt = 7000,  name = "+7 000₽" },
-    { lvl = 12, kind = "flux",  amt = 120,   name = "+120 ПОЛЮС-ФЛЮКС" },
-    { lvl = 13, kind = "money", amt = 8000,  name = "+8 000₽" },
-    { lvl = 14, kind = "flux",  amt = 150,   name = "+150 ПОЛЮС-ФЛЮКС" },
+    { lvl = 11, kind = "money", amt = 6000,  name = "+6 000₽" },
+    { lvl = 12, kind = "model", id = "Models/UIF/scientists/UIF_scientist_7.mdl", name = "Модель «Учёный ЦНИИ»" },
+    { lvl = 13, kind = "money", amt = 7000,  name = "+7 000₽" },
+    { lvl = 14, kind = "flux",  amt = 100,   name = "+100 ПОЛЮС-ФЛЮКС" },
     { lvl = 15, kind = "item",  id = "stg44",name = "StG-44 «Штурмгевер»" },
-    { lvl = 16, kind = "money", amt = 10000, name = "+10 000₽" },
-    { lvl = 17, kind = "flux",  amt = 180,   name = "+180 ПОЛЮС-ФЛЮКС" },
-    { lvl = 18, kind = "money", amt = 12000, name = "+12 000₽" },
-    { lvl = 19, kind = "flux",  amt = 200,   name = "+200 ПОЛЮС-ФЛЮКС" },
-    { lvl = 20, kind = "grand", name = "VIP-статус + 50 000₽ + медаль «Легенда Полюса»" },
+    { lvl = 16, kind = "model", id = "models/hts/comradebear/pm0v3/player/rkka/commissar/co/m35_1941_s1_02.mdl", name = "Модель «Офицер РККА»" },
+    { lvl = 17, kind = "money", amt = 8000,  name = "+8 000₽" },
+    { lvl = 18, kind = "flux",  amt = 120,   name = "+120 ПОЛЮС-ФЛЮКС" },
+    { lvl = 19, kind = "model", id = "models/hts/comradebear/pm0v3/player/undeadarmy/pioneer/nco/m40_s1_skeleton.mdl", name = "Модель «Унтер-офицер Осовца»" },
+    { lvl = 20, kind = "item",  id = "ak74m",name = "АК-74М" },
+    { lvl = 21, kind = "money", amt = 10000, name = "+10 000₽" },
+    { lvl = 22, kind = "model", id = "models/hts/comradebear/pm0v3/player/rkka/general_staff/gen/m40_1941_s1_05.mdl", name = "Модель «Генерал РККА»" },
+    { lvl = 23, kind = "flux",  amt = 150,   name = "+150 ПОЛЮС-ФЛЮКС" },
+    { lvl = 24, kind = "item",  id = "svd",  name = "СВД «Драгунова»" },
+    { lvl = 25, kind = "model", id = "models/hts/comradebear/pm0v3/player/undeadarmy/infantry/en/m40occult_s1_skeleton.mdl", name = "Модель «Солдат Вермахта»" },
+    { lvl = 26, kind = "money", amt = 15000, name = "+15 000₽" },
+    { lvl = 27, kind = "flux",  amt = 200,   name = "+200 ПОЛЮС-ФЛЮКС" },
+    { lvl = 28, kind = "item",  id = "rpk16",name = "РПК-16" },
+    { lvl = 29, kind = "model", id = "models/hts/comradebear/pm0v3/player/undeadarmy/infantry/co/m38occult_s1_skeleton.mdl", name = "Модель «Генерал Вермахта»" },
+    { lvl = 30, kind = "grand", name = "ГЛАВНЫЙ ПРИЗ: VIP + 100 000₽ + 500 ПФ + медаль «Легенда Полюса» + модель «Мёртвый Офицер Осовца»" },
 }
 
 local function BPRewardFor(lvl)
