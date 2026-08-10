@@ -29,30 +29,30 @@ local BP_REWARDS = {
     { lvl = 3,  kind = "item",  id = "p08",  name = "Luger P08 «Парабеллум»" },
     { lvl = 4,  kind = "money", amt = 4000,  name = "+4 000₽" },
     { lvl = 5,  kind = "item",  id = "mp40", name = "MP-40 «Машиненпистоле»" },
-    { lvl = 6,  kind = "model", id = "models/hts/comradebear/pm0v3/player/rkka/medical/en/m35_1941_s1_01f.mdl", name = "Модель «Медсестра РККА»" },
+    { lvl = 6,  kind = "model", id = "models/hts/comradebear/pm0v3/player/nkvd/internal_troops/co/m35_1941_s1_02f.mdl", name = "Модель «Медсестра РККА»" },
     { lvl = 7,  kind = "money", amt = 5000,  name = "+5 000₽" },
     { lvl = 8,  kind = "flux",  amt = 75,    name = "+75 ПОЛЮС-ФЛЮКС" },
     { lvl = 9,  kind = "model", id = "models/hts/comradebear/pm0v3/player/usarmy/infantry/en/m41_s1_01.mdl", name = "Модель «Солдат США»" },
     { lvl = 10, kind = "item",  id = "g43",  name = "Gewehr 43" },
-    { lvl = 11, kind = "money", amt = 6000,  name = "+6 000₽" },
+    { lvl = 11, kind = "model", id = "models/hts/comradebear/pm0v3/player/nkvd/border_guards/en/m35_1941_s1_01.mdl", name = "Модель «НКВД Пограничник»" },
     { lvl = 12, kind = "model", id = "Models/UIF/scientists/UIF_scientist_7.mdl", name = "Модель «Учёный ЦНИИ»" },
     { lvl = 13, kind = "money", amt = 7000,  name = "+7 000₽" },
     { lvl = 14, kind = "flux",  amt = 100,   name = "+100 ПОЛЮС-ФЛЮКС" },
     { lvl = 15, kind = "item",  id = "stg44",name = "StG-44 «Штурмгевер»" },
     { lvl = 16, kind = "model", id = "models/hts/comradebear/pm0v3/player/rkka/commissar/co/m35_1941_s1_02.mdl", name = "Модель «Офицер РККА»" },
-    { lvl = 17, kind = "money", amt = 8000,  name = "+8 000₽" },
+    { lvl = 17, kind = "model", id = "models/hts/comradebear/pm0v3/player/rkka/armored/co/m41coat_1941_s1_06.mdl", name = "Модель «Танкист РККА»" },
     { lvl = 18, kind = "flux",  amt = 120,   name = "+120 ПОЛЮС-ФЛЮКС" },
     { lvl = 19, kind = "model", id = "models/hts/comradebear/pm0v3/player/undeadarmy/pioneer/nco/m40_s1_skeleton.mdl", name = "Модель «Унтер-офицер Осовца»" },
     { lvl = 20, kind = "item",  id = "ak74m",name = "АК-74М" },
-    { lvl = 21, kind = "money", amt = 10000, name = "+10 000₽" },
+    { lvl = 21, kind = "job",   id = "seed_rkka_tankist", name = "ПРОФА «Танкист РККА» (уникальная)" },
     { lvl = 22, kind = "model", id = "models/hts/comradebear/pm0v3/player/rkka/general_staff/gen/m40_1941_s1_05.mdl", name = "Модель «Генерал РККА»" },
-    { lvl = 23, kind = "flux",  amt = 150,   name = "+150 ПОЛЮС-ФЛЮКС" },
+    { lvl = 23, kind = "job",   id = "seed_oso_oficer", name = "ПРОФА «Офицер-командир Осовца»" },
     { lvl = 24, kind = "item",  id = "svd",  name = "СВД «Драгунова»" },
     { lvl = 25, kind = "model", id = "models/hts/comradebear/pm0v3/player/undeadarmy/infantry/en/m40occult_s1_skeleton.mdl", name = "Модель «Солдат Вермахта»" },
-    { lvl = 26, kind = "money", amt = 15000, name = "+15 000₽" },
-    { lvl = 27, kind = "flux",  amt = 200,   name = "+200 ПОЛЮС-ФЛЮКС" },
+    { lvl = 26, kind = "job",   id = "seed_oso_vermacht", name = "ПРОФА «Солдат Вермахта»" },
+    { lvl = 27, kind = "model", id = "models/hts/comradebear/pm0v3/player/undeadarmy/infantry/co/m38occult_s1_skeleton.mdl", name = "Модель «Генерал Вермахта»" },
     { lvl = 28, kind = "item",  id = "rpk16",name = "РПК-16" },
-    { lvl = 29, kind = "model", id = "models/hts/comradebear/pm0v3/player/undeadarmy/infantry/co/m38occult_s1_skeleton.mdl", name = "Модель «Генерал Вермахта»" },
+    { lvl = 29, kind = "job",   id = "seed_oso_general", name = "ПРОФА «Генерал Вермахта»" },
     { lvl = 30, kind = "grand", name = "ГЛАВНЫЙ ПРИЗ: VIP + 100 000₽ + 500 ПФ + медаль «Легенда Полюса» + модель «Мёртвый Офицер Осовца»" },
 }
 
@@ -92,6 +92,9 @@ local function BPOf(ply)
     POLUS11.BP.data[sid] = POLUS11.BP.data[sid] or { xp = 0, claimed = {} }
     local d = POLUS11.BP.data[sid]
     d.claimed = d.claimed or {}
+    d.models = d.models or {}          -- v5.2.1: разблокированные модели (гардероб)
+    d.wardrobe = d.wardrobe or ""      -- v5.2.1: надетый облик
+    d.jobs = d.jobs or {}              -- v5.2.2: разблокированные профы-награды
     return d
 end
 
@@ -175,6 +178,11 @@ local function BPGrant(ply, r)
         local d = BPOf(ply)
         d.models[r.id] = true
         bpDirty = true
+    elseif r.kind == "job" then
+        -- v5.2.2: разблокировка ПРОФЫ-награды (берётся в F4)
+        local d = BPOf(ply)
+        d.jobs[r.id] = true
+        bpDirty = true
     elseif r.kind == "grand" then
         -- VIP-статус
         if P11FW.SetRank then P11FW.SetRank(ply, "vip", ply) end
@@ -246,6 +254,7 @@ function POLUS11.BPSync(ply)
             max = BP_MAX_LVL, claimed = d.claimed or {},
             rewards = BP_REWARDS,
             models = ownedModels, wardrobe = d.wardrobe or "",
+            jobs = d.jobs or {},   -- v5.2.2: разблокированные профы {id=true}
         }) or "{}")
     net.Send(ply)
 end

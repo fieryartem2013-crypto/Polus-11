@@ -624,6 +624,21 @@ local SEED_JOBS = {
         },
     },
 
+    -- ================= v5.2.2: ТАНКИСТ РККА (награда батл-пасса ур.21) =================
+    {
+        id = "seed_rkka_tankist", time = 90, category = "rkka", order = 40,
+        name = "Танкист РККА",
+        desc = "Экипаж бронемашин «Полюса»: бронекостюм, мехводские привычки и секретный ствол из трофейного арсенала. УНИКАЛЬНАЯ профа — награда батл-пасса «Битва Времени» (F5, уровень 21). 120 ХП / 110 брони.",
+        weapons = { { "arc9_eft_avt", "arc9_eft_aks74", "weapon_ar2" }, { "arc9_eft_sr2m", "weapon_smg1" }, "weapon_polus11_radio" },
+        hp = 120, armor = 110, max = 2,
+        hidden = true, cmdonly = true,
+        bpUnlock = "tankist",   -- v5.2.2: открывается наградой батл-пасса
+        color = Color(160, 140, 80),
+        models = {
+            "models/hts/comradebear/pm0v3/player/rkka/armored/co/m41coat_1941_s1_06.mdl",
+        },
+    },
+
     -- ================= v5.2.0 «БИТВА ВРЕМЕНИ»: КРЕПОСТЬ ОСОВЕЦ =================
     -- Восставшие из-под земли: мёртвый гарнизон Осовца и части Вермахта.
     -- Модели — undeadarmy (скелеты в форме), оружие — секретный арсенал
@@ -634,7 +649,7 @@ local SEED_JOBS = {
         id = "seed_oso_pioner", time = 30, category = "osowiec", order = 40,
         name = "Солдат Осовца",
         desc = "Мёртвый защитник крепости: встал из-под земли вместе с гарнизоном 1915 года. Не чувствует холода, не помнит боли. Секретный карабин рейха в руках. 110 ХП / 60 брони.",
-        weapons = { { "arc9_eft_k98", "arc9_doi_k98", "weapon_crossbow" }, { "arc9_eft_p08", "weapon_pistol" }, "weapon_polus11_radio" },
+        weapons = { { "arc9_eft_svt", "arc9_eft_k98", "weapon_crossbow" }, { "arc9_eft_p08", "weapon_pistol" }, "weapon_polus11_radio" }, -- v5.2.2: СВТ-40
         hp = 110, armor = 60, max = 3,
         color = Color(120, 190, 120),
         models = {
@@ -647,7 +662,7 @@ local SEED_JOBS = {
         id = "seed_oso_strelok", time = 60, category = "osowiec", order = 41,
         name = "Стрелок Осовца",
         desc = "Рядовой мёртвого гарнизона: снайперская трёхлинейка и верность присяге 1915 года. Смотрит сквозь метель — глаза уже не высыхают. 105 ХП / 50 брони.",
-        weapons = { { "arc9_eft_mosin_infantry", "weapon_crossbow" }, "weapon_polus11_radio" },
+        weapons = { { "arc9_eft_svt", "arc9_eft_mosin_infantry", "weapon_crossbow" }, "weapon_polus11_radio" }, -- v5.2.2: СВТ-40
         hp = 105, armor = 50, max = 2,
         color = Color(130, 195, 130),
         models = {
@@ -659,7 +674,7 @@ local SEED_JOBS = {
         id = "seed_oso_medik", time = 45, category = "osowiec", order = 42,
         name = "Медик Осовца",
         desc = "Санитар, который сам уже не умрёт: латает живых и мёртвых, у него бинты не кончаются — как и терпение. 95 ХП / 30 брони.",
-        weapons = { "weapon_polus11_medkit", "weapon_polus11_syringe", { "arc9_eft_p08", "weapon_pistol" }, "weapon_polus11_radio" },
+        weapons = { "weapon_polus11_medkit", "weapon_polus11_syringe", { "arc9_eft_sr2m", "weapon_smg1" }, "weapon_polus11_radio" }, -- v5.2.2: СР-2М
         hp = 95, armor = 30, max = 2,
         color = Color(140, 205, 140),
         models = {
@@ -671,7 +686,7 @@ local SEED_JOBS = {
         id = "seed_oso_nco", time = 120, category = "osowiec", order = 43,
         name = "Унтер-офицер Осовца",
         desc = "Костлявый командир отделения: орёт так, что мёртвые встают по стойке смирно. Секретный штурмовой карабин рейха. 120 ХП / 80 брони.",
-        weapons = { { "arc9_eft_stg44", "arc9_eft_g43", "weapon_ar2" }, { "arc9_eft_p08", "weapon_pistol" }, "weapon_polus11_radio" },
+        weapons = { { "arc9_eft_avt", "arc9_eft_stg44", "weapon_ar2" }, { "arc9_eft_p08", "weapon_pistol" }, "weapon_polus11_radio" }, -- v5.2.2: АВТ-40
         hp = 120, armor = 80, max = 2,
         color = Color(110, 180, 110),
         models = {
@@ -682,9 +697,11 @@ local SEED_JOBS = {
     {
         id = "seed_oso_vermacht", time = 60, category = "osowiec", order = 44,
         name = "Солдат Вермахта",
-        desc = "Оккультная пехота рейха, пришедшая за мёртвыми: чёрная форма, руны и секретный арсенал, который РККА не смогло утащить. 110 ХП / 70 брони.",
-        weapons = { { "arc9_eft_mp40", "arc9_eft_mp5", "weapon_smg1" }, { "arc9_eft_p08", "weapon_pistol" }, "weapon_polus11_radio" },
+        desc = "Оккультная пехота рейха, пришедшая за мёртвыми: чёрная форма, руны и секретный арсенал. НАГРАДА батл-пасса «Битва Времени» (F5, уровень 26). 110 ХП / 70 брони.",
+        weapons = { { "arc9_eft_asval", "arc9_eft_mp40", "weapon_smg1" }, { "arc9_eft_p08", "weapon_pistol" }, "weapon_polus11_radio" }, -- v5.2.2: АС «Вал»
         hp = 110, armor = 70, max = 3,
+        hidden = true, cmdonly = true,
+        bpUnlock = "vermacht",
         color = Color(90, 150, 90),
         models = {
             "models/hts/comradebear/pm0v3/player/undeadarmy/infantry/en/m40occult_s1_skeleton.mdl",
@@ -694,9 +711,11 @@ local SEED_JOBS = {
     {
         id = "seed_oso_oficer", time = 240, category = "osowiec", order = 45,
         name = "Офицер-командир Осовца",
-        desc = "Командир мёртвого гарнизона: фуражка М38, портупея и приказ, отданный сто лет назад. Открывает терминал и ведёт мёртвых в бой. 125 ХП / 100 брони.",
-        weapons = { { "arc9_eft_stg44", "arc9_eft_g43", "weapon_ar2" }, { "arc9_eft_p08", "weapon_pistol" }, "weapon_polus11_radio" },
+        desc = "Командир мёртвого гарнизона: фуражка М38, портупея и приказ, отданный сто лет назад. НАГРАДА батл-пасса (F5, уровень 23). 125 ХП / 100 брони.",
+        weapons = { { "arc9_eft_avt", "arc9_eft_stg44", "weapon_ar2" }, { "arc9_eft_p08", "weapon_pistol" }, "weapon_polus11_radio" }, -- v5.2.2: АВТ-40
         hp = 125, armor = 100, max = 1, terminal = true, command = true,
+        hidden = true, cmdonly = true,
+        bpUnlock = "oficer",
         color = Color(100, 170, 100),
         models = {
             "models/hts/comradebear/pm0v3/player/undeadarmy/infantry/co/m38_s1_skeleton.mdl",
@@ -706,9 +725,11 @@ local SEED_JOBS = {
     {
         id = "seed_oso_general", time = 360, category = "osowiec", order = 46,
         name = "Генерал Вермахта",
-        desc = "Оккультный генерал рейха: тот, кто поднял мёртвых Осовца. М38 с рунами, полная власть над гарнизоном и секретным арсеналом. Одно место. 135 ХП / 125 брони.",
-        weapons = { { "arc9_eft_stg44", "arc9_eft_g43", "weapon_ar2" }, { "arc9_eft_p08", "weapon_pistol" }, "weapon_polus11_radio" },
+        desc = "Оккультный генерал рейха: тот, кто поднял мёртвых Осовца. М38 с рунами, полная власть. НАГРАДА батл-пасса (F5, уровень 29). Одно место. 135 ХП / 125 брони.",
+        weapons = { { "arc9_eft_asval", "arc9_eft_stg44", "weapon_ar2" }, { "arc9_eft_p08", "weapon_pistol" }, "weapon_polus11_radio" }, -- v5.2.2: АС «Вал»
         hp = 135, armor = 125, max = 1, terminal = true, command = true,
+        hidden = true, cmdonly = true,
+        bpUnlock = "general",
         color = Color(80, 140, 80),
         models = {
             "models/hts/comradebear/pm0v3/player/undeadarmy/infantry/co/m38occult_s1_skeleton.mdl",

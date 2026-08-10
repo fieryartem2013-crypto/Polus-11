@@ -172,7 +172,15 @@ function P11FW.OpenJobMenu()
     local me0 = LocalPlayer()
     local function JobShown(jobId)
         local j = P11FW.Jobs[jobId]
-        if j and j.hidden then return false end -- v4.24.2 «ЗНАМЯ»: командные профы скрыты из F4
+        if j and j.hidden then
+            -- v5.2.2 «БИТВА ВРЕМЕНИ»: профы-награды батл-пасса показываются,
+            -- если игрок разблокировал их наградой (P11.BP.data.jobs[id])
+            if j.bpUnlock and P11 and P11.BP and P11.BP.data and P11.BP.data.jobs
+                and P11.BP.data.jobs[j.bpUnlock] then
+                return true
+            end
+            return false -- v4.24.2 «ЗНАМЯ»: командные профы скрыты из F4
+        end
         return not (P11FW.WLHiddenFor and P11FW.WLHiddenFor(me0, jobId))
     end
 

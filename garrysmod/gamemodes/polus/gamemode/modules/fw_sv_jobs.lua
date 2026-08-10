@@ -105,6 +105,15 @@ function P11FW.SetJob(ply, jobId, modelIdx, force)
         return false, "идёт операция — ты на боевом посту, должность заморожена"
     end
 
+    -- v5.2.2 «БИТВА ВРЕМЕНИ»: профы-награды батл-пасса (нужен разблок)
+    if not force and job.bpUnlock then
+        local bp = POLUS11 and POLUS11.BP and POLUS11.BP.data and POLUS11.BP.data[ply:SteamID64()]
+        local has = bp and bp.jobs and bp.jobs[job.bpUnlock]
+        if not has then
+            return false, "эта профа — награда батл-пасса «Битва Времени» (F5)"
+        end
+    end
+
     -- v4.24.2 «ЗНАМЯ»: «командные» профы (Солдат СССР/США) — только консоль/ивент
     if not force and job.cmdonly then
         return false, "эта должность выдаётся только командой или ивентом"

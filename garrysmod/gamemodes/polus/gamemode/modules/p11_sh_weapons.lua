@@ -49,6 +49,11 @@ POLUS11.WepFallback = {
     arc9_eft_mp40           = "weapon_smg1",     -- MP-40
     arc9_eft_mp5            = "weapon_smg1",     -- MP5
     arc9_eft_p08            = "weapon_pistol",   -- Luger P08 «Парабеллум»
+    -- v5.2.2 «БИТВА ВРЕМЕНИ»: вооружение Мертвецов (Крепость Осовец)
+    arc9_eft_asval          = "weapon_smg1",     -- АС «Вал»
+    arc9_eft_avt            = "weapon_ar2",      -- АВТ-40
+    arc9_eft_sr2m           = "weapon_smg1",     -- СР-2М «Вереск»
+    arc9_eft_svt            = "weapon_crossbow", -- СВТ-40
     -- v4.8.5 «КРАСНЫЙ ОРЁЛ»: американская резидентура
     arc9_eft_m1911a1        = "weapon_pistol",  -- Colt M1911A1 (.45 ACP)
     arc9_eft_m870           = "weapon_shotgun", -- Remington 870 (помпа США)
