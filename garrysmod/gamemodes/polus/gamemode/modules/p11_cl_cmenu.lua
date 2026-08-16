@@ -1,5 +1,7 @@
 -- ============================================================
 --  ПОЛЮС-11 — С-МЕНЮ ИГРОКА (client) v5.1 «КОМАНДОР» (v4.30.0)
+--  v5.8.13 «РАДИО»: кнопка «📻 РАДИО» только для ГЛАВЫ админов —
+--  пишет в чат !radio polus_ost_1 (левая колонка, 14/416).
 --  v5.8.7 «О НАС»: внизу добавлен баннер «ℹ О НАС» (общество
 --  «Проект Арчи» — Discord + коллекция); окно выше (652/748),
 --  подсказка сдвинута. Кнопка вписана в лейаут — не перекрывает.
@@ -532,6 +534,8 @@ function P11.OpenCMenu()
     local canWl = (not isAdmin) and P11FW.CanWhitelist and P11FW.CanWhitelist(me)
     -- v4.30.0 «КОМАНДОР»: стаффу (Хелпер+, ранг 2+) меню ВЫШЕ — полоса быстрых команд
     local isStaff = (P11FW.GetRankLevel and P11FW.GetRankLevel(me) or 0) >= 2
+    -- v5.8.13: кнопка «РАДИО» доступна только ГЛАВЕ админов (ранг 16+ или суперадмин)
+    local isBoss = me:IsSuperAdmin() or (P11FW.GetRankLevel and P11FW.GetRankLevel(me) or 0) >= 16
 
     local f = vgui.Create("DPanel")
     P11.CMenu = f
@@ -621,6 +625,14 @@ function P11.OpenCMenu()
         P11.CloseCMenu()
         if P11.OpenTradePicker then P11.OpenTradePicker() end
     end)
+
+    -- v5.8.13: кнопка «📻 РАДИО» — только ГЛАВА админов: пишет в чат !radio polus_ost_1
+    if isBoss then
+        CButton(f, 14, 416, 246, 34, "📻  РАДИО", "включить polus_ost_1", CC.cyan, function()
+            P11.CloseCMenu()
+            RunConsoleCommand("say", "!radio polus_ost_1")
+        end)
+    end
 
     -- ---- правая колонка: БЫСТРОЕ ----
     local rl = vgui.Create("DLabel", f)
