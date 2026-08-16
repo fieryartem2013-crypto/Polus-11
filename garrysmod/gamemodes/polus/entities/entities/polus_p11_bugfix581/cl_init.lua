@@ -26,7 +26,7 @@ surface.CreateFont("P11.BF.DocMid",   { font = "Roboto", size = 17, weight = 600
 surface.CreateFont("P11.BF.DocSmall", { font = "Roboto", size = 13, weight = 400, extended = true })
 surface.CreateFont("P11.BF.DocTiny",  { font = "Roboto", size = 11, weight = 500, extended = true })
 
--- обрезка по ширине (безопасно для UTF-8)
+-- обрезка по ширине (безопасно для UTF-8) — для мелких полей (счётчики)
 local function TrimToWidth(text, font, maxw)
     text = text or ""
     surface.SetFont(font)
@@ -48,6 +48,45 @@ local function TrimToWidth(text, font, maxw)
     return out .. "…"
 end
 
+-- v5.8.14: перенос ПО СЛОВАМ (до maxLines строк) — длинные имена/должности
+-- (например «Командир Отряда „Красный Орёл“») показываются ЦЕЛИКОМ,
+-- без обрезки. Возвращает массив строк.
+local function WrapWords(text, font, maxw, maxLines)
+    text = text or ""
+    surface.SetFont(font)
+    if surface.GetTextSize(text) <= maxw then return { text } end
+
+    local words = {}
+    for w in string.gmatch(text, "%S+") do
+        words[#words + 1] = w
+    end
+    local lines, cur = {}, ""
+    for _, w in ipairs(words) do
+        local test = cur == "" and w or (cur .. " " .. w)
+        if surface.GetTextSize(test) <= maxw or cur == "" then
+            cur = test
+        else
+            lines[#lines + 1] = cur
+            cur = w
+            if #lines >= maxLines then break end
+        end
+    end
+    if cur ~= "" and #lines < maxLines then
+        lines[#lines + 1] = cur
+    end
+    return lines
+end
+
+-- нарисовать строки с переносом, вернуть конечный y
+local function DrawWrapped(lines, font, x, y, col, lh)
+    lh = lh or 19
+    for _, ln in ipairs(lines) do
+        draw.SimpleText(ln, font, x, y, col, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        y = y + lh
+    end
+    return y
+end
+
 local function DocHandler()
     local name = net.ReadString()
     local jobName = net.ReadString()
@@ -60,7 +99,7 @@ local function DocHandler()
     local f = vgui.Create("DFrame")
     P11.BFDocFrame = f
     f.T0 = SysTime()
-    f:SetSize(460, 320)
+    f:SetSize(460, 372)
     f:Center()
     f:SetTitle("")
     f:MakePopup()
@@ -88,32 +127,40 @@ local function DocHandler()
         draw.SimpleText("УДОСТОВЕРЕНИЕ ЛИЧНОСТИ", "P11.BF.DocTiny", w / 2, 60,
             Color(70, 60, 44), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 
-        -- Имя (обрезаем длинное)
-        draw.SimpleText("Имя: " .. TrimToWidth(name, "P11.BF.DocMid", w - 60),
-            "P11.BF.DocMid", 24, 86, Color(40, 36, 26), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-        -- Фракция крупно
-        draw.SimpleText(TrimToWidth(string.upper(facName or ""), "P11.BF.DocMid", w - 60),
-            "P11.BF.DocMid", 24, 114, Color(90, 62, 30), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-        -- Должность (обрезаем)
-        draw.SimpleText("Должность: " .. TrimToWidth(jobName, "P11.BF.DocSmall", w - 60),
-            "P11.BF.DocSmall", 24, 138, Color(40, 36, 26), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+        local x = 24
+        local maxw = w - 48
+        local y = 82
+        local col = Color(40, 36, 26)
 
-        -- КОД — главное
-        draw.RoundedBox(4, 24, 152, w - 48, 40, Color(24, 30, 40, 255))
-        draw.SimpleText("КОД: " .. FormatCode(code), "P11.BF.DocMid", w / 2, 172,
+        -- Имя (перенос по словам, до 2 строк)
+        y = DrawWrapped(WrapWords("Имя: " .. (name or ""), "P11.BF.DocMid", maxw, 2),
+            "P11.BF.DocMid", x, y, col, 19)
+        -- Фракция крупно (перенос по словам)
+        y = y + 4
+        y = DrawWrapped(WrapWords(string.upper(facName or ""), "P11.BF.DocMid", maxw, 2),
+            "P11.BF.DocMid", x, y, Color(90, 62, 30), 19)
+        -- Должность (перенос по словам — «Орёл» виден целиком)
+        y = y + 4
+        y = DrawWrapped(WrapWords("Должность: " .. (jobName or ""), "P11.BF.DocSmall", maxw, 2),
+            "P11.BF.DocSmall", x, y, col, 17)
+
+        -- КОД — главное (после текста, не пересекает)
+        local codeY = y + 8
+        draw.RoundedBox(4, 24, codeY, w - 48, 40, Color(24, 30, 40, 255))
+        draw.SimpleText("КОД: " .. FormatCode(code), "P11.BF.DocMid", w / 2, codeY + 20,
             Color(230, 220, 190), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 
-        -- выдача/проверка — СВОЯ строка (слева)
+        -- выдача/проверка
+        local lowY = codeY + 52
         draw.SimpleText("выдано/проверено: " .. TrimToWidth(stamp, "P11.BF.DocTiny", w - 110),
-            "P11.BF.DocTiny", 24, 212, Color(90, 80, 60), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-        -- проверка кода — своя строка (по центру внизу, тускло)
+            "P11.BF.DocTiny", 24, lowY, Color(90, 80, 60), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
         draw.SimpleText("проверка кода — через КАРАУЛЬНЫЙ ТЕРМИНАЛ",
-            "P11.BF.DocTiny", w / 2, 234, Color(120, 105, 80), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+            "P11.BF.DocTiny", w / 2, lowY + 22, Color(120, 105, 80), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 
         -- печать — справа внизу, текст её не пересекает
         surface.SetDrawColor(70, 60, 40, 200)
-        surface.DrawOutlinedRect(w - 96, 258, 70, 40, 3)
-        draw.SimpleText("П-11", "P11.BF.DocMid", w - 61, 278, Color(70, 60, 40, 220),
+        surface.DrawOutlinedRect(w - 96, h - 62, 70, 40, 3)
+        draw.SimpleText("П-11", "P11.BF.DocMid", w - 61, h - 42, Color(70, 60, 40, 220),
             TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
     end
 
