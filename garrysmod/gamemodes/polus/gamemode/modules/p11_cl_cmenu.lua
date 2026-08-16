@@ -1,5 +1,8 @@
 -- ============================================================
 --  ПОЛЮС-11 — С-МЕНЮ ИГРОКА (client) v5.1 «КОМАНДОР» (v4.30.0)
+--  v5.8.7 «О НАС»: внизу добавлен баннер «ℹ О НАС» (общество
+--  «Проект Арчи» — Discord + коллекция); окно выше (652/748),
+--  подсказка сдвинута. Кнопка вписана в лейаут — не перекрывает.
 --  v5.1: стаффу (Хелпер+) меню ВЫШЕ на полосу «БЫСТРЫЕ КОМАНДЫ» —
 --  пять кнопок: ВАРН/БАН/КИК/К НЕМУ/К СЕБЕ. Клик → выбор бойца
 --  списком → причина/срок (своё окно P11.StringRequest) → штатный
@@ -534,7 +537,7 @@ function P11.OpenCMenu()
     P11.CMenu = f
     f.T0 = SysTime()
     f.PStaff = isStaff
-    f:SetSize(math.min(780, ScrW() - 40), math.min(isStaff and 678 or 600, ScrH() - 40)) -- v4.30.0: расширено для стаффа
+    f:SetSize(math.min(780, ScrW() - 40), math.min(isStaff and 748 or 652, ScrH() - 40)) -- v5.8.7: окно выше — место под баннер «О НАС»
     f:Center()
     f:MakePopup()
     f:SetKeyboardInputEnabled(true)
@@ -742,10 +745,18 @@ function P11.OpenCMenu()
 
     -- низ: подсказка
     local foot = vgui.Create("DLabel", f)
-    foot:SetPos(14, isStaff and 646 or 556) foot:SetSize(748, 20)
+    foot:SetPos(14, isStaff and 708 or 612) foot:SetSize(748, 20)
     foot:SetFont("P11.CM.Small") foot:SetTextColor(CC.dim)
     local rk = P11FW.GetRankName and P11FW.GetRankName(me) or "User"
     foot:SetText("Ты — " .. rk .. " • F6 — поддержка станции • документы и пустые руки уже в снаряжении • C закроет это меню")
+
+    -- v5.8.7 «О НАС»: баннер внизу — общество «Проект Арчи» (Discord + коллекция).
+    -- Вписан ПРЯМО в лейаут (не обёрткой поверх) — ничего не перекрывает.
+    CButton(f, 14, isStaff and 656 or 560, 764, 46, "ℹ  О НАС",
+        "общество «Проект Арчи» · наш Discord · коллекция моделей", CC.gold, function()
+            P11.CloseCMenu()
+            if P11.OpenAbout then P11.OpenAbout() end
+        end, true) -- баннер-режим (как ДРЕВО/ОПЕРАЦИИ)
 
     f.OnKeyCodePressed = function(s, key)
         if key == KEY_ESCAPE then f:Remove() end

@@ -4,7 +4,10 @@
 --     которое делает и развивает сервер «ПОЛЮС-11». Кнопки:
 --     Discord (https://discord.gg/fDuSGRJRC3) и коллекция
 --     (https://steamcommunity.com/sharedfiles/filedetails/?id=3777625029).
---  2) КНОПКА «ℹ О НАС» в С-меню (обёртка P11.OpenCMenu).
+--  2) КНОПКА «ℹ О НАС» в С-меню ВПИСАНА ПРЯМО В ЛЕЙАУТ
+--     (p11_cl_cmenu.lua v5.8.7, баннер внизу) — не перекрывает
+--     другие кнопки. Здесь кнопку больше НЕ вешаем (обёртка была,
+--     перекрывала — убрана).
 --  3) АВТОПОКАЗ новичку при первом входе (один раз) — как часть
 --     инструкции для новичка.
 --  4) Команда !о нас / !проект / !об обществе — открыть окно.
@@ -148,69 +151,6 @@ P11.OpenAbout = function()
     end
     close.DoClick = function() f:Remove() end
 end
-
--- =================== КНОПКА В С-МЕНЮ ===================
-local function AddAboutButton()
-    local m = P11 and P11.CMenu
-    if not IsValid(m) then return end
-    if IsValid(P11.AboutBtn) then return end -- уже есть в этом меню
-
-    local me = LocalPlayer()
-    local isAdmin = P11FW and P11FW.Config and P11FW.Config.Admin and P11FW.Config.Admin(me)
-    local canWl = (not isAdmin) and P11FW.CanWhitelist and P11FW.CanWhitelist(me)
-
-    -- у админов/вайтлиста правая колонка 364 свободна (бодигруппы у них слева),
-    -- у обычных — ниже бодигрупп (420), над Багажом (452)
-    local x, y = 532, 420
-    if isAdmin or canWl then x, y = 532, 364 end
-
-    local b = vgui.Create("DButton", m)
-    b:SetPos(x, y) b:SetSize(234, 48)
-    b:SetText("")
-    b.Paint = function(s, ww, hh)
-        local hov = s:IsHovered()
-        draw.RoundedBox(8, 0, 0, ww, hh, hov and Color(34, 46, 66, 255) or Color(20, 27, 39, 240))
-        draw.RoundedBoxEx(8, 0, 0, ww, math.floor(hh / 2), Color(255, 255, 255, 5), true, true, false, false)
-        if hov then
-            surface.SetDrawColor(C.gold.r, C.gold.g, C.gold.b, 130)
-            surface.DrawOutlinedRect(0, 0, ww, hh, 1)
-            s:SetCursor("hand")
-        end
-        -- иконка-квадрат
-        draw.RoundedBox(6, 6, 6, 36, 36, Color(C.gold.r, C.gold.g, C.gold.b, 55))
-        draw.SimpleText("ℹ", "P11.AB.Sub", 24, 24, Color(240, 248, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-        draw.SimpleText("О НАС", "P11.AB.Btn", 50, hh / 2 - 10, C.text, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-        draw.SimpleText("общество «Проект Арчи»", "P11.AB.Small", 50, hh / 2 + 11, C.gold, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-        if hov then
-            draw.SimpleText("›", "P11.AB.Btn", ww - 14, hh / 2, C.gold, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-        end
-    end
-    b.DoClick = function()
-        if P11.CloseCMenu then P11.CloseCMenu() end
-        P11.OpenAbout()
-    end
-    b:SetTooltip("Общество «Проект Арчи»: Discord + коллекция")
-    P11.AboutBtn = b
-end
-
--- обёртка открытия С-меню (файл гейммода не трогаем)
-local patched = false
-local function EnsurePatch()
-    if patched then return true end
-    if not P11 or not P11.OpenCMenu then return false end
-    local orig = P11.OpenCMenu
-    P11.OpenCMenu = function(...)
-        if orig then orig(...) end
-        AddAboutButton()
-    end
-    patched = true
-    return true
-end
-
-hook.Add("Think", "P11.About.Patch", function()
-    EnsurePatch()
-    if IsValid(P11 and P11.CMenu) then AddAboutButton() end
-end)
 
 -- =================== КОМАНДА !о нас ===================
 hook.Add("OnPlayerChat", "P11.About.Chat", function(ply, text, teamOnly, dead)
