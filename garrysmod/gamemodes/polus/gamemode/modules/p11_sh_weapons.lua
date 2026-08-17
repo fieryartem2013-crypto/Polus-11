@@ -58,6 +58,14 @@ POLUS11.WepFallback = {
     arc9_eft_m1911a1        = "weapon_pistol",  -- Colt M1911A1 (.45 ACP)
     arc9_eft_m870           = "weapon_shotgun", -- Remington 870 (помпа США)
     arc9_eft_velociraptor   = "weapon_ar2",     -- v4.8.6: глушёный Velociraptor .300 BLK (исключение Центра)
+    -- v5.8.15 «ООН / ГОК»: вооружение сил ООН и ГОК
+    arc9_eft_mp9            = "weapon_smg1",    -- MP9 (Рекрут)
+    arc9_eft_scarh          = "weapon_ar2",     -- SCAR-H (Солдат)
+    arc9_eft_scarx17        = "weapon_ar2",     -- SCAR-X17 (Штурмовик)
+    arc9_eft_mp5k           = "weapon_smg1",    -- MP5K (Шпион)
+    arc9_eft_uzi_pro        = "weapon_smg1",    -- UZI PRO (Учёный)
+    arc9_eft_m60e4          = "weapon_ar2",     -- M60E4 (Титан)
+    arc9_eft_vector9        = "weapon_smg1",    -- Vector 9 (Командир)
 }
 
 -- боезапас для СТОКОВЫХ фолбэков (EFT-стволам не нужен — своя система)

@@ -67,10 +67,10 @@ local SEED_FACTIONS = {
         color = Color(150, 55, 60),
     },
     {
-        -- v5.2.0 «БИТВА ВРЕМЕНИ»: НОВАЯ ФРАКЦИЯ «КРЕПОСТЬ ОСОВЕЦ» (заявка владельца)
-        id = "osowiec", name = "Крепость Осовец", order = 9,
-        desc = "Восставшие из-под земли: мёртвый гарнизон легендарной крепости Осовец и рванувшиеся следом части Вермахта. Секретное оружие рейха, которое РККА так и не смогло утащить. Они не помнят боли — помнят только приказ.",
-        color = Color(120, 190, 120), -- мёртвая болотная зелень
+        -- v5.8.15: ИВЕНТ-ФРАКЦИЯ «ООН / ГОК» (заменила прошлую «Крепость Осовец»)
+        id = "ungoc", name = "ООН / ГОК", order = 9,
+        desc = "Ивентовая фракция: силы ООН и ГОК (Глобальная Оккультная Коалиция). Пришли разобраться с тем, что на станции. Современное оружие, тяжёлая броня, кейсы маскировки «ЛЕГАТ».",
+        color = Color(70, 130, 190), -- сине-голубая ООН
     },
 }
 
@@ -639,100 +639,116 @@ local SEED_JOBS = {
         },
     },
 
-    -- ================= v5.2.0 «БИТВА ВРЕМЕНИ»: КРЕПОСТЬ ОСОВЕЦ =================
-    -- Восставшие из-под земли: мёртвый гарнизон Осовца и части Вермахта.
-    -- Модели — undeadarmy (скелеты в форме), оружие — секретный арсенал
-    -- рейха (ARC9 EFT, фолбэки на сток если пака нет).
+    -- ================= v5.8.15: ООН / ГОК (заменила Крепость Осовец) =================
+    -- Ивентовая фракция: силы ООН и ГОК. Модели cheddar, оружие ARC9 EFT,
+    -- у Шпиона — кейс маскировки «ЛЕГАТ», у Командира — вайтлист.
 
-    -- Солдат Осовца — мёртвый защитник крепости (пионер М40)
+    -- Рекрут ООН — новобранец сил ООН
     {
-        id = "seed_oso_pioner", time = 30, category = "osowiec", order = 40,
-        name = "Солдат Осовца",
-        desc = "Мёртвый защитник крепости: встал из-под земли вместе с гарнизоном 1915 года. Не чувствует холода, не помнит боли. Секретный карабин рейха в руках. 110 ХП / 60 брони.",
-        weapons = { { "arc9_eft_svt", "arc9_eft_k98", "weapon_crossbow" }, { "arc9_eft_p08", "weapon_pistol" }, "weapon_polus11_radio" }, -- v5.2.2: СВТ-40
-        hp = 110, armor = 60, max = 3,
-        color = Color(120, 190, 120),
+        id = "seed_un_rekrut", time = 0, category = "ungoc", order = 60,
+        name = "Рекрут ООН",
+        desc = "Новобранец сил ООН: первая форма, первый ствол. Учись у старших, держись группы. 100 ХП / 55 брони.",
+        weapons = { { "arc9_eft_mp9", "weapon_smg1" } },
+        hp = 100, armor = 55, max = 4,
+        color = Color(70, 130, 190),
         models = {
-            "models/hts/comradebear/pm0v3/player/undeadarmy/pioneer/en/m40dot44_s1_skeleton.mdl",
-            "models/hts/comradebear/pm0v3/player/undeadarmy/infantry/en/m40_s1_skeleton.mdl",
+            "models/player/cheddar/assessment_team/assessment_09.mdl",
         },
     },
-    -- Стрелок Осовца — инфантерия
+    -- Солдат ООН — пехотинец
     {
-        id = "seed_oso_strelok", time = 60, category = "osowiec", order = 41,
-        name = "Стрелок Осовца",
-        desc = "Рядовой мёртвого гарнизона: снайперская трёхлинейка и верность присяге 1915 года. Смотрит сквозь метель — глаза уже не высыхают. 105 ХП / 50 брони.",
-        weapons = { { "arc9_eft_svt", "arc9_eft_mosin_infantry", "weapon_crossbow" }, "weapon_polus11_radio" }, -- v5.2.2: СВТ-40
-        hp = 105, armor = 50, max = 2,
-        color = Color(130, 195, 130),
+        id = "seed_un_soldat", time = 30, category = "ungoc", order = 61,
+        name = "Солдат ООН",
+        desc = "Пехотинец сил ООН: дисциплина, SCAR-H, приказ. 115 ХП / 100 брони.",
+        weapons = { { "arc9_eft_scarh", "weapon_ar2" } },
+        hp = 115, armor = 100, max = 4,
+        color = Color(70, 130, 190),
         models = {
-            "models/hts/comradebear/pm0v3/player/undeadarmy/infantry/en/m40_s1_skeleton.mdl",
+            "models/player/cheddar/goc_soldier/goc_field_operative.mdl",
         },
     },
-    -- Медик Осовца — мёртвый санитар
+    -- Штурмовик ООН — тяжёлый штурм
     {
-        id = "seed_oso_medik", time = 45, category = "osowiec", order = 42,
-        name = "Медик Осовца",
-        desc = "Санитар, который сам уже не умрёт: латает живых и мёртвых, у него бинты не кончаются — как и терпение. 95 ХП / 30 брони.",
-        weapons = { "weapon_polus11_medkit", "weapon_polus11_syringe", { "arc9_eft_sr2m", "weapon_smg1" }, "weapon_polus11_radio" }, -- v5.2.2: СР-2М
-        hp = 95, armor = 30, max = 2,
-        color = Color(140, 205, 140),
+        id = "seed_un_shturm", time = 60, category = "ungoc", order = 62,
+        name = "Штурмовик ООН",
+        desc = "Тяжёлый штурмовик: SCAR-X17, пробивает стены и Нечто. 135 ХП / 125 брони.",
+        weapons = { { "arc9_eft_scarx17", "weapon_ar2" } },
+        hp = 135, armor = 125, max = 2,
+        color = Color(60, 110, 170),
         models = {
-            "models/hts/comradebear/pm0v3/player/undeadarmy/medic/en/m40dot44_s1_skeleton.mdl",
+            "models/player/cheddar/goc_soldier/goc_soldier.mdl",
         },
     },
-    -- Унтер-офицер Осовца (NCO pioneer)
+    -- Шпион ООН — кейс маскировки «ЛЕГАТ»
     {
-        id = "seed_oso_nco", time = 120, category = "osowiec", order = 43,
-        name = "Унтер-офицер Осовца",
-        desc = "Костлявый командир отделения: орёт так, что мёртвые встают по стойке смирно. Секретный штурмовой карабин рейха. 120 ХП / 80 брони.",
-        weapons = { { "arc9_eft_avt", "arc9_eft_stg44", "weapon_ar2" }, { "arc9_eft_p08", "weapon_pistol" }, "weapon_polus11_radio" }, -- v5.2.2: АВТ-40
-        hp = 120, armor = 80, max = 2,
-        color = Color(110, 180, 110),
+        id = "seed_un_shpion", time = 90, category = "ungoc", order = 63,
+        name = "Шпион ООН",
+        desc = "Тихий наблюдатель: MP5K под курткой и кейс маскировки «ЛЕГАТ» — переоденься кем угодно. 125 ХП / 100 брони.",
+        weapons = { "weapon_polus11_disguise", { "arc9_eft_mp5k", "weapon_smg1" } },
+        hp = 125, armor = 100, max = 2,
+        color = Color(90, 90, 170),
         models = {
-            "models/hts/comradebear/pm0v3/player/undeadarmy/pioneer/nco/m40_s1_skeleton.mdl",
+            "models/player/cheddar/goc/strike_team_soldier2/goc_striker_team.mdl",
         },
     },
-    -- Солдат Вермахта — оккультная пехота
+    -- Учёный ООН — гражданский специалист ГОК
     {
-        id = "seed_oso_vermacht", time = 60, category = "osowiec", order = 44,
-        name = "Солдат Вермахта",
-        desc = "Оккультная пехота рейха, пришедшая за мёртвыми: чёрная форма, руны и секретный арсенал. НАГРАДА батл-пасса «Битва Времени» (F5, уровень 26). 110 ХП / 70 брони.",
-        weapons = { { "arc9_eft_asval", "arc9_eft_mp40", "weapon_smg1" }, { "arc9_eft_p08", "weapon_pistol" }, "weapon_polus11_radio" }, -- v5.2.2: АС «Вал»
-        hp = 110, armor = 70, max = 3,
-        hidden = true, cmdonly = true,
-        bpUnlock = "vermacht",
-        color = Color(90, 150, 90),
+        id = "seed_un_ucheniy", time = 30, category = "ungoc", order = 64,
+        name = "Учёный ООН",
+        desc = "Гражданский специалист ГОК: UZI PRO для защиты, аналитика для дела. 100 ХП / 100 брони.",
+        weapons = { { "arc9_eft_uzi_pro", "weapon_smg1" } },
+        hp = 100, armor = 100, max = 2,
+        color = Color(140, 190, 140),
         models = {
-            "models/hts/comradebear/pm0v3/player/undeadarmy/infantry/en/m40occult_s1_skeleton.mdl",
+            "models/player/cheddar/goc_soldier/goc_hazmat.mdl",
         },
     },
-    -- Офицер-командир Осовца
+    -- Титан ГОК — живая крепость
     {
-        id = "seed_oso_oficer", time = 240, category = "osowiec", order = 45,
-        name = "Офицер-командир Осовца",
-        desc = "Командир мёртвого гарнизона: фуражка М38, портупея и приказ, отданный сто лет назад. НАГРАДА батл-пасса (F5, уровень 23). 125 ХП / 100 брони.",
-        weapons = { { "arc9_eft_avt", "arc9_eft_stg44", "weapon_ar2" }, { "arc9_eft_p08", "weapon_pistol" }, "weapon_polus11_radio" }, -- v5.2.2: АВТ-40
-        hp = 125, armor = 100, max = 1, terminal = true, command = true,
-        hidden = true, cmdonly = true,
-        bpUnlock = "oficer",
-        color = Color(100, 170, 100),
+        id = "seed_un_titan", time = 120, category = "ungoc", order = 65,
+        name = "Титан ГОК",
+        desc = "Живая крепость: оранжевый костюм, M60E4, 200 ХП / 185 брони. Идёт медленно, ломает всё.",
+        weapons = { { "arc9_eft_m60e4", "weapon_ar2" } },
+        hp = 200, armor = 185, max = 1,
+        color = Color(220, 140, 60),
         models = {
-            "models/hts/comradebear/pm0v3/player/undeadarmy/infantry/co/m38_s1_skeleton.mdl",
+            "models/player/cheddar/suit/orange_suit/orangesuit.mdl",
         },
     },
-    -- Генерал Вермахта — оккультный командующий
+    -- Офицер ООН/ГОК — командное звено
     {
-        id = "seed_oso_general", time = 360, category = "osowiec", order = 46,
-        name = "Генерал Вермахта",
-        desc = "Оккультный генерал рейха: тот, кто поднял мёртвых Осовца. М38 с рунами, полная власть. НАГРАДА батл-пасса (F5, уровень 29). Одно место. 135 ХП / 125 брони.",
-        weapons = { { "arc9_eft_asval", "arc9_eft_stg44", "weapon_ar2" }, { "arc9_eft_p08", "weapon_pistol" }, "weapon_polus11_radio" }, -- v5.2.2: АС «Вал»
-        hp = 135, armor = 125, max = 1, terminal = true, command = true,
-        hidden = true, cmdonly = true,
-        bpUnlock = "general",
-        color = Color(80, 140, 80),
+        id = "seed_un_oficer", time = 90, category = "ungoc", order = 66,
+        name = "Офицер ООН/ГОК",
+        desc = "Командное звено: АС «Вал», координация, решения. 145 ХП / 115 брони.",
+        weapons = { { "arc9_eft_asval", "weapon_smg1" } },
+        hp = 145, armor = 115, max = 2,
+        color = Color(210, 170, 80),
         models = {
-            "models/hts/comradebear/pm0v3/player/undeadarmy/infantry/co/m38occult_s1_skeleton.mdl",
+            "models/player/cheddar/goc_soldier/goc_officer.mdl",
+        },
+    },
+    -- Командир ГОК — вайтлист
+    {
+        id = "seed_un_komandir", time = 120, category = "ungoc", order = 67,
+        name = "Командир ГОК (вайтлист)",
+        desc = "Голова миссии: Vector 9, полный доступ, вайтлист. 145 ХП / 145 брони.",
+        weapons = { { "arc9_eft_vector9", "weapon_smg1" } },
+        hp = 145, armor = 145, max = 1, whitelist = true,
+        color = Color(230, 190, 90),
+        models = {
+            "models/player/cheddar/goc_soldier/goc_commander.mdl",
+        },
+    },
+    -- Дипломат ООН — без оружия
+    {
+        id = "seed_un_diplomat", time = 30, category = "ungoc", order = 68,
+        name = "Дипломат ООН",
+        desc = "Без оружия — только слово. Переговоры, документы, статус. 100 ХП / 50 брони.",
+        weapons = {},
+        hp = 100, armor = 50, max = 2,
+        color = Color(150, 170, 200),
+        models = {
+            "models/player/cheddar/ambassador/goc_male_07.mdl",
         },
     },
 

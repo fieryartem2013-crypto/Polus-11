@@ -68,7 +68,7 @@ function P11.OpenBattlePass()
         surface.DrawLine(12, 84, w - 12, 84)
         draw.SimpleText("⚔ БАТЛ-ПАСС «БИТВА ВРЕМЕНИ»", "P11.BP.Title", w / 2, 14,
             BP_COL.gold, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
-        draw.SimpleText("ивент: Крепость Осовец восстала · 30 уровней · делай дела — забирай награды рейха",
+        draw.SimpleText("ивент: 30 уровней · делай дела — забирай награды",
             "P11.BP.Small", w / 2, 52, BP_COL.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
 
         -- крестик
