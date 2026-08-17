@@ -27,9 +27,17 @@ P11FW.Ranks = {
     { id = "super_admin",       name = "Super Administrator",   level = 6,  color = Color(240, 100, 100), fx = "shimmer" },
     { id = "global_admin",      name = "Global Administrator",  level = 7,  color = Color(235, 95, 145),  fx = "shimmer" },
     { id = "anticheat",         name = "Anticheat Helper",      level = 8,  color = Color(120, 220, 210), fx = "shimmer" },
+    -- v5.8.18 «РАНГИ ИВЕНТОВ»: Tech Admin + лестница Eventmaster'ов.
+    -- Q-меню (спавнменю) открывается с уровня 9 (Config.DevMenuLevel) —
+    -- Eventmaster и выше его имеют, Tech Admin (8) — НЕТ (только техподдержка).
+    { id = "tech_admin",        name = "Tech Admin",             level = 8,  color = Color(140, 170, 200) },
+    { id = "eventmaster",       name = "Eventmaster",            level = 9,  color = Color(190, 140, 220), fx = "shimmer" },
     { id = "developer",         name = "Developer",             level = 9,  color = Color(110, 205, 255), fx = "shimmer" },
+    { id = "head_eventmaster",  name = "Head Eventmaster",       level = 10, color = Color(210, 130, 235), fx = "shimmer" },
     { id = "dep_staff_leader",  name = "Deputy Staff Leader",   level = 10, color = Color(185, 145, 235), fx = "shimmer" },
+    { id = "super_eventmaster", name = "Super Eventmaster",      level = 11, color = Color(235, 120, 245), fx = "shimmer" },
     { id = "dep_chief_curator", name = "Deputy Chief Curator",  level = 11, color = Color(215, 125, 165), fx = "shimmer" },
+    { id = "global_eventmaster",name = "Global Eventmaster",     level = 12, color = Color(255, 145, 225), fx = "aurora" },
     { id = "curator",           name = "Curator",               level = 12, color = Color(225, 120, 110), fx = "shimmer" },
     { id = "chief_curator",     name = "Chief Curator",         level = 13, color = Color(205, 105, 220), fx = "aurora" },
     { id = "staff_leader",      name = "Staff Leader",          level = 14, color = Color(255, 150, 80),  fx = "aurora" },

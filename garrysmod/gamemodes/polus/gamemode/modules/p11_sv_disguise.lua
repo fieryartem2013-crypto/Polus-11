@@ -43,7 +43,6 @@ local SUITS = {
             "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m35_1941_s1_04.mdl",
             "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m35_1941_s1_05.mdl",
             "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m35_1941_s1_06.mdl",
-            "models/player/Combine_Soldier.mdl", -- стоковый фолбэк: шинель+каска
         },
         autoDesc = "Боец гарнизона «Полюс-11». При исполнении, разговорчив мало.",
     },
@@ -57,7 +56,6 @@ local SUITS = {
             "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m43_s1_04.mdl",
             "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m43_s1_05.mdl",
             "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m43_s1_06.mdl",
-            "models/player/Combine_Soldier.mdl",
         },
         autoDesc = "Штурмовик гарнизона. От него пахнет порохом и озоном.",
     },
@@ -70,7 +68,6 @@ local SUITS = {
             "models/hts/comradebear/pm0v3/player/rkka/commissar/co/m35_1941_s1_03.mdl",
             "models/hts/comradebear/pm0v3/player/rkka/commissar/co/m35_1941_s1_04.mdl",
             "models/hts/comradebear/pm0v3/player/rkka/commissar/co/m35_1941_s1_05.mdl",
-            "models/player/Combine_Soldier.mdl",
         },
         autoDesc = "Офицер гарнизона. Смотрит так, будто ведёт на тебя досье.",
     },
@@ -81,7 +78,6 @@ local SUITS = {
         models = {
             "models/hts/comradebear/pm0v3/player/rkka/general_staff/gen/m40_1941_s1_05.mdl",
             "models/hts/comradebear/pm0v3/player/rkka/infantry/gen/m40_1941_s1_02.mdl",
-            "models/player/Combine_Soldier.mdl",
         },
         autoDesc = "Генерал из штаба. Отдаёт приказы одним подбородком.",
     },
@@ -92,8 +88,7 @@ local SUITS = {
         models = {
             "Models/UIF/scientists/UIF_scientist_7.mdl",
             "Models/UIF/scientists/UIF_scientist_8.mdl",
-            "models/player/kleiner.mdl",
-            "models/player/mossman.mdl",
+            "models/player/barney.mdl", -- v5.8.18: учёный-фолбэк (роб/очки), НЕ Кляйнер
         },
         autoDesc = "Исследователь комплекса. Руки пахнут формалином.",
     },
