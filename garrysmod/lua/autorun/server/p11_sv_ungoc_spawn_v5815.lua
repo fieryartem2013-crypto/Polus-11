@@ -259,4 +259,40 @@ hook.Add("PlayerSpawn", "P11.V5815.Spawn", function(ply)
     end)
 end)
 
+-- ============ ДИАГНОСТИКА p11_ungocdiag ============
+concommand.Add("p11_ungocdiag", function(ply)
+    local isAdmin = (not IsValid(ply)) or ply:IsSuperAdmin()
+        or (P11FW.Config and P11FW.Config.Admin and P11FW.Config.Admin(ply))
+    if not isAdmin then
+        if IsValid(ply) then ply:ChatPrint("[ООН/ГОК] Только для админов.") end
+        return
+    end
+    local out = { "== ООН/ГОК: ДИАГНОСТИКА (v5.8.15) ==" }
+    -- категории
+    local hasUN, hasOso = false, false
+    for _, c in ipairs(P11FW.CategoryList or {}) do
+        if c.id == "ungoc" then hasUN = true end
+        if c.id == "osowiec" then hasOso = true end
+    end
+    out[#out + 1] = "Фракция ООН/ГОК: " .. (hasUN and "ЕСТЬ" or "НЕТ")
+    out[#out + 1] = "Фракция Осовец: " .. (hasOso and "ЕСТЬ (не вырезалась!)" or "вырезана")
+    -- профы
+    local nUN = 0
+    for _, r in ipairs(P11FW.CustomJobs or {}) do
+        if r.category == "ungoc" then nUN = nUN + 1 end
+    end
+    out[#out + 1] = "Проф ООН/ГОК: " .. nUN
+    -- немецкое оружие в ларьке
+    local german = {}
+    for _, id in ipairs(GERMAN_ITEMS) do
+        if POLUS11.Items and POLUS11.Items[id] then german[#german + 1] = id end
+    end
+    out[#out + 1] = "Немецкое оружие в ларьке: " .. (#german == 0 and "вырезано" or table.concat(german, ", "))
+    local text = table.concat(out, "\n")
+    print(text)
+    if IsValid(ply) then
+        for _, line in ipairs(out) do ply:ChatPrint(line) end
+    end
+end)
+
 print("[POLUS-11] v5.8.15: hide-chat убран, немецкое оружие из ларька вырезано, Осовец удалён, ООН/ГОК добавлен")
