@@ -73,6 +73,28 @@ POLUS11.PromoList = {
             return "Талон «ПАЁК82» погашен: +5 000₽ (кошелёк: " .. v .. "₽), броня 100, здоровье подтянуто. " .. table.Random(jokes)
         end,
     },
+    -- v5.8.20 «STOLINOV11»: НОВЫЙ БОНУС НАБОРА. Лимит 100 РАЗНЫХ игроков,
+    -- действует НЕДЕЛЮ (срок хранится в data/polus11/promo_expire.json —
+    -- переживает рестарты), награда: VIP на 2 дня + 35 000₽.
+    {
+        code = "STOLINOV11",
+        title = "бонус нового набора",
+        desc = "VIP на 2 дня + 35 000₽ (лимит: 100 бойцов · действует неделю)",
+        maxUses = 100,
+        expireDays = 7,
+        reward = function(ply)
+            local v = POLUS11.AddMoney(ply, 35000, "талон «STOLINOV11»")
+            local gotVIP = false
+            if POLUS11.GrantTempVIP then
+                gotVIP = POLUS11.GrantTempVIP(ply, 2)
+            else
+                if P11FW.SetRank then P11FW.SetRank(ply, "vip", nil) end
+                gotVIP = true
+            end
+            PrintMessage(HUD_PRINTTALK, "★ ТАЛОН STOLINOV11: боец " .. ply:Nick() .. " получил VIP на 2 дня и +35 000₽! (осталось: " .. POLUS11.PromoLeft and POLUS11.PromoLeft("STOLINOV11") or "?" .. " из 100)")
+            return "Талон «STOLINOV11» погашен: " .. (gotVIP and "VIP на 2 дня активирован" or "ранг VIP уже есть — бонус в силе") .. " + 35 000₽ (кошелёк: " .. v .. "₽)."
+        end,
+    },
 }
 
 -- каталог по коду для быстрого поиска (регистр СТРОГИЙ, поля trim)
@@ -137,6 +159,27 @@ function POLUS11.PromoTry(ply, raw)
     local p = BYCODE[code]
     local sid = ply:SteamID()
     local used = istable(POLUS11.PromoUsed[code]) and POLUS11.PromoUsed[code][sid] ~= nil
+
+    -- v5.8.20 «STOLINOV11»: лимит использований (разные игроки) и срок действия
+    if p and p.maxUses then
+        local cnt = 0
+        local tbl = POLUS11.PromoUsed[code]
+        if istable(tbl) then
+            for _ in pairs(tbl) do cnt = cnt + 1 end
+        end
+        if cnt >= p.maxUses then
+            ply:ChatPrint("[ПОЛЮС-11] Талон «" .. code .. "» исчерпан: все " .. p.maxUses .. " мест разобрали. Следи за рассылкой станции!")
+            Reply(ply, false, DENY)
+            return
+        end
+    end
+    if p and p.expireDays and POLUS11.PromoExpireAt then
+        local ex = POLUS11.PromoExpireAt(code, p.expireDays)
+        if ex and os.time() > ex then
+            Reply(ply, false, DENY)
+            return
+        end
+    end
 
     if not p or used then
         ply.P11PromoFails = (ply.P11PromoFails or 0) + 1
