@@ -72,6 +72,12 @@ local SEED_FACTIONS = {
         desc = "Ивентовая фракция: силы ООН и ГОК (Глобальная Оккультная Коалиция). Пришли разобраться с тем, что на станции. Современное оружие, тяжёлая броня, кейсы маскировки «ЛЕГАТ».",
         color = Color(70, 130, 190), -- сине-голубая ООН
     },
+    {
+        -- v5.8.25 «АЛЬФА ТЕРА»: ЛИЧНАЯ ФРАКЦИЯ (дезертиры и партизаны)
+        id = "tera", name = "Альфа Тера", order = 10,
+        desc = "Личная фракция: дезертиры и партизаны «Альфа Тера». Ушли из-под контроля станции, воюют сами за себя: своя броня, свой ствол, свои правила. Допуск — по вайтлисту.",
+        color = Color(80, 120, 100), -- партизанская тёмная зелень
+    },
 }
 
 -- ХП/броня берутся из полей hp/armor; всем авто-выдаются «руки».
@@ -750,6 +756,59 @@ local SEED_JOBS = {
         models = {
             "models/player/cheddar/ambassador/goc_male_07.mdl",
         },
+    },
+
+    -- ================= v5.8.25 «АЛЬФА ТЕРА»: ЛИЧНАЯ ФРАКЦИЯ =================
+    -- Дезертиры и партизаны. ВСЕ должности — по вайтлисту.
+    -- Новобранец Тера — пистолет ПБ
+    {
+        id = "seed_tera_rekrut", time = 0, category = "tera", order = 70,
+        name = "Новобранец Тера",
+        desc = "Первый боевой выход: бесшумный ПБ за пазухой и чужая форма. Дезертир, который ещё учится выживать. 100 ХП / 100 брони.",
+        weapons = { { "arc9_eft_pb", "weapon_pistol" } },
+        hp = 100, armor = 100, max = 4, whitelist = true,
+        color = Color(80, 120, 100),
+        models = { "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m35_1941_s1_04.mdl" },
+    },
+    -- Солдат Тера — КЕДР
+    {
+        id = "seed_tera_soldat", time = 30, category = "tera", order = 71,
+        name = "Солдат Тера",
+        desc = "Партизан со стволом: КЕДР режет короткие дистанции, форма — с убитого. 100 ХП / 100 брони.",
+        weapons = { { "arc9_eft_kedr", "weapon_smg1" } },
+        hp = 100, armor = 100, max = 3, whitelist = true,
+        color = Color(80, 120, 100),
+        models = { "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m35_1941_s1_04.mdl" },
+    },
+    -- Сержант Тера — АК-74М + маскировка «ОБСЛУГА»
+    {
+        id = "seed_tera_serzhant", time = 60, category = "tera", order = 72,
+        name = "Сержант Тера",
+        desc = "Командир отделения партизан: АК-74М и кейс маскировки «ОБСЛУГА» — прикинься своим, ударь чужим. 100 ХП / 150 брони.",
+        weapons = { "weapon_polus11_disguise2", { "arc9_eft_ak74m", "weapon_ar2" } },
+        hp = 100, armor = 150, max = 2, whitelist = true,
+        color = Color(90, 135, 110),
+        models = { "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m43_s1_06.mdl" },
+    },
+    -- Командир Тера — АС «Вал» + маскировка «ЛЕГАТ»
+    {
+        id = "seed_tera_komandir", time = 120, category = "tera", order = 73,
+        name = "Командир Тера",
+        desc = "Голова «Альфы Тера»: АС «Вал» и кейс «ЛЕГАТ» — легенда под любого. 150 ХП / 150 брони.",
+        weapons = { "weapon_polus11_disguise", { "arc9_eft_asval", "weapon_smg1" } },
+        hp = 150, armor = 150, max = 1, whitelist = true,
+        color = Color(100, 150, 120),
+        models = { "models/hts/comradebear/pm0v3/player/nkvd/border_guards/en/m35_1941_s1_02.mdl" },
+    },
+    -- Джагер Тера — РПД + КС-23
+    {
+        id = "seed_tera_djager", time = 180, category = "tera", order = 74,
+        name = "Джагер Тера",
+        desc = "Тяжёлый партизан: РПД для зачистки и КС-23 для стен. Гора брони и злобы. 200 ХП / 200 брони.",
+        weapons = { { "arc9_eft_rpd", "weapon_ar2" }, { "arc9_eft_ks23", "weapon_shotgun" } },
+        hp = 200, armor = 200, max = 1, whitelist = true,
+        color = Color(115, 165, 130),
+        models = { "models/hts/comradebear/pm0v3/player/rkka/infantry/en/m43_s1_06.mdl" },
     },
 
 }

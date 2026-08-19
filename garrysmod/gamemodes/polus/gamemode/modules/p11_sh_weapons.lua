@@ -66,6 +66,11 @@ POLUS11.WepFallback = {
     arc9_eft_uzi_pro        = "weapon_smg1",    -- UZI PRO (Учёный)
     arc9_eft_m60e4          = "weapon_ar2",     -- M60E4 (Титан)
     arc9_eft_vector9        = "weapon_smg1",    -- Vector 9 (Командир)
+    -- v5.8.25 «АЛЬФА ТЕРА»: партизанский арсенал
+    arc9_eft_pb             = "weapon_pistol",  -- ПБ (бесшумный пистолет)
+    arc9_eft_kedr           = "weapon_smg1",    -- КЕДР (пистолет-пулемёт)
+    arc9_eft_ks23           = "weapon_shotgun", -- КС-23 (дробовик)
+    arc9_eft_rpd            = "weapon_ar2",     -- РПД (пулемёт)
 }
 
 -- боезапас для СТОКОВЫХ фолбэков (EFT-стволам не нужен — своя система)
