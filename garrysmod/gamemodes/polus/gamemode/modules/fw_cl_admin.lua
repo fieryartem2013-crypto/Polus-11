@@ -221,7 +221,7 @@ function P11FW.OpenAdminMenu(forceTab)
     local canWlTab = P11FW.CanWhitelist and P11FW.CanWhitelist(LocalPlayer())
     -- v4.4.0: +АДМИНКИ (ранги плиткой, 10+) и +ВАЙТЛИСТ (wl-ранги/админы)
     local tabs = {
-        { id = "players",   name = "ИГРОКИ",    minLevel = (P11FW.Config and P11FW.Config.RankManageLevel) or 10 },
+        { id = "players",   name = "ИГРОКИ",    canRank = true }, -- v5.8.23: по CanManageRank (список рангов)
         { id = "mod",       name = "МОДЕРАЦИЯ", perm = "warn", badge = "!" },
         { id = "acts",      name = "ДЕЙСТВИЯ",  minLevel = 3 }, -- v4.30.1 «ДОПУСК»: с Модератора (3)
         { id = "flux",      name = "💠 ПОТОК",  minLevel = 4 }, -- v4.14.2: КАЗНА — выдача трёх валют (ПФ/₽/⏱)
@@ -233,7 +233,7 @@ function P11FW.OpenAdminMenu(forceTab)
         { id = "factions",  name = "ФРАКЦИИ",   minLevel = 14 },
         { id = "utils",     name = "УТИЛИТЫ",   minLevel = 14 },
         { id = "spawns",    name = "СПАВНЫ",    minLevel = 14 }, -- v4.6.1
-        { id = "admranks",  name = "АДМИНКИ",   minLevel = (P11FW.Config and P11FW.Config.RankManageLevel) or 10 },
+        { id = "admranks",  name = "АДМИНКИ",   canRank = true }, -- v5.8.23: выдача рангов плиткой — по CanManageRank
         { id = "whitelist", name = "ВАЙТЛИСТ",  wl = true },
     }
 
@@ -267,6 +267,7 @@ function P11FW.OpenAdminMenu(forceTab)
             local col = on and AC.accent or AC.dim
             if (t.perm and not P11FW.CanMod(LocalPlayer(), t.perm))
                or (t.minLevel and myLevel < t.minLevel)
+               or (t.canRank and not (P11FW.CanManageRank and P11FW.CanManageRank(LocalPlayer(), nil)))
                or (t.wl and not canWlTab) then
                 col = Color(90, 95, 105)
             end
@@ -285,6 +286,11 @@ function P11FW.OpenAdminMenu(forceTab)
             if t.minLevel and myLevel < t.minLevel then
                 surface.PlaySound("buttons/button10.wav")
                 chat.AddText(AC.gold, "[P11FW] Вкладка «" .. t.name .. "» — с ранга " .. RankNameByLevel(t.minLevel) .. ".")
+                return
+            end
+            if t.canRank and not (P11FW.CanManageRank and P11FW.CanManageRank(LocalPlayer(), nil)) then
+                surface.PlaySound("buttons/button10.wav")
+                chat.AddText(AC.gold, "[P11FW] Вкладка «" .. t.name .. "» — выдача рангов доступна Global Admin+ / Куратору+ / штабу.")
                 return
             end
             if t.wl and not canWlTab then
@@ -1212,7 +1218,7 @@ function P11FW.OpenAdminMenu(forceTab)
         local rankNote = vgui.Create("DLabel", ap)
         rankNote:SetPos(12, 372) rankNote:SetSize(372, 42)
         rankNote:SetFont("P11FW.Small") rankNote:SetTextColor(AC.dim)
-        rankNote:SetText("Выдать может Куратор+ (ниже своего ранга).\n" ..
+        rankNote:SetText("Выдать может: Global Admin, Deputy Staff Leader, Global Eventmaster, Куратор+, штаб (ниже своего ранга).\n" ..
             "Секрет основателя: p11_access <ключ> в консоли\n(ключ меняется в fw_sh_config.lua).")
         rankNote:SetAutoStretchVertical(true)
 

@@ -155,13 +155,30 @@ function P11FW.CanDevMenu(ply)
     return P11FW.GetRankLevel(ply) >= need
 end
 
+--- v5.8.23 «ПРАВА АДМИНИСТРАЦИИ»: кто может выдавать ранги.
+--- Раньше порог был RankManageLevel=12 (Куратор+) — Deputy Staff
+--- Leader (10) и Global Admin (7) НЕ могли выдавать. По заявке
+--- владельца выдавать ранги (ниже своего) могут:
+---   Global Admin, Deputy Staff Leader, Global Eventmaster, Curator,
+---   Chief Curator, Staff Leader, Chief Staff Leader, Глава.
+local RANK_MANAGERS = {
+    global_admin         = true, -- 7
+    deputy_staff_leader  = true, -- 10
+    global_eventmaster   = true, -- 12
+    curator              = true, -- 12
+    chief_curator        = true, -- 13
+    staff_leader         = true, -- 14
+    chief_staff_leader   = true, -- 15
+    glava                = true, -- 16
+}
+
 --- Может ли ply выдавать ранги (и не выше себя)?
 function P11FW.CanManageRank(ply, targetLevel)
     if not IsValid(ply) then return false end
-    local need = P11FW.Config and P11FW.Config.RankManageLevel or 5
-    local my = P11FW.GetRankLevel(ply)
-    if my < need then return false end
-    if targetLevel and targetLevel >= my then return false end
+    local r = P11FW.GetRank(ply)
+    if not r then return false end
+    if not RANK_MANAGERS[r.id] then return false end
+    if targetLevel and targetLevel >= r.level then return false end
     return true
 end
 
@@ -262,7 +279,7 @@ function P11FW.RankRightsInfo(rank)
     if lvl >= 9 then
         out[#out + 1] = "Q-меню движка (спавнменю, инструменты)"
     end
-    if lvl >= ((P11FW.Config and P11FW.Config.RankManageLevel) or 12) then
+    if rank and RANK_MANAGERS[rank.id] then -- v5.8.23: выдающие ранги — по списку
         out[#out + 1] = "выдача и снятие рангов НИЖЕ СВОЕГО (вкладка АДМИНКИ, p11_rank)"
     end
     if lvl >= 16 then
