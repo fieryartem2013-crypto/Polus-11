@@ -31,6 +31,15 @@ local BG = {
 }
 
 -- =================== ОКНО БОДИГРУПП ===================
+-- v5.8.24: защищённая отправка (если канал вдруг не зарегистрирован —
+-- не сыпем ошибки «unpooled», просто молча пропускаем)
+local function BGNet()
+    local ok = pcall(function()
+        net.Start("P11_BGSet")
+    end)
+    return ok
+end
+
 local function OpenBodyGroups()
     local me = LocalPlayer()
     if not IsValid(me) then return end
@@ -96,10 +105,11 @@ local function OpenBodyGroups()
             v = math.Clamp(v, 0, cnt - 1)
             me:SetBodygroup(i, v) -- сразу видно у себя
             valLab:SetText(tostring(v))
-            net.Start("P11_BGSet")
+            if BGNet() then
                 net.WriteInt(i, 8)
                 net.WriteUInt(v, 8)
-            net.SendToServer()
+                net.SendToServer()
+            end
         end
 
         if cnt > 1 then
@@ -127,10 +137,11 @@ local function OpenBodyGroups()
     end
     rb.DoClick = function()
         for i = 0, n - 1 do me:SetBodygroup(i, 0) end
-        net.Start("P11_BGSet")
+        if BGNet() then
             net.WriteInt(-1, 8)
             net.WriteUInt(0, 8)
-        net.SendToServer()
+            net.SendToServer()
+        end
         OpenBodyGroups() -- перерисовать
     end
 end
