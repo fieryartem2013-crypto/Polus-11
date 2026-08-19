@@ -10,7 +10,7 @@ util.AddNetworkString("P11FW_JobsSync")
 util.AddNetworkString("P11FW_JobEdit")
 
 local FILE = "polus_framework/jobs_custom.json"
-local TEAM_CUSTOM_BASE = 200
+local TEAM_CUSTOM_BASE = 140 -- v5.8.26: 200+ упиралось в лимит команд GMod (255); 140+ = 116 слотов
 
 P11FW.CustomJobs = P11FW.CustomJobs or {} -- массив records
 

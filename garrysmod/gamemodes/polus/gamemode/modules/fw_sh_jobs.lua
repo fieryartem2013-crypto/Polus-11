@@ -225,7 +225,7 @@ for i, id in ipairs(P11FW.JobIds) do
     local t = TEAM_BASE + i - 1
     P11FW.JobTeams[id] = t
     P11FW.TeamJobs[t] = id
-    team.SetUp(t, P11FW.Jobs[id].name, P11FW.Jobs[id].color or Color(200, 200, 200), true)
+    pcall(team.SetUp, t, P11FW.Jobs[id].name, P11FW.Jobs[id].color or Color(200, 200, 200), true) -- v5.8.26: pcall (лимит команд 255)
 end
 
 -- категории отсортированные (для меню)
@@ -328,7 +328,7 @@ function P11FW.RegisterCustomJobs(records)
                 P11FW.Jobs[id] = table.Copy(P11FW.BaseJobs[id])
                 P11FW.BaseJobs[id] = nil
                 local t = P11FW.JobTeams[id]
-                if t then team.SetUp(t, P11FW.Jobs[id].name, P11FW.Jobs[id].color, true) end
+                if t then pcall(team.SetUp, t, P11FW.Jobs[id].name, P11FW.Jobs[id].color, true) end -- v5.8.26: pcall
             end
         end
     end
@@ -355,7 +355,7 @@ function P11FW.RegisterCustomJobs(records)
                 if rec.vip ~= nil then job.vip = rec.vip == true end -- v4.8.0
                 job.color      = Color(tonumber(c.r) or 210, tonumber(c.g) or 170, tonumber(c.b) or 120)
                 job.overridden = true
-                team.SetUp(rec.team, job.name, job.color, true)
+                pcall(team.SetUp, rec.team, job.name, job.color, true) -- v5.8.26: pcall
             elseif not rec.override then
             P11FW.Jobs[rec.id] = {
                 custom   = true,
@@ -381,7 +381,7 @@ function P11FW.RegisterCustomJobs(records)
             }
             P11FW.JobTeams[rec.id] = rec.team
             P11FW.TeamJobs[rec.team] = rec.id
-            team.SetUp(rec.team, rec.name, P11FW.Jobs[rec.id].color, true)
+            pcall(team.SetUp, rec.team, rec.name, P11FW.Jobs[rec.id].color, true) -- v5.8.26: pcall
             end
         end
     end

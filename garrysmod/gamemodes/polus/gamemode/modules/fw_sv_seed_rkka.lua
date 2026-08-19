@@ -815,7 +815,7 @@ local SEED_JOBS = {
 
 -- ============ МЕХАНИКА СИДА ============
 
-local TEAM_SEED_BASE = 200 -- как TEAM_CUSTOM_BASE в fw_sv_customjobs
+local TEAM_SEED_BASE = 140 -- v5.8.26: 200+ упиралось в лимит команд GMod (255)
 
 -- свободный team-индекс с учётом уже занятых кастомными профами
 local function NextFreeTeamForSeed()
