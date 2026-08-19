@@ -56,6 +56,9 @@ local LOOT = {
             { id = "ampoule", min = 1, max = 1, ch = 0.30 },
             { id = "ukol",    min = 1, max = 1, ch = 0.15 },
             { id = "radio",   min = 1, max = 1, ch = 0.06 },
+            -- v5.8.22: чертежи оружия в тайниках (малый шанс)
+            { id = "blueprint_ak",     min = 1, max = 1, ch = 0.08 },
+            { id = "blueprint_flamer", min = 1, max = 1, ch = 0.07 },
         },
         money = { min = 200, max = 700, ch = 1.0 },
         flux  = { n = 5, ch = 0.04 },
@@ -86,6 +89,9 @@ local LOOT = {
             { id = "ammo_ar",     min = 1, max = 1, ch = 0.35 },
             { id = "ammo_buck",   min = 1, max = 1, ch = 0.35 },
             { id = "scalpel",     min = 1, max = 1, ch = 0.05 },
+            -- v5.8.22: чертежи оружия
+            { id = "blueprint_ak",  min = 1, max = 1, ch = 0.10 },
+            { id = "blueprint_svd", min = 1, max = 1, ch = 0.05 },
         },
         money = { min = 80, max = 200, ch = 0.15 },
     },
@@ -129,6 +135,8 @@ local LOOT = {
             { id = "ammo_dyn",    min = 1, max = 1, ch = 0.18 },
             { id = "medkit",      min = 1, max = 1, ch = 0.06 },
             { id = "scalpel",     min = 1, max = 1, ch = 0.06 },
+            -- v5.8.22: чертёж РПК-16 (редкий)
+            { id = "blueprint_rpk16", min = 1, max = 1, ch = 0.04 },
         },
         money = { min = 60, max = 200, ch = 0.15 },
     },

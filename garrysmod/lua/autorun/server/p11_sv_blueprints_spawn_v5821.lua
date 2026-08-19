@@ -28,26 +28,27 @@ local RECIPES = {
     craft_ak = {
         name = "АК-74 (по чертежу)",
         give = "ak74",
-        needs = { blueprint_ak = 1, scrap = 3, parts = 2, spirit = 1 },
-        desc = "Чертёж + лом + запчасти. Полноразмерный автомат.",
+        -- v5.8.22: крафт усложнён (чертёж + много материалов + патроны)
+        needs = { blueprint_ak = 1, scrap = 6, parts = 4, spirit = 3, fuel = 1 },
+        desc = "Чертёж + много лома/запчастей/спирта/соляры. Долгая сборка.",
     },
     craft_svd = {
         name = "СВД «Драгунова» (по чертежу)",
         give = "svd",
-        needs = { blueprint_svd = 1, scrap = 4, parts = 3, spirit = 2 },
-        desc = "Снайперская по чертежу. Дальний аргумент.",
+        needs = { blueprint_svd = 1, scrap = 8, parts = 6, spirit = 4, fuel = 2, cloth = 2 },
+        desc = "Снайперская по чертежу: оптика, ствол, терпение, материалы.",
     },
     craft_rpk16 = {
         name = "РПК-16 (по чертежу)",
         give = "rpk16",
-        needs = { blueprint_rpk16 = 1, scrap = 5, parts = 3, fuel = 1 },
-        desc = "Пулемёт из бумаги и металла. Пока РПК говорит — Нечто не подходит.",
+        needs = { blueprint_rpk16 = 1, scrap = 10, parts = 6, fuel = 3, spirit = 2, cons = 2 },
+        desc = "Пулемёт из бумаги и тонны металла.",
     },
     craft_flamer2 = {
         name = "Кустарный огнемёт (по чертежу)",
         give = "flamer",
-        needs = { blueprint_flamer = 1, fuel = 3, parts = 2, scrap = 2 },
-        desc = "Чертёж огнемёта: соляра, запчасти, лом — и струя огня.",
+        needs = { blueprint_flamer = 1, fuel = 5, parts = 4, scrap = 4, spirit = 2 },
+        desc = "Чертёж огнемёта: много соляры, запчастей, лома.",
     },
 }
 
