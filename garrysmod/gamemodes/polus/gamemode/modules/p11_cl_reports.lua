@@ -32,6 +32,55 @@ local function IsAdm()
         and P11FW.Config.Admin(me) or false
 end
 
+-- ============ HUD-ПЛАШКА РЕПОРТА (v5.8.19, НЕ блокирует игру) ============
+-- При новом репорте админ видит неблокирующее уведомление в HUD:
+-- можно продолжать стрелять/двигаться. Окно — только по /репорты.
+-- (v5.8.27: блок объявлен ДО сетевого обработчика — раньше ShowHud
+-- была после net.Receive и Lua видел её как глобальную nil → ошибка
+-- «attempt to call global 'ShowHud'».)
+
+P11R.hud = nil -- { text, t, dur }
+
+local function ShowHud(txt)
+    P11R.hud = { text = txt, t = CurTime(), dur = 16 }
+end
+
+hook.Add("HUDPaint", "P11.RP.Hud", function()
+    local h = P11R.hud
+    if not h then return end
+    local el = CurTime() - h.t
+    if el > h.dur then P11R.hud = nil return end
+
+    local a = 255
+    if el > h.dur - 2 then
+        a = math.floor(255 * (h.dur - el) / 2)
+        if a < 0 then a = 0 end
+    end
+
+    -- плашка справа сверху (над областью действий, не мешает HUD слева)
+    local w = 440
+    local x = ScrW() - w - 16
+    local y = 84
+    local hh = 76
+
+    draw.RoundedBox(10, x, y, w, hh, Color(26, 16, 18, math.floor(232 * a / 255)))
+    surface.SetDrawColor(235, 100, 90, math.floor(a * 0.9))
+    surface.DrawOutlinedRect(x, y, w, hh, 1)
+    -- пульсирующая точка-индикатор
+    local pulse = 0.6 + math.sin(CurTime() * 4) * 0.4
+    surface.SetDrawColor(255, 90, 80, math.floor(255 * pulse))
+    surface.DrawCircle(x + 22, y + 20, 5, 255, 90, 80, math.floor(255 * pulse))
+
+    draw.SimpleText("📨 НОВЫЙ РЕПОРТ", "P11.RP.Text", x + 36, y + 18,
+        Color(255, 140, 130, a), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+    local t = tostring(h.text or "")
+    if #t > 80 then t = string.sub(t, 1, 80) .. "…" end
+    draw.SimpleText(t, "P11.RP.Tiny", x + 14, y + 42,
+        Color(235, 240, 246, a), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+    draw.SimpleText("/репорты — открыть окно", "P11.RP.Tiny", x + 14, y + 62,
+        Color(190, 205, 220, math.floor(a * 0.85)), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+end)
+
 -- ============ СЕТЬ ============
 
 local function Send(op, id)
@@ -88,51 +137,6 @@ net.Receive("P11_Rep", function()
     end
 end)
 
--- ============ HUD-ПЛАШКА РЕПОРТА (v5.8.19, НЕ блокирует игру) ============
--- При новом репорте админ видит неблокирующее уведомление в HUD:
--- можно продолжать стрелять/двигаться. Окно — только по /репорты.
-
-P11R.hud = nil -- { text, t, dur }
-
-local function ShowHud(txt)
-    P11R.hud = { text = txt, t = CurTime(), dur = 16 }
-end
-
-hook.Add("HUDPaint", "P11.RP.Hud", function()
-    local h = P11R.hud
-    if not h then return end
-    local el = CurTime() - h.t
-    if el > h.dur then P11R.hud = nil return end
-
-    local a = 255
-    if el > h.dur - 2 then
-        a = math.floor(255 * (h.dur - el) / 2)
-        if a < 0 then a = 0 end
-    end
-
-    -- плашка справа сверху (над областью действий, не мешает HUD слева)
-    local w = 440
-    local x = ScrW() - w - 16
-    local y = 84
-    local hh = 76
-
-    draw.RoundedBox(10, x, y, w, hh, Color(26, 16, 18, math.floor(232 * a / 255)))
-    surface.SetDrawColor(235, 100, 90, math.floor(a * 0.9))
-    surface.DrawOutlinedRect(x, y, w, hh, 1)
-    -- пульсирующая точка-индикатор
-    local pulse = 0.6 + math.sin(CurTime() * 4) * 0.4
-    surface.SetDrawColor(255, 90, 80, math.floor(255 * pulse))
-    surface.DrawCircle(x + 22, y + 20, 5, 255, 90, 80, math.floor(255 * pulse))
-
-    draw.SimpleText("📨 НОВЫЙ РЕПОРТ", "P11.RP.Text", x + 36, y + 18,
-        Color(255, 140, 130, a), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-    local t = tostring(h.text or "")
-    if #t > 80 then t = string.sub(t, 1, 80) .. "…" end
-    draw.SimpleText(t, "P11.RP.Tiny", x + 14, y + 42,
-        Color(235, 240, 246, a), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-    draw.SimpleText("/репорты — открыть окно", "P11.RP.Tiny", x + 14, y + 62,
-        Color(190, 205, 220, math.floor(a * 0.85)), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
-end)
 
 -- ============ ОКНО ============
 
