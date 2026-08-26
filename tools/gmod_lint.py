@@ -253,7 +253,9 @@ function timer.Check(n) return false end function timer.Pause(n) end function ti
 function timer.TimeLeft(n) return 0 end function timer.RepsLeft(n) return 0 end
 function timer.Toggle(n) end
 -- Таймеры стреляют ПО ВРЕМЕНИ: берём ближайший по delay, а не «как легло в pairs».
--- Без этого обёртки хуков вставали в случайном порядке и тесты плавали.
+-- Повторяющиеся таймеры (reps = 0 — бесконечно, reps = N) переставляются снова,
+-- но не больше P11_MAX_REPS раз, чтобы симуляция завершалась.
+P11_MAX_REPS = 6
 function P11_FireTimers(maxn)
   local n = 0
   while true do
@@ -270,6 +272,13 @@ function P11_FireTimers(maxn)
     local ok, err = pcall(bestT.fn)
     if not ok then P11_HOOK_ERR[#P11_HOOK_ERR+1] = "timer " .. bestName .. " :: " .. tostring(err) end
     n = n + 1
+    -- повтор: 0 = бесконечно (ограничиваем), >1 = ещё (reps-1) раз
+    local reps = bestT.reps
+    bestT.fired = (bestT.fired or 0) + 1
+    local again = false
+    if reps == 0 and bestT.fired < P11_MAX_REPS then again = true
+    elseif isnumber(reps) and reps > 1 then bestT.reps = reps - 1; again = true end
+    if again then timer._t[bestName] = bestT end
   end
   return n
 end
