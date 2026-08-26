@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ПОЛЮС-11 · Центр сборок</title>
+<style>
+  :root{
+    --bg:#0b1017; --bg2:#111a24; --line:#1e2c3a; --txt:#dfe7ef; --dim:#8fa3b8;
+    --red:#c8322b; --gold:#d8b45a; --ice:#79b8d8; --ok:#5ec27a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:
+      radial-gradient(1200px 500px at 70% -10%, #16283a 0%, transparent 60%),
+      var(--bg);
+    color:var(--txt);font:15px/1.55 "Segoe UI",Roboto,Arial,sans-serif;min-height:100vh}
+  a{color:var(--ice)}
+  header{display:flex;align-items:center;gap:14px;padding:16px 22px;
+    border-bottom:1px solid var(--line);background:rgba(9,14,20,.85);
+    position:sticky;top:0;z-index:5;backdrop-filter:blur(6px)}
+  .logo{font-weight:800;letter-spacing:.12em;font-size:18px}
+  .logo b{color:var(--red)}
+  .badge{font-size:11px;letter-spacing:.14em;color:var(--gold);
+    border:1px solid #4a3d1c;background:#1a1608;padding:3px 8px;border-radius:3px}
+  .spacer{flex:1}
+  nav{display:flex;gap:6px;flex-wrap:wrap}
+  .navbtn{background:#152031;color:var(--txt);border:1px solid var(--line);
+    padding:8px 14px;border-radius:4px;cursor:pointer;font-size:13px;letter-spacing:.06em}
+  .navbtn:hover{border-color:var(--ice);color:#fff}
+  .navbtn.open{background:var(--red);border-color:var(--red);color:#fff}
+  .wrap{padding:26px 22px 80px;max-width:1080px;margin:0 auto}
+  h1{font-size:26px;margin:0 0 6px}
+  .sub{color:var(--dim);margin:0 0 22px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+  .card{background:var(--bg2);border:1px solid var(--line);border-radius:6px;padding:16px}
+  .card h3{margin:0 0 8px;font-size:15px;letter-spacing:.04em}
+  .card p{margin:0;color:var(--dim);font-size:13.5px}
+  .ver{font-size:30px;font-weight:800;color:var(--gold);line-height:1}
+  .kv{display:flex;justify-content:space-between;border-top:1px dashed var(--line);
+    padding:6px 0;font-size:13px;color:var(--dim)}
+  .kv b{color:var(--txt);font-weight:600}
+  .dl{display:inline-block;background:var(--red);color:#fff;text-decoration:none;
+    padding:11px 18px;border-radius:4px;font-weight:700;letter-spacing:.06em;
+    border:1px solid #e04a42;margin-top:12px}
+  .dl:hover{background:#e04a42}
+  .dl.ghost{background:transparent;border:1px solid var(--line);color:var(--txt);font-weight:500}
+  /* выпадающее меню */
+  .menu{position:relative}
+  .dropdown{position:absolute;right:0;top:112%;min-width:290px;background:#0f1720;
+    border:1px solid var(--line);border-radius:6px;box-shadow:0 18px 40px rgba(0,0,0,.55);
+    padding:6px;display:none;z-index:9}
+  .dropdown.show{display:block}
+  .dropdown .item{display:flex;justify-content:space-between;gap:10px;padding:10px 12px;
+    border-radius:4px;cursor:pointer;font-size:13.5px}
+  .dropdown .item:hover{background:#17242f}
+  .dropdown .item small{color:var(--dim)}
+  .dropdown .item.new::after{content:"НОВОЕ";font-size:10px;color:var(--ok);
+    border:1px solid #245034;padding:1px 5px;border-radius:3px;margin-left:8px}
+  /* плашка */
+  .overlay{position:fixed;inset:0;background:rgba(4,8,12,.72);display:none;
+    align-items:flex-start;justify-content:center;padding:40px 16px;z-index:20;overflow:auto}
+  .overlay.show{display:flex}
+  .panel{width:min(940px,100%);background:#0e1620;border:1px solid var(--line);
+    border-radius:8px;box-shadow:0 30px 80px rgba(0,0,0,.6);animation:pop .16s ease-out}
+  @keyframes pop{from{transform:translateY(-8px);opacity:.4}to{transform:none;opacity:1}}
+  .panel header{position:static;background:transparent;border:0;
+    border-bottom:1px solid var(--line);padding:14px 18px;backdrop-filter:none}
+  .panel .title{font-weight:700;letter-spacing:.05em}
+  .x{background:transparent;border:1px solid var(--line);color:var(--dim);
+    width:32px;height:32px;border-radius:4px;cursor:pointer;font-size:16px}
+  .x:hover{color:#fff;border-color:var(--red)}
+  .body{padding:18px 22px 26px}
+  .body h1{font-size:21px}
+  .body h2{font-size:17px;margin-top:24px;border-bottom:1px solid var(--line);padding-bottom:6px}
+  .body h3{font-size:15px;margin-top:18px;color:var(--gold)}
+  .body code{background:#16222e;padding:1px 5px;border-radius:3px;font-size:12.5px}
+  .body pre{background:#0a1219;border:1px solid var(--line);border-radius:5px;
+    padding:12px;overflow:auto;font-size:12.5px}
+  .body pre code{background:transparent;padding:0}
+  .body table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13.5px}
+  .body th,.body td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+  .body th{background:#13202c}
+  .body blockquote{border-left:3px solid var(--gold);margin:12px 0;padding:2px 14px;color:var(--dim)}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 4px}
+  .hint{color:var(--dim);font-size:12.5px;margin-top:8px}
+  .list{list-style:none;padding:0;margin:10px 0}
+  .list li{border-top:1px dashed var(--line);padding:8px 0;font-size:13.5px}
+  .list li b{color:var(--gold)}
+  footer{color:#5d6f80;font-size:12px;padding:0 22px 30px;max-width:1080px;margin:0 auto}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ПОЛЮС<b>-11</b> · ЦЕНТР СБОРОК</div>
+  <span class="badge" id="gmBadge">гейммод: …</span>
+  <div class="spacer"></div>
+  <nav>
+    <div class="menu">
+      <button class="navbtn" id="btnBuilds">СБОРКИ ▾</button>
+      <div class="dropdown" id="buildsMenu"></div>
+    </div>
+    <button class="navbtn" data-doc="PATCHNOTES_v5.8.29.md">ПАТЧНОУТ</button>
+    <button class="navbtn" data-doc="ANALITIKA_POLNAYA_v5.8.29.md">АНАЛИТИКА</button>
+    <button class="navbtn" data-doc="УСТАНОВКА_DARKRP_v5.8.29.md">УСТАНОВКА</button>
+    <button class="navbtn" data-doc="ПРАВИЛА_РАБОТЫ.md">ПРАВИЛА</button>
+    <button class="navbtn" id="btnTools">ИНСТРУМЕНТЫ</button>
+  </nav>
+</header>
+
+<div class="wrap">
+  <h1>Свежая сборка сервера</h1>
+  <p class="sub">Нажми «СБОРКИ» в меню сверху или версию ниже — откроется плашка
+     с составом пакета и кнопкой скачивания ZIP.</p>
+
+  <div class="grid" id="cards"></div>
+</div>
+
+<footer>
+  Витрина читает <code>pkg/packages.json</code> — он собирается скриптом
+  <code>tools/serve_site.py</code>. Сами архивы лежат в корне репозитория.
+</footer>
+
+<div class="overlay" id="overlay">
+  <div class="panel">
+    <header>
+      <div class="title" id="panelTitle">—</div>
+      <div class="spacer"></div>
+      <button class="x" id="btnClose" title="Закрыть (Esc)">✕</button>
+    </header>
+    <div class="body" id="panelBody"></div>
+  </div>
+</div>
+
+<script>
+let META = {packages:[], docs:[], gamemode:"darkrp"};
+const $ = s => document.querySelector(s);
+const overlay = $("#overlay"), panelTitle = $("#panelTitle"), panelBody = $("#panelBody");
+
+function fmtSize(n){ return n>1048576 ? (n/1048576).toFixed(2)+" МБ" : (n/1024).toFixed(0)+" КБ"; }
+function fmtDate(ts){ const d=new Date(ts*1000); return d.toLocaleDateString("ru-RU")+" "+d.toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"}); }
+function esc(s){ return String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+
+/* ---- крошечный рендер markdown (заголовки, таблицы, списки, код, цитаты) ---- */
+function md(src){
+  const lines = String(src).replace(/\r/g,"").split("\n");
+  let out=[], i=0, inCode=false, list=false;
+  const closeList = ()=>{ if(list){ out.push("</ul>"); list=false; } };
+  const inline = t => esc(t)
+      .replace(/`([^`]+)`/g,"<code>$1</code>")
+      .replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>")
+      .replace(/(^|[^*])\*([^*]+)\*/g,"$1<i>$2</i>");
+  while(i<lines.length){
+    const l=lines[i];
+    if(/^\s*```/.test(l)){ closeList(); out.push(inCode?"</code></pre>":"<pre><code>"); inCode=!inCode; i++; continue; }
+    if(inCode){ out.push(esc(l)); i++; continue; }
+    if(/^\s*\|.*\|\s*$/.test(l)){
+      closeList();
+      const cells=r=>r.trim().replace(/^\||\|$/g,"").split("|").map(c=>c.trim());
+      let rows=[cells(l)]; i++;
+      if(i<lines.length && /^\s*\|[\s\-:|]+\|\s*$/.test(lines[i])){ i++; }
+      while(i<lines.length && /^\s*\|.*\|\s*$/.test(lines[i])){ rows.push(cells(lines[i])); i++; }
+      let t="<table><thead><tr>"+rows[0].map(c=>"<th>"+inline(c)+"</th>").join("")+"</tr></thead><tbody>";
+      for(let r=1;r<rows.length;r++) t+="<tr>"+rows[r].map(c=>"<td>"+inline(c)+"</td>").join("")+"</tr>";
+      out.push(t+"</tbody></table>"); continue;
+    }
+    if(/^#{1,6}\s/.test(l)){ closeList(); const n=l.match(/^#+/)[0].length; out.push("<h"+n+">"+inline(l.replace(/^#+\s/,""))+"</h"+n+">"); i++; continue; }
+    if(/^>\s?/.test(l)){ closeList(); out.push("<blockquote>"+inline(l.replace(/^>\s?/,""))+"</blockquote>"); i++; continue; }
+    if(/^[-*]\s+/.test(l)){ if(!list){ out.push('<ul class="list">'); list=true; } out.push("<li>"+inline(l.replace(/^[-*]\s+/,""))+"</li>"); i++; continue; }
+    if(/^\d+\.\s+/.test(l)){ if(!list){ out.push('<ul class="list">'); list=true; } out.push("<li>"+inline(l.replace(/^\d+\.\s+/,""))+"</li>"); i++; continue; }
+    if(l.trim()===""){ closeList(); i++; continue; }
+    closeList(); out.push("<p>"+inline(l)+"</p>"); i++;
+  }
+  closeList(); if(inCode) out.push("</code></pre>");
+  return out.join("\n");
+}
+
+function openPanel(title, html){
+  panelTitle.textContent = title;
+  panelBody.innerHTML = html;
+  overlay.classList.add("show");
+  document.querySelectorAll(".navbtn").forEach(b=>b.classList.remove("open"));
+}
+function closePanel(){ overlay.classList.remove("show"); $("#buildsMenu").classList.remove("show"); }
+
+async function openDoc(name){
+  const d = META.docs.find(x=>x.name===name);
+  if(!d){ openPanel(name, "<p>Документ не найден в <code>pkg/</code>.</p>"); return; }
+  openPanel(d.title, "<p class='hint'>Загрузка…</p>");
+  try{
+    const txt = await (await fetch(d.file)).text();
+    openPanel(d.title, md(txt) +
+      "<div class='actions'><a class='dl ghost' href='"+d.file+"' download>⬇ Скачать .md</a></div>");
+  }catch(e){ openPanel(d.title, "<p>Не удалось прочитать файл: "+esc(e)+"</p>"); }
+}
+
+function openBuild(p, isNew){
+  const notes = {
+    "5.8.29": [
+      ["Гейммод переименован в <b>darkrp</b>", "вкладка/категория DarkRP в сервер-браузере"],
+      ["<b>ЭКСТРЕННЫЙ СБОР ожил</b>", "старый модуль не компилировался с v5.0.0 — сбор не работал вообще"],
+      ["<b>Ключ основателя с сервера</b>", "старый ключ из публичного репозитория больше не принимается"],
+      ["<b>!профа</b> только для стаффа", "раньше любой игрок менял себе должность в ТАБ"],
+      ["<b>Дежурство не платит за простой</b>", "нет движения 240 с — оклад на паузе"],
+      ["Версия сборки не врёт", "клиент показывал 5.2.5 вместо номера сервера"]
+    ],
+    "5.8.28": [
+      ["Staff Leader не выдаёт Administrator", "явный список разрешённых рангов + журнал"],
+      ["Esc в E-меню не вешает игру", "возврат управления"],
+      ["Смена профы ставит ХП профы", ""],
+      ["Игрок медленнее (×0.76)", "конвар p11_speed"],
+      ["Все НПС выведены из T-pose", ""]
+    ]
+  }[p.version] || [];
+
+  let html = "<h1>POLUS11_SERVER_v"+p.version+".zip</h1>"
+    + "<div class='kv'><span>Размер</span><b>"+fmtSize(p.size)+"</b></div>"
+    + "<div class='kv'><span>Собран</span><b>"+fmtDate(p.mtime)+"</b></div>"
+    + "<div class='kv'><span>SHA-256 (первые 8)</span><b>"+p.sha256_8+"</b></div>"
+    + "<div class='kv'><span>Гейммод</span><b>"+META.gamemode+" · "+META.gamemode_title+"</b></div>";
+  if(notes.length){ html += "<h3>Что в пакете</h3><ul class='list'>"
+    + notes.map(n=>"<li><b>"+n[0]+"</b>"+(n[1]?" — "+n[1]:"")+"</li>").join("") + "</ul>"; }
+  html += "<div class='actions'>"
+    + "<a class='dl' href='"+p.file+"' download>⬇ СКАЧАТЬ ZIP (v"+p.version+")</a>"
+    + "<a class='dl ghost' href='"+p.file+"'>Открыть в браузере</a>"
+    + "</div>"
+    + "<p class='hint'>Внутри: <code>garrysmod/</code> (гейммод + autorun + cfg + звук), "
+    + "<code>docs/</code>, <code>tools/</code>, README и INSTALL. "
+    + "Ставится копированием папки <code>garrysmod/</code> поверх серверной.</p>"
+    + "<div class='actions'><a class='dl ghost' href='#' id='lnkInstall'>📖 Установка и проверка</a></div>";
+  openPanel("Сборка v"+p.version, html);
+  const lnk=document.getElementById("lnkInstall");
+  if(lnk) lnk.onclick=e=>{e.preventDefault(); openDoc("УСТАНОВКА_DARKRP_v5.8.29.md");};
+}
+
+function openTools(){
+  openPanel("Инструменты разработчика", `
+  <h1>tools/</h1>
+  <p>Два скрипта, которые проверяют сборку без запуска Garry's Mod.</p>
+  <h3>gmod_lint.py — прогон в движковом VM</h3>
+  <pre><code>python3 -m venv /tmp/luaenv &amp;&amp; /tmp/luaenv/bin/pip install lupa
+/tmp/luaenv/bin/python tools/gmod_lint.py</code></pre>
+  <p>Грузит файлы настоящим <b>LuaJIT 2.1</b> (тот же интерпретатор, что в GMod)
+  на заглушках API: синтаксис всех файлов → загрузка сервера в порядке
+  <code>init.lua</code> → загрузка клиента в порядке <code>cl_init.lua</code> →
+  хуки запуска и таймеры → два кадра HUDPaint/Think с ловлей тяжёлых вызовов.</p>
+  <h3>audit_p11.py — метрики сборки</h3>
+  <pre><code>python3 tools/audit_p11.py</code></pre>
+  <p>Списки загрузки и модули-сироты, счётчики хуков, дубли net-строк,
+  concommand без проверки прав, таймеры короче секунды, сейвы, секреты в shared.</p>
+  <h3>build_package.py — снапшот-архив</h3>
+  <pre><code>python3 tools/build_package.py 5.8.30</code></pre>
+  <h3>serve_site.py — эта витрина</h3>
+  <pre><code>python3 tools/serve_site.py 8765</code></pre>
+  `);
+}
+
+function render(){
+  $("#gmBadge").textContent = "гейммод: " + META.gamemode;
+  const menu = $("#buildsMenu"), cards = $("#cards");
+  menu.innerHTML = ""; cards.innerHTML = "";
+  META.packages.forEach((p,idx)=>{
+    const it = document.createElement("div");
+    it.className = "item" + (idx===0 ? " new" : "");
+    it.innerHTML = "<span>v"+p.version+"</span><small>"+fmtSize(p.size)+"</small>";
+    it.onclick = ()=>{ $("#buildsMenu").classList.remove("show"); openBuild(p, idx===0); };
+    menu.appendChild(it);
+
+    const c = document.createElement("div");
+    c.className = "card";
+    c.innerHTML = "<div class='ver'>v"+p.version+"</div>"
+      + "<div class='kv'><span>Размер</span><b>"+fmtSize(p.size)+"</b></div>"
+      + "<div class='kv'><span>Собран</span><b>"+fmtDate(p.mtime)+"</b></div>"
+      + "<a class='dl' href='"+p.file+"' download>⬇ СКАЧАТЬ ZIP</a>"
+      + "<div class='hint' style='cursor:pointer' data-v='"+p.version+"'>состав пакета →</div>";
+    c.querySelector(".hint").onclick = ()=>openBuild(p, idx===0);
+    cards.appendChild(c);
+  });
+}
+
+$("#btnBuilds").onclick = e => { e.stopPropagation(); $("#buildsMenu").classList.toggle("show"); };
+document.addEventListener("click", e => { if(!e.target.closest(".menu")) $("#buildsMenu").classList.remove("show"); });
+$("#btnClose").onclick = closePanel;
+overlay.onclick = e => { if(e.target===overlay) closePanel(); };
+document.addEventListener("keydown", e => { if(e.key==="Escape") closePanel(); });
+$("#btnTools").onclick = openTools;
+document.querySelectorAll("[data-doc]").forEach(b=> b.onclick = ()=>openDoc(b.dataset.doc));
+
+(async function(){
+  try{ META = await (await fetch("pkg/packages.json")).json(); }
+  catch(e){ $("#cards").innerHTML = "<div class='card'><h3>Нет данных</h3><p>"+esc(e)+"</p></div>"; return; }
+  render();
+  const first = META.packages[0];
+  if(first) setTimeout(()=>openBuild(first,true), 250);
+})();
+</script>
+</body>
+</html>
