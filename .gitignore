@@ -1,0 +1,10 @@
+# витрина сборок: временная папка, наполняется tools/serve_site.py
+site/pkg/
+
+# python
+__pycache__/
+*.pyc
+
+# локальные копии и логи
+*.log
+.DS_Store

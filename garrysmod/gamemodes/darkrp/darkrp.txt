@@ -1,7 +1,7 @@
-"polus"
+"darkrp"
 {
 	"base"		"sandbox"
-	"title"		"POLUS-11 RP"
+	"title"		"DarkRP"
 	"maps"		"^gm_|^rp_"
 	"menusystem"	"1"
 	"workshopid"	""
